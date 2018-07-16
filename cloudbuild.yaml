@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/cloud-builders/bazel'
+  args: ['test', '//...']
+
+tags: ['$_PR_NUMBER', '$_REPO_OWNER', '$_REPO', '$_SHA']
