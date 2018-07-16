@@ -9,3 +9,7 @@ TODO(tikuta): write here
 `gcloud container builds submit --config=cloudbuild.yaml .`
 or
 `bazel test //...`
+
+## Pull Request
+
+このリポジトリにmasterではないブランチを作って、そこからmasterにpull request送るとCIが走ってくれます。
