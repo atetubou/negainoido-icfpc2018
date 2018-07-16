@@ -1,3 +1,7 @@
 steps:
 - name: 'gcr.io/cloud-builders/bazel'
   args: ['test', '//...']
+- name: 'gcr.io/cloud-builders/gsutil'
+  entrypoint: "bash"
+  args:
+  - "/workspace/sh.sh"
