@@ -1,6 +1,5 @@
 /bazel-bin
 /bazel-genfiles
-/bazel-out
-/bazel-sandbox
-/bazel-testlogs
 /bazel-negainoido-icfpc2018
+/bazel-out
+/bazel-testlogs
