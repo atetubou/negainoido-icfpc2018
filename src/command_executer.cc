@@ -1,8 +1,8 @@
 #include "command_executer.h"
 
-#define UNREACHABLE() CHECK(false)
+#include <algorithm>
 
-CommandExecuter::CommandExecuter(int R) {}
+#define UNREACHABLE() CHECK(false)
 
 Point Point::operator+ (const Point& p) {
   return Point(x + p.x, y + p.y, z + p.z);
@@ -23,6 +23,24 @@ bool operator==(const Point& p1, const Point& p2) {
 }
 bool operator!=(const Point& p1, const Point& p2) {
     return !(p1 == p2);
+}
+
+CommandExecuter::SystemStatus::SystemStatus(int r)
+  : R(r), energy(0), harmonics(LOW) {
+  // TODO(hiroh): can this be replaced by matrix{}?
+  memset(matrix, 0, sizeof(uint8_t) * kMaxResolution * kMaxResolution * kMaxResolution);
+}
+CommandExecuter::BotStatus::BotStatus()
+  : active(false), pos(0, 0, 0), seeds(0, 0) {}
+
+CommandExecuter::BotStatus::BotStatus(bool active, const Point& pos, const std::pair<int, int>& seeds) : active(active), pos(pos), seeds(seeds) {}
+
+CommandExecuter::CommandExecuter(int R)
+  : num_active_bots(1), system_status(R) {
+  // Bot[1] is active, exists at (0,0,0) and has all the seeds.
+  bot_status[1].active = true;
+  bot_status[1].pos = Point(0,0,0);
+  bot_status[1].seeds = std::make_pair(1, kMaxNumBots + 1); // [1, 21)
 }
 
 bool IsLCD(const Point& p) {
@@ -55,7 +73,7 @@ bool IsPath(const Point& p1, const Point& p2) {
 
 
 uint32_t CommandExecuter::GetBotsNum() {
-  return system_status.active_bots.size();
+  return num_active_bots;
 }
 
 bool CommandExecuter::IsValidBotId(const uint32_t id) {
@@ -100,10 +118,9 @@ void CommandExecuter::Halt(const uint32_t bot_id) {
   Point& p = bot_status[bot_id].pos;
   CHECK(p.x == 0 && p.y == 0 && p.z == 0);
   CHECK(GetBotsNum() == 1);
-  CHECK(system_status.active_bots.find(bot_id) != system_status.active_bots.end());
+  CHECK(bot_status[bot_id].active);
   CHECK(system_status.harmonics == LOW);
-
-  system_status.active_bots.empty();
+  bot_status[bot_id].active = false;
 }
 
 void CommandExecuter::Wait(const uint32_t bot_id) {
