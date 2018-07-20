@@ -1,8 +1,9 @@
 #include <fstream>
-#include <string>
 #include <iostream>
+#include <string>
 
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 
 /*
 
@@ -17,11 +18,8 @@ std::string ReadFile(const std::string& name) {
   // http://www.cplusplus.com/reference/istream/istream/read/
   std::ifstream is(FLAGS_ndl_filename, std::ifstream::binary);
   std::string buffer;
-
-  if (!is) {
-    std::cerr << "failed to read file " << FLAGS_ndl_filename << std::endl;
-    exit(1);
-  }
+  
+  LOG_IF(FATAL, !is) << "failed to read file " << FLAGS_ndl_filename;
 
   // get length of file:
   is.seekg (0, is.end);
@@ -33,10 +31,7 @@ std::string ReadFile(const std::string& name) {
   // read data as a block:
   is.read(&buffer[0], length);
     
-  if (!is) {
-    std::cerr << "error: only " << is.gcount() << " could be read";
-    exit(1);
-  }
+  LOG_IF(FATAL, !is) << "error: only " << is.gcount() << " could be read";
 
   return buffer;
 }
@@ -95,7 +90,6 @@ int main(int argc, char** argv) {
   std::string nbt_content = ReadFile(FLAGS_ndl_filename);
 
   int nanobot_num = 1;
-  int nanobot_idx = 0;
 
   for (size_t i = 0; i < nbt_content.size();) {
     int cur_nanobot_num = nanobot_num;
@@ -125,10 +119,9 @@ int main(int argc, char** argv) {
         int llda = (nbt_content[i] >> 4) & 0b11;
         int lldi = nbt_content[i + 1] & 0b11111;
         int dx = 0, dy = 0, dz = 0;
-        if (!getshort(llda, lldi, &dx, &dy, &dz)) {
-          std::cerr << "encoding error" << std::endl;
-          exit(1);
-        }
+        LOG_IF(FATAL, !getshort(llda, lldi, &dx, &dy, &dz))
+               << "encoding error";
+
         std::cout << "SMove <" << dx << ", " << dy << ", " << dz << ">" << std::endl;
         i += 2;
         continue;
@@ -143,16 +136,12 @@ int main(int argc, char** argv) {
       
         int dx1 = 0, dy1 = 0, dz1 = 0;
         int dx2 = 0, dy2 = 0, dz2 = 0;
-        if (!getlong(sid1a, sid1i, &dx1, &dy1, &dz1)) {
-          std::cerr << "encoding error" << std::endl;
-          exit(1);        
-        }
+        LOG_IF(FATAL, !getlong(sid1a, sid1i, &dx1, &dy1, &dz1))
+          << "encoding error";
 
-        if (!getlong(sid2a, sid2i, &dx2, &dy2, &dz2)) {
-          std::cerr << "encoding error" << std::endl;
-          exit(1);
-        }      
-
+        LOG_IF(FATAL, !getlong(sid2a, sid2i, &dx2, &dy2, &dz2))
+          << "encoding error" << std::endl;
+        
         std::cout << "LMove <" << dx1 << ", " << dy1 << ", " << dz1 << "> <" 
                   << dx2 << ", " << dy2 << ", " << dz2 << ">"
                   << std::endl;
@@ -165,10 +154,9 @@ int main(int argc, char** argv) {
         --nanobot_num;
         int nd = (nbt_content[i] >> 3) & 0b11111;
         int dx, dy, dz;
-        if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
-          std::cerr << "encoding error" << std::endl;
-          exit(1);
-        }
+
+        LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
+          << "encoding error";
       
         std::cout << "FusionP <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
         ++i;
@@ -180,10 +168,9 @@ int main(int argc, char** argv) {
         --nanobot_num;
         int nd = (nbt_content[i] >> 3) & 0b11111;
         int dx, dy, dz;
-        if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
-          std::cerr << "encoding error" << std::endl;
-          exit(1);
-        }
+        LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
+          << "encoding error" << std::endl;
+
         std::cout << "FusionS <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
       
         ++i;
@@ -196,10 +183,9 @@ int main(int argc, char** argv) {
         int nd = (nbt_content[i] >> 3) & 0b11111;
         int m = nbt_content[i + 1];
         int dx, dy, dz;
-        if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
-          std::cerr << "encoding error" << std::endl;
-          exit(1);
-        }
+        LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
+          << "encoding error";
+
         std::cout << "Fission <" << dx << ", " << dy << ", " << dz << "> "  << m << std::endl;
         i += 2;
         continue;
@@ -209,18 +195,15 @@ int main(int argc, char** argv) {
         // Fill
         int nd = (nbt_content[i] >> 3) & 0b11111;
         int dx, dy, dz;
-        if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
-          std::cerr << "encoding error" << std::endl;
-          exit(1);
-        }
+        LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
+          << "encoding error" << std::endl;
+
         std::cout << "Fill <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
         i += 1;
         continue;
       }
 
-      std::cerr << "unknown command? " << binary(nbt_content[i]) << std::endl;
-
-      exit(1);
+      LOG(FATAL) << "unknown command? " << binary(nbt_content[i]);
     }
   }
 }
