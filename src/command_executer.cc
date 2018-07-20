@@ -164,13 +164,12 @@ void CommandExecuter::LMove(const uint32_t bot_id, const Point& sld1, const Poin
   CHECK(IsSLD(sld2));
   Point c0 = bot_status[bot_id].pos;
   Point c1 = c0 + sld1;
-  Point c2 = c0 + sld1;
-
-  bot_status[bot_id].pos = c2;
+  Point c2 = c1 + sld2;
 
   CHECK(IsVoidPath(c0, c1));
   CHECK(IsVoidPath(c1, c2));
 
+  bot_status[bot_id].pos = c2;
   v_cords.push_back(std::make_pair(c0, c1));
   v_cords.push_back(std::make_pair(c1, c2));
   system_status.energy += 2 * (MLen(sld1) + 2 + MLen(sld2));
