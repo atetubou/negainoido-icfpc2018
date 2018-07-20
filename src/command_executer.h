@@ -38,9 +38,10 @@ class CommandExecuter {
   struct BotStatus {
     bool active;
     Point pos;
-    std::pair<int,int> seeds; // [x, y)
+    std::pair<int,int> seeds; // [x, y]
     BotStatus();
     BotStatus(bool active_, const Point& pos_, const std::pair<int,int>& seeds);
+    bool HasSeeds();
   };
 
   explicit CommandExecuter(int R);
@@ -53,6 +54,7 @@ class CommandExecuter {
   void Flip(const uint32_t bot_id);
   void SMove(const uint32_t bot_id, const Point& lld);
   void LMove(const uint32_t bot_id, const Point& sld1, const Point& sld2);
+  void Fission(const uint32_t bot_id, const Point& nd, const uint32_t m);
   // TODO(udon)
 
  private:
@@ -63,7 +65,9 @@ class CommandExecuter {
 
   // utility
   uint32_t GetBotsNum();
-  bool IsValidBotId(const uint32_t id);
+  bool IsActiveBotId(const uint32_t id);
+  bool IsValidCoordinate(const Point& p);
+  bool IsVoidCoordinate(const Point& p);
   bool IsVoidPath(const Point& p1, const Point& p2);
 };
 
