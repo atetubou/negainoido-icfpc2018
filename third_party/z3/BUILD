@@ -2,7 +2,7 @@ licenses(["unencumbered"])  # Public Domain or MIT
 
 exports_files(["LICENSE"])
 
-cc_import(
+cc_library(
     name = "z3",
     hdrs = [
         "z3++.h",
@@ -20,9 +20,9 @@ cc_import(
         "z3_rcf.h",
         "z3_v1.h"
     ],
-    shared_library = select({ 
-              "@bazel_tools//src/conditions:darwin": "libz3.dylib",
-              "//conditions:default": "libz3.so"
+    srcs = select({ 
+              "@bazel_tools//src/conditions:darwin": ["libz3.dylib"],
+              "//conditions:default": ["libz3.so"]
             }),
     visibility = ["//visibility:public"],
 )
