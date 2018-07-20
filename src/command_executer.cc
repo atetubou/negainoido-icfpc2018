@@ -26,9 +26,9 @@ CommandExecuter::CommandExecuter(int R)
 
 // Utilities
 bool IsLCD(const Point& p) {
-  if ((p.x == 0 && p.y != 0 && p.z != 0) ||
-      (p.x != 0 && p.y == 0 && p.z != 0) ||
-      (p.x != 0 && p.y != 0 && p.z == 0)) {
+  if ((p.x != 0 && p.y == 0 && p.z == 0) ||
+      (p.x == 0 && p.y != 0 && p.z == 0) ||
+      (p.x == 0 && p.y == 0 && p.z != 0)) {
     return true;
   }
   return false;
@@ -188,6 +188,11 @@ void CommandExecuter::LMove(const uint32_t bot_id, const Point& sld1, const Poin
 }
 
 void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint32_t m) {
+
+  // BUG(udon): Doesn't work
+  UNREACHABLE();
+
+
   CHECK(IsActiveBotId(bot_id));
   CHECK(IsNCD(nd));
   CHECK(bot_status[bot_id].HasSeeds());
