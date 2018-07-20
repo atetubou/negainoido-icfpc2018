@@ -2,50 +2,32 @@
 #include <fstream>
 #include <vector>
 
-using namespace std;
-using v = vector<int>;
-using vv = vector<v>;
-using vvv = vector<vv>;
+#include "gflags/gflags.h"
+#include "glog/logging.h"
 
-vvv
-read_mdl(char*fn) {
-    ifstream is (fn);
-    char *buffer = new char[1];
-    is.read(buffer, 1);
-    int R = (unsigned int)buffer[0];
-    vvv M(R, vv(R, v(R, 0)));
-    int i = 8;
-    for (int x=0; x<R; ++x) {
-        for (int y=0; y<R; ++y) {
-            for (int z=0; z<R; ++z) {
-                if (i >= 8) {
-                    is.read(buffer, 1);
-                    i = 0;
-                }
-                if (buffer[0] & (1 << i)) {
-                    M[x][y][z] = 1;
-                }
-                i += 1;
-            }
-        }
-    }
-    return M;
-}
+#include "src/base/base.h"
+
+DEFINE_string(mdl_filename, "", "filepath of mdl");
 
 int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-    vvv M = read_mdl(argv[1]);
-    int R = M.size();
-    cout << R << endl;
+  if (!FLAGS_mdl_filename.empty()) {
+    std::cout << "need to pass --mdl_filename=/path/to/mdl";
+    exit(1);
+  }
 
-    for (int x=0;x<R;++x) {
-        for (int y=0; y<R; ++y) {
-            for (int z=0;z<R;++z) {
-                cout << M[x][y][z];
-            }
-            cout << endl;
-        }
-        cout << endl;
+  vvv M = ReadMDL(FLAGS_mdl_filename);
+  int R = M.size();
+  std::cout << R << std::endl;
+
+  for (int x=0;x<R;++x) {
+    for (int y=0; y<R; ++y) {
+      for (int z=0;z<R;++z) {
+        std::cout << M[x][y][z];
+      }
+      std::cout << std::endl;
     }
-
+    std::cout << std::endl;
+  }
 }

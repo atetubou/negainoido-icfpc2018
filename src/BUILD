@@ -5,6 +5,7 @@ cc_binary(
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
+        "//src/base",
     ],
 )
 
@@ -20,9 +21,10 @@ cc_library(
 cc_binary(
     name = "mdl2txt",
     srcs = ["mdl2txt.cc"],
-    # deps = [
-    #     "//external:glog",
-    #     "@com_github_gflags_gflags//:gflags",
-    #     "@jsoncpp_git//:jsoncpp",
-    # ],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+    ],
 )
