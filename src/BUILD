@@ -11,13 +11,17 @@ cc_binary(
 
 cc_library(
     name = "command_executer",
-    srcs = ["command_executer.h",
+    srcs = ["command.h",
+            "command.cc",
+            "command_executer.h",
             "command_executer.cc",
             "command_util.h",
             "command_util.cc",
     ],
     copts = ["-std=c++14"],
-    deps = ["//external:glog"],
+    deps = ["//external:glog",
+            "@jsoncpp_git//:jsoncpp",
+    ],
 )
 
 cc_binary(
