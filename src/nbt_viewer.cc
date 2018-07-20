@@ -10,7 +10,7 @@
 
 /*
 
-  bazel run //src:nbt_viewer -- --json --ndl_filename=/path/to/ndl_file
+  bazel run //src:nbt_viewer -- --json --nbt_filename=/path/to/nbt_file
 
 */
 
