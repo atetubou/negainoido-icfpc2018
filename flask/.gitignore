@@ -1,0 +1,10 @@
+__pycache__/
+tests/__pycache__/
+debug.log
+uwsgi.log
+uwsgi.pid
+env/
+reload.trigger
+secret.sh
+nohup.out
+
