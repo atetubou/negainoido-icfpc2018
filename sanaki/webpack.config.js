@@ -11,6 +11,14 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /src\/.+.js?$/,
+        loader: 'babel-loader',
+        exclude: /node_modules/,
+        query: {
+          presets: ['es2015', 'react']
+        }
+      },
+      {
         test: /styles\/.+\.scss$/,
         use: [
           'style-loader',
