@@ -39,7 +39,10 @@ class CommandExecuter {
   struct BotStatus {
     bool active;
     Point pos;
+
+    // BUG(udon): |seeds| should be a set
     std::pair<int,int> seeds; // [x, y]
+
     BotStatus();
     BotStatus(bool active_, const Point& pos_, const std::pair<int,int>& seeds);
     bool HasSeeds();
@@ -55,8 +58,11 @@ class CommandExecuter {
   void Flip(const uint32_t bot_id);
   void SMove(const uint32_t bot_id, const Point& lld);
   void LMove(const uint32_t bot_id, const Point& sld1, const Point& sld2);
+  void Fill(const uint32_t bot_id, const Point& nd);
+
+  // BUG(udon): Fission doesn't work
   void Fission(const uint32_t bot_id, const Point& nd, const uint32_t m);
-  // TODO(udon)
+  // TODO(udon): FusionP, FusionS
 
  private:
   std::vector<std::pair<Point, Point>> v_cords;
