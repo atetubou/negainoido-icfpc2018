@@ -6,20 +6,9 @@
 #include <set>
 #include <array>
 
+#include "command_util.h"
+
 #include "glog/logging.h"
-
-struct Point {
-  int x;
-  int y;
-  int z;
-
-  Point() = default;
-  Point(int x, int y, int z) : x(x), y(y), z(z) {}
-  Point operator+ (const Point& p);
-  Point& operator+= (const Point& p);
-};
-bool operator==(const Point& p1, const Point& p2);
-bool operator!=(const Point& p1, const Point& p2);
 
 enum Harmonics {
   LOW = 0,

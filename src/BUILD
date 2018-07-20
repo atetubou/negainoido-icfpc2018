@@ -13,6 +13,8 @@ cc_library(
     name = "command_executer",
     srcs = ["command_executer.h",
             "command_executer.cc",
+            "command_util.h",
+            "command_util.cc",
     ],
     copts = ["-std=c++14"],
     deps = ["//external:glog"],
