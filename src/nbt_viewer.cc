@@ -117,11 +117,10 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
     LOG_IF(FATAL, !getlong(llda, lldi, &dx, &dy, &dz))
       << "encoding error";
 
-    Json::Value smove;
-    smove["dx"] = dx;
-    smove["dy"] = dy;
-    smove["dz"] = dz;
-    (*command)["command"]["SMove"] = std::move(smove);
+    (*command)["command"] = "SMoeve";
+    (*command)["dx"] = dx;
+    (*command)["dy"] = dy;
+    (*command)["dz"] = dz;
     
     (*ss) << "SMove <" << dx << ", " << dy << ", " << dz << ">" << std::endl;
     return 2;
@@ -142,14 +141,14 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
     LOG_IF(FATAL, !getshort(sid2a, sid2i, &dx2, &dy2, &dz2))
       << "encoding error" << std::endl;
 
-    Json::Value lmove;
-    lmove["dx1"] = dx1;
-    lmove["dy1"] = dy1;
-    lmove["dz1"] = dz1;
-    lmove["dx2"] = dx2;
-    lmove["dy2"] = dy2;
-    lmove["dz2"] = dz2;
-    (*command)["command"]["LMove"] = std::move(lmove);        
+    (*command)["command"] = "LMove";
+    (*command)["dx1"] = dx1;
+    (*command)["dy1"] = dy1;
+    (*command)["dz1"] = dz1;
+    (*command)["dx2"] = dx2;
+    (*command)["dy2"] = dy2;
+    (*command)["dz2"] = dz2;
+
     (*ss) << "LMove <" << dx1 << ", " << dy1 << ", " << dz1 << "> <" 
        << dx2 << ", " << dy2 << ", " << dz2 << ">"
        << std::endl;
@@ -167,11 +166,10 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
       
     (*ss) << "FusionP <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
 
-    Json::Value fusionp;
-    fusionp["dx"] = dx;
-    fusionp["dy"] = dy;
-    fusionp["dz"] = dz;
-    (*command)["command"]["FusionP"] = std::move(fusionp);        
+    (*command)["command"] = "FusionP";
+    (*command)["dx"] = dx;
+    (*command)["dy"] = dy;
+    (*command)["dz"] = dz;
     
     return 1;
   }
@@ -186,11 +184,10 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
 
     (*ss) << "FusionS <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
 
-    Json::Value fusions;
-    fusions["dx"] = dx;
-    fusions["dy"] = dy;
-    fusions["dz"] = dz;
-    (*command)["command"]["FusionS"] = std::move(fusions);
+    (*command)["command"] = "FusionS";
+    (*command)["dx"] = dx;
+    (*command)["dy"] = dy;
+    (*command)["dz"] = dz;
 
     return 1;
   }
@@ -206,11 +203,10 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
 
     (*ss) << "Fission <" << dx << ", " << dy << ", " << dz << "> "  << m << std::endl;
 
-    Json::Value fission;
-    fission["dx"] = dx;
-    fission["dy"] = dy;
-    fission["dz"] = dz;
-    (*command)["command"]["Fission"] = std::move(fission);
+    (*command)["command"] = "Fission";
+    (*command)["dx"] = dx;
+    (*command)["dy"] = dy;
+    (*command)["dz"] = dz;
     
     return 2;
   }
@@ -224,12 +220,10 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
 
     (*ss) << "Fill <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
 
-    Json::Value fill;
-    fill["dx"] = dx;
-    fill["dy"] = dy;
-    fill["dz"] = dz;
-    (*command)["command"]["Fill"] = std::move(fill);
-    
+    (*command)["command"] = "Fill";
+    (*command)["dx"] = dx;
+    (*command)["dy"] = dy;
+    (*command)["dz"] = dz;
     return 1;
   }
 
