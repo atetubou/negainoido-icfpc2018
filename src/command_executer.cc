@@ -78,9 +78,9 @@ bool CommandExecuter::IsActiveBotId(const uint32_t id) {
 
 bool CommandExecuter::IsValidCoordinate(const Point& p) {
   return
-    0 <= p.x && p.x < system_status.R &&
-    0 <= p.y && p.y < system_status.R &&
-    0 <= p.z && p.z < system_status.R;
+    (0 <= p.x && p.x < system_status.R) &&
+    (0 <= p.y && p.y < system_status.R) &&
+    (0 <= p.z && p.z < system_status.R);
 }
 
 bool CommandExecuter::IsVoidCoordinate(const Point& p) {
@@ -217,6 +217,26 @@ void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint
   num_active_bots += 1;
 
   system_status.energy += 24;
+
+  v_cords.push_back(std::make_pair(c0, c0));
+  v_cords.push_back(std::make_pair(c1, c1));
+}
+
+void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
+  CHECK(IsActiveBotId(bot_id));
+  CHECK(IsNCD(nd));
+
+  BotStatus& bot = bot_status[bot_id];
+  Point c0 = bot.pos;
+  Point c1 = c1 + nd;
+  CHECK(IsValidCoordinate(c1));
+
+  if (system_status.matrix[c1.x][c1.y][c1.z] == VOID) {
+    system_status.matrix[c1.x][c1.y][c1.z] = FULL;
+    system_status.energy += 12;
+  } else {
+    system_status.energy += 6;
+  }
 
   v_cords.push_back(std::make_pair(c0, c0));
   v_cords.push_back(std::make_pair(c1, c1));

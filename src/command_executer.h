@@ -56,6 +56,7 @@ class CommandExecuter {
   void SMove(const uint32_t bot_id, const Point& lld);
   void LMove(const uint32_t bot_id, const Point& sld1, const Point& sld2);
   void Fission(const uint32_t bot_id, const Point& nd, const uint32_t m);
+  void Fill(const uint32_t bot_id, const Point& nd);
   // TODO(udon)
 
  private:
