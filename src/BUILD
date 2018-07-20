@@ -2,8 +2,9 @@ cc_binary(
     name = "nbt_viewer",
     srcs = ["nbt_viewer.cc"],
     deps = [
-        "@com_github_gflags_gflags//:gflags",
         "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
     ],
 )
 
@@ -14,4 +15,5 @@ cc_library(
     ],
     copts = ["-std=c++14"],
     deps = ["//external:glog"],
+    ],
 )

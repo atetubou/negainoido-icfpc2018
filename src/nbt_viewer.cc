@@ -4,15 +4,17 @@
 
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+#include "json/json.h"
 
 /*
 
-  bazel run //src:nbt_viewer -- --ndl_filename=/path/to/ndl_file
+  bazel run //src:nbt_viewer -- --json --ndl_filename=/path/to/ndl_file
 
 */
 
 
 DEFINE_string(ndl_filename,"", "filepath of ndl");
+DEFINE_bool(json, false, "output command in json if --json is set");
 
 std::string ReadFile(const std::string& name) {
   // http://www.cplusplus.com/reference/istream/istream/read/
@@ -91,22 +93,36 @@ int main(int argc, char** argv) {
 
   int nanobot_num = 1;
 
+  std::ostringstream ss;
+  Json::Value json;  
+
   for (size_t i = 0; i < nbt_content.size();) {
     int cur_nanobot_num = nanobot_num;
-    for (int cur_nanobot_idx = 0; cur_nanobot_idx < cur_nanobot_num; ++cur_nanobot_idx) {
-      std::cout <<"bot id " << cur_nanobot_idx << ": ";
+    Json::Value turn;
+
+    for (int cur_nanobot_idx = 1; cur_nanobot_idx <= cur_nanobot_num; ++cur_nanobot_idx) {
+      Json::Value command;
+      command["bot_id"] = cur_nanobot_idx;
+
+      ss <<"bot id " << cur_nanobot_idx << ": ";
 
       switch (nbt_content[i]) {
       case kHALT:
-        std::cout << "Halt" << std::endl;
+        ss << "Halt" << std::endl;
+        command["command"] = "Halt";
+        turn.append(command);
         ++i;
         continue;
       case kWAIT:
-        std::cout << "Wait" << std::endl;
+        ss << "Wait" << std::endl;
+        command["command"] = "Wait";
+        turn.append(command);
         ++i;
         continue;
       case kFLIP:
-        std::cout << "Flip" << std::endl;
+        ss << "Flip" << std::endl;
+        command["command"] = "Flip";
+        turn.append(command);
         ++i;
         continue;
       default:
@@ -119,10 +135,16 @@ int main(int argc, char** argv) {
         int llda = (nbt_content[i] >> 4) & 0b11;
         int lldi = nbt_content[i + 1] & 0b11111;
         int dx = 0, dy = 0, dz = 0;
-        LOG_IF(FATAL, !getshort(llda, lldi, &dx, &dy, &dz))
+        LOG_IF(FATAL, !getlong(llda, lldi, &dx, &dy, &dz))
                << "encoding error";
 
-        std::cout << "SMove <" << dx << ", " << dy << ", " << dz << ">" << std::endl;
+        Json::Value smove;
+        smove["dx"] = dx;
+        smove["dy"] = dy;
+        smove["dz"] = dz;
+        command["command"]["SMove"] = std::move(smove);
+        turn.append(command);
+        ss << "SMove <" << dx << ", " << dy << ", " << dz << ">" << std::endl;
         i += 2;
         continue;
       }
@@ -136,15 +158,24 @@ int main(int argc, char** argv) {
       
         int dx1 = 0, dy1 = 0, dz1 = 0;
         int dx2 = 0, dy2 = 0, dz2 = 0;
-        LOG_IF(FATAL, !getlong(sid1a, sid1i, &dx1, &dy1, &dz1))
+        LOG_IF(FATAL, !getshort(sid1a, sid1i, &dx1, &dy1, &dz1))
           << "encoding error";
 
-        LOG_IF(FATAL, !getlong(sid2a, sid2i, &dx2, &dy2, &dz2))
+        LOG_IF(FATAL, !getshort(sid2a, sid2i, &dx2, &dy2, &dz2))
           << "encoding error" << std::endl;
-        
-        std::cout << "LMove <" << dx1 << ", " << dy1 << ", " << dz1 << "> <" 
-                  << dx2 << ", " << dy2 << ", " << dz2 << ">"
-                  << std::endl;
+
+        Json::Value lmove;
+        lmove["dx1"] = dx1;
+        lmove["dy1"] = dy1;
+        lmove["dz1"] = dz1;
+        lmove["dx2"] = dx2;
+        lmove["dy2"] = dy2;
+        lmove["dz2"] = dz2;
+        command["command"]["LMove"] = std::move(lmove);        
+        turn.append(command);
+        ss << "LMove <" << dx1 << ", " << dy1 << ", " << dz1 << "> <" 
+           << dx2 << ", " << dy2 << ", " << dz2 << ">"
+           << std::endl;
         i += 2;
         continue;
       }
@@ -158,8 +189,16 @@ int main(int argc, char** argv) {
         LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
           << "encoding error";
       
-        std::cout << "FusionP <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
+        ss << "FusionP <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
         ++i;
+
+        Json::Value fusionp;
+        fusionp["dx"] = dx;
+        fusionp["dy"] = dy;
+        fusionp["dz"] = dz;
+        command["command"]["FusionP"] = std::move(fusionp);        
+        turn.append(command);
+
         continue;
       }
 
@@ -171,9 +210,17 @@ int main(int argc, char** argv) {
         LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
           << "encoding error" << std::endl;
 
-        std::cout << "FusionS <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
+        ss << "FusionS <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
       
         ++i;
+
+        Json::Value fusions;
+        fusions["dx"] = dx;
+        fusions["dy"] = dy;
+        fusions["dz"] = dz;
+        command["command"]["FusionS"] = std::move(fusions);
+        turn.append(command);
+
         continue;
       }
 
@@ -186,7 +233,15 @@ int main(int argc, char** argv) {
         LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
           << "encoding error";
 
-        std::cout << "Fission <" << dx << ", " << dy << ", " << dz << "> "  << m << std::endl;
+        ss << "Fission <" << dx << ", " << dy << ", " << dz << "> "  << m << std::endl;
+
+        Json::Value fission;
+        fission["dx"] = dx;
+        fission["dy"] = dy;
+        fission["dz"] = dz;
+        command["command"]["Fission"] = std::move(fission);
+        turn.append(command);
+
         i += 2;
         continue;
       }
@@ -198,12 +253,29 @@ int main(int argc, char** argv) {
         LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
           << "encoding error" << std::endl;
 
-        std::cout << "Fill <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
+        ss << "Fill <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
         i += 1;
+
+        Json::Value fill;
+        fill["dx"] = dx;
+        fill["dy"] = dy;
+        fill["dz"] = dz;
+        command["command"]["Fill"] = std::move(fill);
+        turn.append(command);
+
         continue;
       }
 
       LOG(FATAL) << "unknown command? " << binary(nbt_content[i]);
     }
+
+    json["turn"].append(std::move(turn));
+  }
+
+
+  if (FLAGS_json) {
+    std::cout << json << std::endl;
+  } else {
+    std::cout << ss.str() << std::endl;
   }
 }
