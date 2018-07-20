@@ -29,5 +29,5 @@ $ gsutil cp gs://negainoido-icfpc2018-shared-bucket/nanika .
 ### File ls
 
 ```
-$ gsutil cp ls gs://negainoido-icfpc2018-shared-bucket
+$ gsutil ls gs://negainoido-icfpc2018-shared-bucket
 ```
