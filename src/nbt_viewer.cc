@@ -13,7 +13,7 @@
 */
 
 
-DEFINE_string(ndl_filename,"", "filepath of ndl");
+DEFINE_string(nbt_filename, "", "filepath of nbt");
 DEFINE_bool(json, false, "output command in json if --json is set");
 
 std::string ReadFile(const std::string& name) {
@@ -21,7 +21,7 @@ std::string ReadFile(const std::string& name) {
   std::ifstream is(name, std::ifstream::binary);
   std::string buffer;
   
-  LOG_IF(FATAL, !is) << "failed to read file " << FLAGS_ndl_filename;
+  LOG_IF(FATAL, !is) << "failed to read file " << name;
 
   // get length of file:
   is.seekg (0, is.end);
@@ -239,7 +239,7 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   
-  std::string nbt_content = ReadFile(FLAGS_ndl_filename);
+  std::string nbt_content = ReadFile(FLAGS_nbt_filename);
 
   int nanobot_num = 1;
 
