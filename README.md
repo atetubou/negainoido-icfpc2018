@@ -13,3 +13,21 @@ or
 ## Pull Request
 
 このリポジトリにmasterではないブランチを作って、そこからmasterにpull request送るとCIが走ってくれます。
+
+## Cloud storage usagge
+
+### File copy
+
+```
+$ gsutil cp nanika gs://negainoido-icfpc2018-shared-bucket
+```
+
+```
+$ gsutil cp gs://negainoido-icfpc2018-shared-bucket/nanika .
+```
+
+### File ls
+
+```
+$ gsutil cp ls gs://negainoido-icfpc2018-shared-bucket
+```
