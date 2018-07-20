@@ -8,7 +8,7 @@
 
   bazel run //src:nbt_viewer -- --ndl_filename=/path/to/ndl_file
 
- */
+*/
 
 
 DEFINE_string(ndl_filename,"", "filepath of ndl");
@@ -65,6 +65,20 @@ bool getlong(int a, int i, int* dx, int* dy, int* dz) {
   else return false;
 
   return true;
+}
+
+bool getnearcoordinate(int nd, int* dx, int* dy, int* dz) {
+  for (*dx = -1; *dx <= 1; ++*dx) {
+    for (*dy = -1; *dy <= 1; ++*dy) {
+      for (*dz = -1; *dz <= 1; ++*dz) {
+        if ((*dx + 1) * 9 + (*dy + 1) * 3 + (*dz + 1) == nd) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 std::string binary(int x) {
@@ -144,8 +158,13 @@ int main(int argc, char** argv) {
     if ((nbt_content[i] & 0b111) == 0b111) {
       // FusionP
       int nd = (nbt_content[i] >> 3) & 0b11111;
-      // TODO decode nd
-      std::cout << "FusionP " << nd << std::endl;
+      int dx, dy, dz;
+      if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
+        std::cerr << "encoding error" << std::endl;
+        exit(1);
+      }
+      
+      std::cout << "FusionP <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
       ++i;
       continue;
     }
@@ -153,8 +172,13 @@ int main(int argc, char** argv) {
     if ((nbt_content[i] & 0b111) == 0b110) {
       // FusionS
       int nd = (nbt_content[i] >> 3) & 0b11111;
-      // TODO decode nd
-      std::cout << "FusionS " << nd << std::endl;
+      int dx, dy, dz;
+      if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
+        std::cerr << "encoding error" << std::endl;
+        exit(1);
+      }
+      std::cout << "FusionS <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
+      
       ++i;
       continue;
     }
@@ -163,8 +187,12 @@ int main(int argc, char** argv) {
       // Fusion
       int nd = (nbt_content[i] >> 3) & 0b11111;
       int m = nbt_content[i + 1];
-      // TODO decode nd, m
-      std::cout << "Fusion " << nd << " " << m << std::endl;
+      int dx, dy, dz;
+      if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
+        std::cerr << "encoding error" << std::endl;
+        exit(1);
+      }
+      std::cout << "Fusion <" << dx << ", " << dy << ", " << dz << "> "  << m << std::endl;
       i += 2;
       continue;
     }
@@ -172,13 +200,17 @@ int main(int argc, char** argv) {
     if ((nbt_content[i] & 0b111) == 0b011) {
       // Fill
       int nd = (nbt_content[i] >> 3) & 0b11111;
-      // TODO decode nd
-      std::cout << "Fill " << nd << std::endl;
+      int dx, dy, dz;
+      if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
+        std::cerr << "encoding error" << std::endl;
+        exit(1);
+      }
+      std::cout << "Fill <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
       i += 1;
       continue;
     }
 
-    std::cerr << "unknown command? " << (int)(nbt_content[i]) << std::endl;
+    std::cerr << "unknown command? " << binary(nbt_content[i]) << std::endl;
 
     exit(1);
   }
