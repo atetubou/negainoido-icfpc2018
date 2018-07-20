@@ -6,6 +6,8 @@
 #include "glog/logging.h"
 #include "json/json.h"
 
+#include "src/base/base.h"
+
 /*
 
   bazel run //src:nbt_viewer -- --json --ndl_filename=/path/to/ndl_file
@@ -16,27 +18,6 @@
 DEFINE_string(nbt_filename, "", "filepath of nbt");
 DEFINE_bool(json, false, "output command in json if --json is set");
 
-std::string ReadFile(const std::string& name) {
-  // http://www.cplusplus.com/reference/istream/istream/read/
-  std::ifstream is(name, std::ifstream::binary);
-  std::string buffer;
-  
-  LOG_IF(FATAL, !is) << "failed to read file " << name;
-
-  // get length of file:
-  is.seekg (0, is.end);
-  int length = is.tellg();
-  is.seekg (0, is.beg);
-
-  buffer.resize(length);
-
-  // read data as a block:
-  is.read(&buffer[0], length);
-    
-  LOG_IF(FATAL, !is) << "error: only " << is.gcount() << " could be read";
-
-  return buffer;
-}
 
 const char kHALT = 0b11111111;
 const char kWAIT = 0b11111110;
