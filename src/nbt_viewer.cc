@@ -16,7 +16,7 @@ DEFINE_string(ndl_filename,"", "filepath of ndl");
 
 std::string ReadFile(const std::string& name) {
   // http://www.cplusplus.com/reference/istream/istream/read/
-  std::ifstream is(FLAGS_ndl_filename, std::ifstream::binary);
+  std::ifstream is(name, std::ifstream::binary);
   std::string buffer;
   
   LOG_IF(FATAL, !is) << "failed to read file " << FLAGS_ndl_filename;
