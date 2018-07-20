@@ -6,10 +6,11 @@
 #include <set>
 #include <array>
 
-// #include "command.h"
+#include "command.h"
 #include "command_util.h"
 
 #include "glog/logging.h"
+#include "json/json.h"
 
 enum Harmonics {
   LOW = 0,
@@ -48,8 +49,10 @@ class CommandExecuter {
     bool HasSeeds();
   };
 
-  explicit CommandExecuter(int R);
-  ~CommandExecuter() = default;
+  CommandExecuter(int R, bool output_json);
+  ~CommandExecuter();
+
+  void Execute(const std::vector<Command>& commands);
 
   // Commands
   // Singleton Commands
@@ -69,6 +72,8 @@ class CommandExecuter {
   size_t num_active_bots;
   std::array<BotStatus, kMaxNumBots+1> bot_status;
   SystemStatus system_status;
+  bool output_json;
+  Json::Value json;
 
   // utility
   uint32_t GetBotsNum();

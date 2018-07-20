@@ -1,6 +1,7 @@
 #include "command_executer.h"
 
 #include <algorithm>
+#include <iostream>
 
 #define UNREACHABLE() CHECK(false)
 
@@ -11,13 +12,14 @@ CommandExecuter::SystemStatus::SystemStatus(int r)
   // TODO(hiroh): can this be replaced by matrix{}?
   memset(matrix, 0, sizeof(uint8_t) * kMaxResolution * kMaxResolution * kMaxResolution);
 }
+
 CommandExecuter::BotStatus::BotStatus()
   : active(false), pos(0, 0, 0), seeds(-1, -1) {}
 
 CommandExecuter::BotStatus::BotStatus(bool active, const Point& pos, const std::pair<int, int>& seeds) : active(active), pos(pos), seeds(seeds) {}
 
-CommandExecuter::CommandExecuter(int R)
-  : num_active_bots(1), system_status(R) {
+CommandExecuter::CommandExecuter(int R, bool output_json)
+  : num_active_bots(1), system_status(R), output_json(output_json) {
   // Bot[1] is active, exists at (0,0,0) and has all the seeds.
   bot_status[1].active = true;
   bot_status[1].pos = Point(0,0,0);
@@ -123,6 +125,44 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
   return true;
 }
 
+void CommandExecuter::Execute(const std::vector<Command>& commands) {
+  for (const auto& c : commands) {
+    auto id = c.id;
+    switch(c.type) {
+    case Command::Type::HALT:
+      Halt(id);
+      break;
+    case Command::Type::WAIT:
+      UNREACHABLE();
+      break;
+    case Command::Type::FLIP:
+      UNREACHABLE();
+      break;
+    case Command::Type::SMOVE:
+      SMove(id, c.smove_lld);
+      break;
+    case Command::Type::LMOVE:
+      UNREACHABLE();
+      break;
+    case Command::Type::FISSION:
+      UNREACHABLE();
+      break;
+    case Command::Type::FILL:
+      Fill(id, c.fill_nd);
+      break;
+    case Command::Type::FUSION_P:
+      UNREACHABLE();
+      break;
+    case Command::Type::FUSION_S:
+      UNREACHABLE();
+      break;
+    }
+  }
+  if (output_json) {
+    auto turn_json = Command::CommandsToJson(commands);
+    json["turn"].append(std::move(turn_json));
+  }
+}
 
 // Commands
 void CommandExecuter::Halt(const uint32_t bot_id) {
