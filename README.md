@@ -4,7 +4,7 @@
 
 TODO(tikuta): write here
 
-## Do build and test
+## Build and Test
 
 `gcloud container builds submit --config=cloudbuild.yaml .`
 or
