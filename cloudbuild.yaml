@@ -1,9 +1,11 @@
 steps:
+- name: 'gcr.io/cloud-builders/gsutilw'
+  args: ['cp', 'gs://negainoido-icfpc2018_secret/negainoido-icfpc2018-2512d5000a62.json', '/workspace/credentials.json']
 - name: 'gcr.io/cloud-builders/bazel'
-  args: ['build', '--remote_http_cache=https://storage.googleapis.com/negainoido-icfpc2018-bazel-cache', '//...']
+  args: ['build', '--google_credentials=/workspace/credentials.json', '--remote_http_cache=https://storage.googleapis.com/negainoido-icfpc2018-bazel-cache', '//...']
 - name: 'gcr.io/cloud-builders/bazel'
-  args: ['test', '--remote_http_cache=https://storage.googleapis.com/negainoido-icfpc2018-bazel-cache', '//...']
-- name: 'gcr.io/cloud-builders/gsutil'
+  args: ['test', '--google_credentials=/workspace/credentials.json', '--remote_http_cache=https://storage.googleapis.com/negainoido-icfpc2018-bazel-cache', '//...']
+- name: 'gcr.io/cloud-builders/gsutilw'
   entrypoint: "bash"
   args:
   - "/workspace/sh.sh"
