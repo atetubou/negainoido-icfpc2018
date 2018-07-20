@@ -4,6 +4,7 @@
 
 #define UNREACHABLE() CHECK(false)
 
+// Point
 Point Point::operator+ (const Point& p) {
   return Point(x + p.x, y + p.y, z + p.z);
 }
@@ -25,6 +26,8 @@ bool operator!=(const Point& p1, const Point& p2) {
     return !(p1 == p2);
 }
 
+// CommandExecuter
+// Constructors
 CommandExecuter::SystemStatus::SystemStatus(int r)
   : R(r), energy(0), harmonics(LOW) {
   // TODO(hiroh): can this be replaced by matrix{}?
@@ -43,6 +46,7 @@ CommandExecuter::CommandExecuter(int R)
   bot_status[1].seeds = std::make_pair(1, kMaxNumBots + 1); // [1, 21)
 }
 
+// Utilities
 bool IsLCD(const Point& p) {
   if ((p.x == 0 && p.y != 0 && p.z != 0) ||
       (p.x != 0 && p.y == 0 && p.z != 0) ||
@@ -70,7 +74,6 @@ bool IsPath(const Point& p1, const Point& p2) {
           abs(p1.z - p2.z));
   return IsLCD(p);
 }
-
 
 uint32_t CommandExecuter::GetBotsNum() {
   return num_active_bots;
@@ -113,6 +116,8 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
   return true;
 }
 
+
+// Commands
 void CommandExecuter::Halt(const uint32_t bot_id) {
   CHECK(IsValidBotId(bot_id));
   Point& p = bot_status[bot_id].pos;
