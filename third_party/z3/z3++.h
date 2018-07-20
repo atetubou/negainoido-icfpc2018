@@ -25,7 +25,7 @@ Notes:
 #include<iostream>
 #include<string>
 #include<sstream>
-#include<z3.h>
+#include "third_party/z3/z3.h"
 #include<limits.h>
 
 /**

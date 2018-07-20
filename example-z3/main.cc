@@ -1,5 +1,5 @@
 #include <iostream>
-#include "z3++.h"
+#include "third_party/z3/z3++.h"
 using namespace z3;
 
 int main() {

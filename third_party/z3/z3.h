@@ -24,16 +24,16 @@ Notes:
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "z3_macros.h"
-#include "z3_api.h"
-#include "z3_ast_containers.h"
-#include "z3_algebraic.h"
-#include "z3_polynomial.h"
-#include "z3_rcf.h"
-#include "z3_fixedpoint.h"
-#include "z3_optimization.h"
-#include "z3_interp.h"
-#include "z3_fpa.h"
-#include "z3_spacer.h"
+#include "third_party/z3/z3_macros.h"
+#include "third_party/z3/z3_api.h"
+#include "third_party/z3/z3_ast_containers.h"
+#include "third_party/z3/z3_algebraic.h"
+#include "third_party/z3/z3_polynomial.h"
+#include "third_party/z3/z3_rcf.h"
+#include "third_party/z3/z3_fixedpoint.h"
+#include "third_party/z3/z3_optimization.h"
+#include "third_party/z3/z3_interp.h"
+#include "third_party/z3/z3_fpa.h"
+#include "third_party/z3/z3_spacer.h"
 #endif
 
