@@ -1,4 +1,4 @@
-# negainoido icfpc 2018
+# negainoido icfpc 2018!!
 
 ## One time setup
 
