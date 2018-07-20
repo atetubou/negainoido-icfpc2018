@@ -1,14 +1,14 @@
+"""
+cargo-raze workspace build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
 package(default_visibility = ["//visibility:public"])
 
-load(
-    "@io_bazel_rules_rust//rust:rust.bzl",
-    "rust_binary",
-    "rust_doc",
-    "rust_doc_test",
-)
-
-rust_binary(
-    name = "hello_world",
-    srcs = ["src/main.rs"],
-    deps = []
+licenses([
+  "notice" # See individual crates for specific licenses
+])
+alias(
+    name = "serde_json",
+    actual = "//example-rust/vendor/serde_json-1.0.24:serde_json",
 )
