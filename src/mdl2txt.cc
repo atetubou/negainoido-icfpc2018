@@ -32,7 +32,7 @@ read_mdl(char*fn) {
     return M;
 }
 
-main(int argc, char*argv[]) {
+int main(int argc, char* argv[]) {
 
     vvv M = read_mdl(argv[1]);
     int R = M.size();

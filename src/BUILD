@@ -16,3 +16,13 @@ cc_library(
     copts = ["-std=c++14"],
     deps = ["//external:glog"],
 )
+
+cc_binary(
+    name = "mdl2txt",
+    srcs = ["mdl2txt.cc"],
+    # deps = [
+    #     "//external:glog",
+    #     "@com_github_gflags_gflags//:gflags",
+    #     "@jsoncpp_git//:jsoncpp",
+    # ],
+)
