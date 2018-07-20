@@ -5,9 +5,8 @@ steps:
   entrypoint: "bash"
   args: 
   - '-c'
-  - >>- 
-    bazel build --google_credentials=/workspace/credentials.json --remote_http_cache=https://storage.googleapis.com/negainoido-icfpc2018-bazel-cache //...;
-    bazel test --google_credentials=/workspace/credentials.json --remote_http_cache=https://storage.googleapis.com/negainoido-icfpc2018-bazel-cache //...
+  - "bazel build --google_credentials=/workspace/credentials.json --remote_http_cache=https://storage.googleapis.com/negainoido-icfpc2018-bazel-cache //...;
+    bazel test --google_credentials=/workspace/credentials.json --remote_http_cache=https://storage.googleapis.com/negainoido-icfpc2018-bazel-cache //..."
 - name: 'gcr.io/cloud-builders/gsutil'
   entrypoint: "bash"
   args:
