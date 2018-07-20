@@ -110,9 +110,12 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
   }
 
   Point p = p1;
-  while (p != p2) {
+  while (true) {
     if (!IsVoidCoordinate(p))
       return false;
+
+    if (p == p2)
+      break;
 
     p += delta;
   }
