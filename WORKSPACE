@@ -45,3 +45,13 @@ new_http_archive(
     build_file = "third_party/jsoncpp.BUILD",
 )
 
+git_repository(
+    name = "com_github_google_glog",
+    remote = "https://github.com/google/glog.git",
+    commit = "028d37889a1e80e8a07da1b8945ac706259e5fd8",
+)
+
+bind(
+    name = "glog",
+    actual = "@com_github_google_glog//:glog",
+)
