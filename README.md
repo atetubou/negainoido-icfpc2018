@@ -6,9 +6,13 @@ TODO(tikuta): write here
 
 ## Build and Test
 
-`gcloud container builds submit --config=cloudbuild.yaml .`
-or
 `bazel test //...`
+
+下はおまけなので無視してください
+
+`gcloud container builds submit --config=cloudbuild.yaml .`
+
+
 
 ## Pull Request
 
