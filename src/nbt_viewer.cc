@@ -86,6 +86,156 @@ std::string binary(int x) {
   return a;
 }
 
+int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::ostringstream* ss, Json::Value* command) {
+
+  switch (nbt_content[i]) {
+  case kHALT:
+    (*ss) << "Halt" << std::endl;
+    (*command)["command"] = "Halt";
+    return 1;
+
+  case kWAIT:
+    (*ss) << "Wait" << std::endl;
+    (*command)["command"] = "Wait";
+    return 1;
+
+  case kFLIP:
+    (*ss) << "Flip" << std::endl;
+    (*command)["command"] = "Flip";
+    return 1;
+
+  default:
+    //
+    break;
+  }
+
+  if ((nbt_content[i] & 0b1111) == 0b0100) {
+    // SMove
+    int llda = (nbt_content[i] >> 4) & 0b11;
+    int lldi = nbt_content[i + 1] & 0b11111;
+    int dx = 0, dy = 0, dz = 0;
+    LOG_IF(FATAL, !getlong(llda, lldi, &dx, &dy, &dz))
+      << "encoding error";
+
+    Json::Value smove;
+    smove["dx"] = dx;
+    smove["dy"] = dy;
+    smove["dz"] = dz;
+    (*command)["command"]["SMove"] = std::move(smove);
+    
+    (*ss) << "SMove <" << dx << ", " << dy << ", " << dz << ">" << std::endl;
+    return 2;
+  }
+
+  if ((nbt_content[i] & 0b1111) == 0b1100) {
+    // LMove
+    int sid2a = (nbt_content[i] >> 6) & 0b11;
+    int sid1a = (nbt_content[i] >> 4) & 0b11;
+    int sid2i = (nbt_content[i + 1] >> 4) & 0b1111;
+    int sid1i = nbt_content[i + 1] & 0b1111;
+      
+    int dx1 = 0, dy1 = 0, dz1 = 0;
+    int dx2 = 0, dy2 = 0, dz2 = 0;
+    LOG_IF(FATAL, !getshort(sid1a, sid1i, &dx1, &dy1, &dz1))
+      << "encoding error";
+
+    LOG_IF(FATAL, !getshort(sid2a, sid2i, &dx2, &dy2, &dz2))
+      << "encoding error" << std::endl;
+
+    Json::Value lmove;
+    lmove["dx1"] = dx1;
+    lmove["dy1"] = dy1;
+    lmove["dz1"] = dz1;
+    lmove["dx2"] = dx2;
+    lmove["dy2"] = dy2;
+    lmove["dz2"] = dz2;
+    (*command)["command"]["LMove"] = std::move(lmove);        
+    (*ss) << "LMove <" << dx1 << ", " << dy1 << ", " << dz1 << "> <" 
+       << dx2 << ", " << dy2 << ", " << dz2 << ">"
+       << std::endl;
+    return 2;
+  }
+    
+  if ((nbt_content[i] & 0b111) == 0b111) {
+    // FusionP
+    --*nanobot_num;
+    int nd = (nbt_content[i] >> 3) & 0b11111;
+    int dx, dy, dz;
+
+    LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
+      << "encoding error";
+      
+    (*ss) << "FusionP <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
+
+    Json::Value fusionp;
+    fusionp["dx"] = dx;
+    fusionp["dy"] = dy;
+    fusionp["dz"] = dz;
+    (*command)["command"]["FusionP"] = std::move(fusionp);        
+    
+    return 1;
+  }
+
+  if ((nbt_content[i] & 0b111) == 0b110) {
+    // FusionS
+    --*nanobot_num;
+    int nd = (nbt_content[i] >> 3) & 0b11111;
+    int dx, dy, dz;
+    LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
+      << "encoding error" << std::endl;
+
+    (*ss) << "FusionS <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
+
+    Json::Value fusions;
+    fusions["dx"] = dx;
+    fusions["dy"] = dy;
+    fusions["dz"] = dz;
+    (*command)["command"]["FusionS"] = std::move(fusions);
+
+    return 1;
+  }
+
+  if ((nbt_content[i] & 0b111) == 0b101) {
+    // Fission
+    ++*nanobot_num;
+    int nd = (nbt_content[i] >> 3) & 0b11111;
+    int m = nbt_content[i + 1];
+    int dx, dy, dz;
+    LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
+      << "encoding error";
+
+    (*ss) << "Fission <" << dx << ", " << dy << ", " << dz << "> "  << m << std::endl;
+
+    Json::Value fission;
+    fission["dx"] = dx;
+    fission["dy"] = dy;
+    fission["dz"] = dz;
+    (*command)["command"]["Fission"] = std::move(fission);
+    
+    return 2;
+  }
+
+  if ((nbt_content[i] & 0b111) == 0b011) {
+    // Fill
+    int nd = (nbt_content[i] >> 3) & 0b11111;
+    int dx, dy, dz;
+    LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
+      << "encoding error" << std::endl;
+
+    (*ss) << "Fill <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
+
+    Json::Value fill;
+    fill["dx"] = dx;
+    fill["dy"] = dy;
+    fill["dz"] = dz;
+    (*command)["command"]["Fill"] = std::move(fill);
+    
+    return 1;
+  }
+
+  LOG(FATAL) << "unknown command? " << binary(nbt_content[i]);
+}
+  
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   
@@ -106,167 +256,10 @@ int main(int argc, char** argv) {
 
       ss <<"bot id " << cur_nanobot_idx << ": ";
 
-      switch (nbt_content[i]) {
-      case kHALT:
-        ss << "Halt" << std::endl;
-        command["command"] = "Halt";
-        turn.append(command);
-        ++i;
-        continue;
-      case kWAIT:
-        ss << "Wait" << std::endl;
-        command["command"] = "Wait";
-        turn.append(command);
-        ++i;
-        continue;
-      case kFLIP:
-        ss << "Flip" << std::endl;
-        command["command"] = "Flip";
-        turn.append(command);
-        ++i;
-        continue;
-      default:
-        //
-        break;
-      }
+      int n = parse_command(nbt_content, i, &nanobot_num, &ss, &command);
+      i += n;
 
-      if ((nbt_content[i] & 0b1111) == 0b0100) {
-        // SMove
-        int llda = (nbt_content[i] >> 4) & 0b11;
-        int lldi = nbt_content[i + 1] & 0b11111;
-        int dx = 0, dy = 0, dz = 0;
-        LOG_IF(FATAL, !getlong(llda, lldi, &dx, &dy, &dz))
-               << "encoding error";
-
-        Json::Value smove;
-        smove["dx"] = dx;
-        smove["dy"] = dy;
-        smove["dz"] = dz;
-        command["command"]["SMove"] = std::move(smove);
-        turn.append(command);
-        ss << "SMove <" << dx << ", " << dy << ", " << dz << ">" << std::endl;
-        i += 2;
-        continue;
-      }
-
-      if ((nbt_content[i] & 0b1111) == 0b1100) {
-        // LMove
-        int sid2a = (nbt_content[i] >> 6) & 0b11;
-        int sid1a = (nbt_content[i] >> 4) & 0b11;
-        int sid2i = (nbt_content[i + 1] >> 4) & 0b1111;
-        int sid1i = nbt_content[i + 1] & 0b1111;
-      
-        int dx1 = 0, dy1 = 0, dz1 = 0;
-        int dx2 = 0, dy2 = 0, dz2 = 0;
-        LOG_IF(FATAL, !getshort(sid1a, sid1i, &dx1, &dy1, &dz1))
-          << "encoding error";
-
-        LOG_IF(FATAL, !getshort(sid2a, sid2i, &dx2, &dy2, &dz2))
-          << "encoding error" << std::endl;
-
-        Json::Value lmove;
-        lmove["dx1"] = dx1;
-        lmove["dy1"] = dy1;
-        lmove["dz1"] = dz1;
-        lmove["dx2"] = dx2;
-        lmove["dy2"] = dy2;
-        lmove["dz2"] = dz2;
-        command["command"]["LMove"] = std::move(lmove);        
-        turn.append(command);
-        ss << "LMove <" << dx1 << ", " << dy1 << ", " << dz1 << "> <" 
-           << dx2 << ", " << dy2 << ", " << dz2 << ">"
-           << std::endl;
-        i += 2;
-        continue;
-      }
-    
-      if ((nbt_content[i] & 0b111) == 0b111) {
-        // FusionP
-        --nanobot_num;
-        int nd = (nbt_content[i] >> 3) & 0b11111;
-        int dx, dy, dz;
-
-        LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
-          << "encoding error";
-      
-        ss << "FusionP <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
-        ++i;
-
-        Json::Value fusionp;
-        fusionp["dx"] = dx;
-        fusionp["dy"] = dy;
-        fusionp["dz"] = dz;
-        command["command"]["FusionP"] = std::move(fusionp);        
-        turn.append(command);
-
-        continue;
-      }
-
-      if ((nbt_content[i] & 0b111) == 0b110) {
-        // FusionS
-        --nanobot_num;
-        int nd = (nbt_content[i] >> 3) & 0b11111;
-        int dx, dy, dz;
-        LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
-          << "encoding error" << std::endl;
-
-        ss << "FusionS <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
-      
-        ++i;
-
-        Json::Value fusions;
-        fusions["dx"] = dx;
-        fusions["dy"] = dy;
-        fusions["dz"] = dz;
-        command["command"]["FusionS"] = std::move(fusions);
-        turn.append(command);
-
-        continue;
-      }
-
-      if ((nbt_content[i] & 0b111) == 0b101) {
-        // Fission
-        ++nanobot_num;
-        int nd = (nbt_content[i] >> 3) & 0b11111;
-        int m = nbt_content[i + 1];
-        int dx, dy, dz;
-        LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
-          << "encoding error";
-
-        ss << "Fission <" << dx << ", " << dy << ", " << dz << "> "  << m << std::endl;
-
-        Json::Value fission;
-        fission["dx"] = dx;
-        fission["dy"] = dy;
-        fission["dz"] = dz;
-        command["command"]["Fission"] = std::move(fission);
-        turn.append(command);
-
-        i += 2;
-        continue;
-      }
-
-      if ((nbt_content[i] & 0b111) == 0b011) {
-        // Fill
-        int nd = (nbt_content[i] >> 3) & 0b11111;
-        int dx, dy, dz;
-        LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
-          << "encoding error" << std::endl;
-
-        ss << "Fill <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
-        i += 1;
-
-        Json::Value fill;
-        fill["dx"] = dx;
-        fill["dy"] = dy;
-        fill["dz"] = dz;
-        command["command"]["Fill"] = std::move(fill);
-        turn.append(command);
-
-        continue;
-      }
-
-      LOG(FATAL) << "unknown command? " << binary(nbt_content[i]);
+      turn.append(std::move(command));
     }
 
     json["turn"].append(std::move(turn));
