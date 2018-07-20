@@ -98,7 +98,7 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
     LOG_IF(FATAL, !getlong(llda, lldi, &dx, &dy, &dz))
       << "encoding error";
 
-    (*command)["command"] = "SMoeve";
+    (*command)["command"] = "SMove";
     (*command)["dx"] = dx;
     (*command)["dy"] = dy;
     (*command)["dz"] = dz;
