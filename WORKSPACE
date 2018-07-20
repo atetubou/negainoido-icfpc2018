@@ -45,11 +45,3 @@ new_http_archive(
     build_file = "third_party/jsoncpp.BUILD",
 )
 
-# git_repository(
-#     name = "io_bazel_rules_rust",
-#     remote = "https://github.com/bazelbuild/rules_rust.git",
-#     tag = "0.0.6",
-# )
-
-# load("@io_bazel_rules_rust//rust:repositories.bzl", "rust_repositories")
-# rust_repositories()
