@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
         int llda = (nbt_content[i] >> 4) & 0b11;
         int lldi = nbt_content[i + 1] & 0b11111;
         int dx = 0, dy = 0, dz = 0;
-        LOG_IF(FATAL, !getshort(llda, lldi, &dx, &dy, &dz))
+        LOG_IF(FATAL, !getlong(llda, lldi, &dx, &dy, &dz))
                << "encoding error";
 
         std::cout << "SMove <" << dx << ", " << dy << ", " << dz << ">" << std::endl;
@@ -136,10 +136,10 @@ int main(int argc, char** argv) {
       
         int dx1 = 0, dy1 = 0, dz1 = 0;
         int dx2 = 0, dy2 = 0, dz2 = 0;
-        LOG_IF(FATAL, !getlong(sid1a, sid1i, &dx1, &dy1, &dz1))
+        LOG_IF(FATAL, !getshort(sid1a, sid1i, &dx1, &dy1, &dz1))
           << "encoding error";
 
-        LOG_IF(FATAL, !getlong(sid2a, sid2i, &dx2, &dy2, &dz2))
+        LOG_IF(FATAL, !getshort(sid2a, sid2i, &dx2, &dy2, &dz2))
           << "encoding error" << std::endl;
         
         std::cout << "LMove <" << dx1 << ", " << dy1 << ", " << dz1 << "> <" 
