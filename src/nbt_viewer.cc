@@ -94,124 +94,133 @@ int main(int argc, char** argv) {
   
   std::string nbt_content = ReadFile(FLAGS_ndl_filename);
 
+  int nanobot_num = 1;
+  int nanobot_idx = 0;
+
   for (size_t i = 0; i < nbt_content.size();) {
-    // std::cout << i << " " << binary(nbt_content[i]) << std::endl;
+    int cur_nanobot_num = nanobot_num;
+    for (int cur_nanobot_idx = 0; cur_nanobot_idx < cur_nanobot_num; ++cur_nanobot_idx) {
+      std::cout <<"bot id " << cur_nanobot_idx << ": ";
 
-    switch (nbt_content[i]) {
-    case kHALT:
-      std::cout << "Halt" << std::endl;
-      ++i;
-      continue;
-    case kWAIT:
-      std::cout << "Wait" << std::endl;
-      ++i;
-      continue;
-    case kFLIP:
-      std::cout << "Flip" << std::endl;
-      ++i;
-      continue;
-    default:
-      //
-      break;
-    }
-
-    if ((nbt_content[i] & 0b1111) == 0b0100) {
-      // SMove
-      int llda = (nbt_content[i] >> 4) & 0b11;
-      int lldi = nbt_content[i + 1] & 0b11111;
-      int dx = 0, dy = 0, dz = 0;
-      if (!getshort(llda, lldi, &dx, &dy, &dz)) {
-        std::cerr << "encoding error" << std::endl;
-        exit(1);
+      switch (nbt_content[i]) {
+      case kHALT:
+        std::cout << "Halt" << std::endl;
+        ++i;
+        continue;
+      case kWAIT:
+        std::cout << "Wait" << std::endl;
+        ++i;
+        continue;
+      case kFLIP:
+        std::cout << "Flip" << std::endl;
+        ++i;
+        continue;
+      default:
+        //
+        break;
       }
-      std::cout << "SMove <" << dx << ", " << dy << ", " << dz << ">" << std::endl;
-      i += 2;
-      continue;
-    }
 
-    if ((nbt_content[i] & 0b1111) == 0b1100) {
-      // LMove
-      int sid2a = (nbt_content[i] >> 6) & 0b11;
-      int sid1a = (nbt_content[i] >> 4) & 0b11;
-      int sid2i = (nbt_content[i + 1] >> 4) & 0b1111;
-      int sid1i = nbt_content[i + 1] & 0b1111;
+      if ((nbt_content[i] & 0b1111) == 0b0100) {
+        // SMove
+        int llda = (nbt_content[i] >> 4) & 0b11;
+        int lldi = nbt_content[i + 1] & 0b11111;
+        int dx = 0, dy = 0, dz = 0;
+        if (!getshort(llda, lldi, &dx, &dy, &dz)) {
+          std::cerr << "encoding error" << std::endl;
+          exit(1);
+        }
+        std::cout << "SMove <" << dx << ", " << dy << ", " << dz << ">" << std::endl;
+        i += 2;
+        continue;
+      }
+
+      if ((nbt_content[i] & 0b1111) == 0b1100) {
+        // LMove
+        int sid2a = (nbt_content[i] >> 6) & 0b11;
+        int sid1a = (nbt_content[i] >> 4) & 0b11;
+        int sid2i = (nbt_content[i + 1] >> 4) & 0b1111;
+        int sid1i = nbt_content[i + 1] & 0b1111;
       
-      int dx1 = 0, dy1 = 0, dz1 = 0;
-      int dx2 = 0, dy2 = 0, dz2 = 0;
-      if (!getlong(sid1a, sid1i, &dx1, &dy1, &dz1)) {
-        std::cerr << "encoding error" << std::endl;
-        exit(1);        
+        int dx1 = 0, dy1 = 0, dz1 = 0;
+        int dx2 = 0, dy2 = 0, dz2 = 0;
+        if (!getlong(sid1a, sid1i, &dx1, &dy1, &dz1)) {
+          std::cerr << "encoding error" << std::endl;
+          exit(1);        
+        }
+
+        if (!getlong(sid2a, sid2i, &dx2, &dy2, &dz2)) {
+          std::cerr << "encoding error" << std::endl;
+          exit(1);
+        }      
+
+        std::cout << "LMove <" << dx1 << ", " << dy1 << ", " << dz1 << "> <" 
+                  << dx2 << ", " << dy2 << ", " << dz2 << ">"
+                  << std::endl;
+        i += 2;
+        continue;
       }
-
-      if (!getlong(sid2a, sid2i, &dx2, &dy2, &dz2)) {
-        std::cerr << "encoding error" << std::endl;
-        exit(1);
-      }      
-
-      std::cout << "LMove <" << dx1 << ", " << dy1 << ", " << dz1 << "> <" 
-                << dx2 << ", " << dy2 << ", " << dz2 << ">"
-                << std::endl;
-      i += 2;
-      continue;
-    }
     
-    if ((nbt_content[i] & 0b111) == 0b111) {
-      // FusionP
-      int nd = (nbt_content[i] >> 3) & 0b11111;
-      int dx, dy, dz;
-      if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
-        std::cerr << "encoding error" << std::endl;
-        exit(1);
-      }
+      if ((nbt_content[i] & 0b111) == 0b111) {
+        // FusionP
+        --nanobot_num;
+        int nd = (nbt_content[i] >> 3) & 0b11111;
+        int dx, dy, dz;
+        if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
+          std::cerr << "encoding error" << std::endl;
+          exit(1);
+        }
       
-      std::cout << "FusionP <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
-      ++i;
-      continue;
-    }
-
-    if ((nbt_content[i] & 0b111) == 0b110) {
-      // FusionS
-      int nd = (nbt_content[i] >> 3) & 0b11111;
-      int dx, dy, dz;
-      if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
-        std::cerr << "encoding error" << std::endl;
-        exit(1);
+        std::cout << "FusionP <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
+        ++i;
+        continue;
       }
-      std::cout << "FusionS <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
+
+      if ((nbt_content[i] & 0b111) == 0b110) {
+        // FusionS
+        --nanobot_num;
+        int nd = (nbt_content[i] >> 3) & 0b11111;
+        int dx, dy, dz;
+        if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
+          std::cerr << "encoding error" << std::endl;
+          exit(1);
+        }
+        std::cout << "FusionS <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
       
-      ++i;
-      continue;
-    }
-
-    if ((nbt_content[i] & 0b111) == 0b101) {
-      // Fusion
-      int nd = (nbt_content[i] >> 3) & 0b11111;
-      int m = nbt_content[i + 1];
-      int dx, dy, dz;
-      if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
-        std::cerr << "encoding error" << std::endl;
-        exit(1);
+        ++i;
+        continue;
       }
-      std::cout << "Fusion <" << dx << ", " << dy << ", " << dz << "> "  << m << std::endl;
-      i += 2;
-      continue;
-    }
 
-    if ((nbt_content[i] & 0b111) == 0b011) {
-      // Fill
-      int nd = (nbt_content[i] >> 3) & 0b11111;
-      int dx, dy, dz;
-      if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
-        std::cerr << "encoding error" << std::endl;
-        exit(1);
+      if ((nbt_content[i] & 0b111) == 0b101) {
+        // Fission
+        ++nanobot_num;
+        int nd = (nbt_content[i] >> 3) & 0b11111;
+        int m = nbt_content[i + 1];
+        int dx, dy, dz;
+        if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
+          std::cerr << "encoding error" << std::endl;
+          exit(1);
+        }
+        std::cout << "Fission <" << dx << ", " << dy << ", " << dz << "> "  << m << std::endl;
+        i += 2;
+        continue;
       }
-      std::cout << "Fill <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
-      i += 1;
-      continue;
+
+      if ((nbt_content[i] & 0b111) == 0b011) {
+        // Fill
+        int nd = (nbt_content[i] >> 3) & 0b11111;
+        int dx, dy, dz;
+        if (!getnearcoordinate(nd, &dx, &dy, &dz)) {
+          std::cerr << "encoding error" << std::endl;
+          exit(1);
+        }
+        std::cout << "Fill <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
+        i += 1;
+        continue;
+      }
+
+      std::cerr << "unknown command? " << binary(nbt_content[i]) << std::endl;
+
+      exit(1);
     }
-
-    std::cerr << "unknown command? " << binary(nbt_content[i]) << std::endl;
-
-    exit(1);
   }
 }
