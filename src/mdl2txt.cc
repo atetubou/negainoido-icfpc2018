@@ -12,7 +12,7 @@ DEFINE_string(mdl_filename, "", "filepath of mdl");
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  if (!FLAGS_mdl_filename.empty()) {
+  if (FLAGS_mdl_filename.empty()) {
     std::cout << "need to pass --mdl_filename=/path/to/mdl";
     exit(1);
   }
