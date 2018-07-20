@@ -14,16 +14,19 @@ CommandExecuter::SystemStatus::SystemStatus(int r)
 }
 
 CommandExecuter::BotStatus::BotStatus()
-  : active(false), pos(0, 0, 0), seeds(-1, -1) {}
+  : active(false), pos(0, 0, 0) {}
 
-CommandExecuter::BotStatus::BotStatus(bool active, const Point& pos, const std::pair<int, int>& seeds) : active(active), pos(pos), seeds(seeds) {}
+//CommandExecuter::BotStatus::BotStatus(bool active, const Point& pos, const std::pair<int, int>& seeds) : active(active), pos(pos), seeds(seeds) {}
 
 CommandExecuter::CommandExecuter(int R, bool output_json)
   : num_active_bots(1), system_status(R), output_json(output_json) {
   // Bot[1] is active, exists at (0,0,0) and has all the seeds.
   bot_status[1].active = true;
   bot_status[1].pos = Point(0,0,0);
-  bot_status[1].seeds = std::make_pair(1, kMaxNumBots); // [1, 20]
+
+  for (int i = 2; i <= 20; i++) {
+    bot_status[1].seeds.insert(i);
+  }
 }
 
 // Utilities
@@ -61,13 +64,6 @@ bool IsPath(const Point& p1, const Point& p2) {
           abs(p1.y - p2.y),
           abs(p1.z - p2.z));
   return IsLCD(p);
-}
-
-bool CommandExecuter::BotStatus::HasSeeds() {
-  return
-    1 <= seeds.first &&
-    seeds.second <= 20 &&
-    seeds.first < seeds.second;
 }
 
 uint32_t CommandExecuter::GetBotsNum() {
@@ -232,37 +228,37 @@ void CommandExecuter::LMove(const uint32_t bot_id, const Point& sld1, const Poin
 
 void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint32_t m) {
 
-  // BUG(udon): Doesn't work
-  UNREACHABLE();
-
-
   CHECK(IsActiveBotId(bot_id));
   CHECK(IsNCD(nd));
-  CHECK(bot_status[bot_id].HasSeeds());
+  CHECK(!bot_status[bot_id].seeds.empty());
   BotStatus& bot = bot_status[bot_id];
   Point c0 = bot.pos;
   Point c1 = c1 + nd;
   CHECK(IsValidCoordinate(c1));
   CHECK(IsVoidCoordinate(c1));
 
-  uint32_t bid_1 = bot.seeds.first;
-  uint32_t bid_m = bid_1 + m - 1;
-  uint32_t bid_n = bot.seeds.second;
-  uint32_t n = bid_n - bid_1 + 1;
-
+  uint32_t n = bot.seeds.size();
   CHECK(m+1 <= n);
 
-  bot.seeds.first = bid_m + 2;
-  bot.seeds.second = bid_n;
+  auto seeds_iter = bot.seeds.begin();
 
-  uint32_t newbot_id = bid_1;
+  uint32_t newbot_id = *seeds_iter++;
   CHECK(bot_status[newbot_id].active == false);
   BotStatus& newbot = bot_status[newbot_id];
   newbot.active = true;
   newbot.pos = c1;
-  newbot.seeds = std::make_pair(bid_1 + 1, bid_m + 1);
-
   num_active_bots += 1;
+
+  for (auto i = 0U; i < m; i++) {
+    newbot.seeds.insert(*seeds_iter++);
+  }
+
+  std::set<uint32_t> bot_seeds;
+  while(seeds_iter != bot.seeds.end()) {
+    bot_seeds.insert(*seeds_iter++);
+  }
+
+  bot.seeds = bot_seeds;
 
   system_status.energy += 24;
 
@@ -288,4 +284,33 @@ void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
 
   v_cords.push_back(std::make_pair(c0, c0));
   v_cords.push_back(std::make_pair(c1, c1));
+}
+
+void CommandExecuter::Fusion(const uint32_t bot_id1, const Point& nd1,
+                             const uint32_t bot_id2, const Point& nd2) {
+    CHECK(IsActiveBotId(bot_id1));
+    CHECK(IsActiveBotId(bot_id2));
+    CHECK(IsNCD(nd1));
+    CHECK(IsNCD(nd2));
+
+    BotStatus& bot1 = bot_status[bot_id1];
+    BotStatus& bot2 = bot_status[bot_id2];
+    CHECK(bot1.pos + nd1 == bot2.pos);
+    CHECK(bot2.pos + nd2 == bot1.pos);
+
+    CHECK(IsValidCoordinate(bot1.pos));
+    CHECK(IsValidCoordinate(bot2.pos));
+
+    bot2.active = false;
+    num_active_bots -= 1;
+
+    for (uint32_t seed : bot2.seeds) {
+      bot1.seeds.insert(seed);
+    }
+    bot1.seeds.insert(bot_id2);
+
+    system_status.energy -= 24;
+
+    v_cords.push_back(std::make_pair(bot1.pos, bot1.pos));
+    v_cords.push_back(std::make_pair(bot2.pos, bot2.pos));
 }
