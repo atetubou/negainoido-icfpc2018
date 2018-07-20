@@ -6,7 +6,10 @@ TODO(tikuta): write here
 
 ## Build and Test
 
-`bazel test //...`
+* `bazel build //example/hello`
+* `bazel test //...`
+* `bazel test //example/hello:hello_test`
+* `bazel run //example:main`
 
 下はおまけなので無視してください
 
