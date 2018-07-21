@@ -1,4 +1,4 @@
-// vim-compile: cd .. && bazel run //src:skeleton -- --mdl_filename=/home/vagrant/icfpc/problems/LA004_tgt.mdl
+// vim-compile: cd .. && bazel run //src:skeleton -- --mdl_filename=/home/vagrant/icfpc/problems/LA049_tgt.mdl
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -53,6 +53,16 @@ vvv InitVVV(int R) {
   return vvv(R, vv(R, v(R, 0)));
 }
 
+void PrintTurns(const std::vector<std::vector<Command>>& turns) {
+    Json::Value result;
+    result["turn"];
+    for (auto&commands : turns) {
+        Json::Value item = Command::CommandsToJson(commands);
+        result["turn"].append(item);
+    }
+    cout << Json2Binary(result);
+}
+
 const Point fill_here(-1, -1, -1);
 
 class Skeleton {
@@ -99,6 +109,7 @@ public:
         for(int dy=-1; dy<=1; dy++) {
           for(int dz=-1; dz<=1; dz++) {
             if (abs(dx) + abs(dy) + abs(dz) != 1) continue;
+            if (dy < 0) continue; // may be bad?
             Point w = v + Point(dx, dy, dz);
             if (w.x < 0 || R <= w.x || w.y < 0 || R <= w.y || w.z < 0 || R <= w.z) continue;
             if (!M[w.x][w.y][w.z]) continue;
@@ -149,18 +160,7 @@ public:
     }
     return true;
   }
-
-  void extract_skeletons() {
-    Point pos(0, 0, 0);
-    vector<Point> movepointlist;
-    while(!IsMEmpty()) {
-      Path path = extract_a_skeleton();
-      cerr << "OK" << endl;
-      vvv rank = RankingAccordingToPath(path);
-      vector<Point> cmds = FillAccordingToRank(rank, pos);
-      pos = cmds.back();
-      movepointlist.insert(movepointlist.end(), cmds.begin(), cmds.end());
-
+  int CountM() {
       int mcount = 0;
       for(int y=0; y<R; y++) {
         for(int x=0; x<R; x++) {
@@ -169,6 +169,28 @@ public:
           }
         }
       }
+      return mcount;
+  }
+
+  void extract_skeletons() {
+    Point pos(0, 0, 0);
+    vector<Point> movepointlist;
+    int lastmcount = CountM();
+    while(!IsMEmpty()) {
+      Path path = extract_a_skeleton();
+      cerr << "OK" << endl;
+      vvv rank = RankingAccordingToPath(path);
+      vector<Point> cmds = FillAccordingToRank(rank, pos);
+      pos = cmds.back();
+      movepointlist.insert(movepointlist.end(), cmds.begin(), cmds.end());
+
+      int mcount = CountM();
+      if (lastmcount == mcount) {
+        cerr << "No progress! Aborting" << endl;
+        break;
+//        exit(1);
+      }
+      lastmcount = mcount;
       cerr << mcount << " " << grand.size() << endl; 
     }
 
@@ -334,9 +356,10 @@ public:
 
 
   void ExecMovePointList(const vector<Point> &cmds) {
-    vector<Command> commands;
+    std::vector<vector<Command>> turns;
     Point pos;
     for(int i=0; i<(int)cmds.size(); i++) {
+      vector<Command> commands;
       if (cmds[i] == fill_here) {
         while((cmds[i] == fill_here || cmds[i] == pos) && i < (int)cmds.size()) i++;
         if (i >= (int)cmds.size() - 1) {
@@ -351,13 +374,17 @@ public:
         commands.emplace_back(Command::make_smove(1, cmds[i] - pos));
         pos = cmds[i];
       }
+      turns.push_back(commands);
     }
-    // Last move
-    commands.emplace_back(Command::make_halt(1));
-
-    ce.Execute(commands);
-//    cout << ce.json << endl;
-    cout << Json2Binary(ce.json);
+    { // Last move
+        std::vector<Command> commands;
+      commands.emplace_back(Command::make_halt(1));
+      turns.push_back(commands);
+    }
+    // ce.Execute(commands);
+    //    cout << ce.json << endl;
+    // cout << Json2Binary(ce.json);
+    PrintTurns(turns);
   }
 
 };
@@ -372,7 +399,6 @@ int main(int argc, char* argv[]) {
 
   vvv M = ReadMDL(FLAGS_mdl_filename);
   WriteMDL(FLAGS_mdl_filename + "_dbl", M); // should be the same file
-  int R = (int)M.size();
 //  OutputMDL(M);
 
   auto skeleton = std::make_unique<Skeleton>(M);

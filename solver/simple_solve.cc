@@ -3,8 +3,8 @@
 #include "glog/logging.h"
 
 #include "src/base/base.h"
-#include "command_util.h"
-#include "command.h"
+#include "src/command_util.h"
+#include "src/command.h"
 #include <queue>
 #include <cmath>
 #include <vector>
@@ -124,7 +124,16 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
 }
 
 DEFINE_string(mdl_filename, "", "filepath of mdl");
-DEFINE_bool(json, false, "output command in json if --json is set");
+
+void flush_commands(vector<Command> &results) {
+  Json::Value json;
+  for (const auto& c : results) {
+    std::vector<Command> commands = {c};
+    json["turn"].append(Command::CommandsToJson(commands));
+  }
+
+  cout << Json2Binary(json);
+}
 
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -143,7 +152,6 @@ int main(int argc, char** argv) {
     }
   }
 
-  vector<Command> results;
 
   vector<Point> visit_order;
   visit_order.emplace_back(0, 0, 0);
@@ -191,6 +199,7 @@ int main(int argc, char** argv) {
   int total_move = 0;
 
   for (size_t i = 0; i + 1 < visit_order.size(); ++i) {
+    vector<Command> results;
     const auto cur = visit_order[i];
     const auto& next = visit_order[i + 1];
 
@@ -208,9 +217,14 @@ int main(int argc, char** argv) {
     for (size_t i = 1; i < commands.size(); ++i) {
       results.push_back(commands[i]);
     }
+    results = MergeSMove(results);
+    flush_commands(results);
   }
 
+  vector<Command> results;
   results.push_back(Command::make_halt(1));
+
+  results = MergeSMove(results);
 
   LOG(INFO) << "done path construction R=" << R
             << " total_visit=" << total_visit 
@@ -218,14 +232,7 @@ int main(int argc, char** argv) {
             << " move_per_voxel=" << static_cast<double>(total_move) / (visit_order.size() - 2)
             << " visit_per_voxel=" << static_cast<double>(total_visit) / (visit_order.size() - 2);
 
-  Json::Value json;  
-  json["turn"].append(Command::CommandsToJson(results));
-
-  if (FLAGS_json) {
-    cout << json << endl;
-  } else {
-    cout << Json2Binary(json);
-  }
+  flush_commands(results);
 
   return 0;
 }

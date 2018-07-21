@@ -220,8 +220,15 @@ std::string Json2Binary(const Json::Value& json) {
 
   for (const auto& turn : json["turn"]) {
     CHECK(turn.isArray());
+    std::vector<std::pair<int, std::string>> commands;
     for (const auto& command : turn) {
-      ret += encodecommand(command);
+      CHECK(command.isMember("bot_id") && command["bot_id"].isInt()) << command;
+      commands.emplace_back(command["bot_id"].asInt(), encodecommand(command));
+    }
+    
+    std::sort(commands.begin(), commands.end());
+    for (const auto& c : commands) {
+      ret += c.second;
     }
   }
 

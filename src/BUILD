@@ -1,6 +1,8 @@
+package(default_visibility = ["//visibility:public"])
+
 cc_binary(
     name = "nbt_viewer",
-    srcs = ["nbt_viewer.cc"],
+    srcs = ["nbt_viewer.cc", "nbt_loader.h"],
     deps = [
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",
@@ -30,6 +32,7 @@ cc_library(
     copts = ["-std=c++14"],
     deps = ["//external:glog",
             "@jsoncpp_git//:jsoncpp",
+            "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -56,18 +59,6 @@ cc_binary(
 )
 
 cc_binary(
-    name = "simple_solve",
-    srcs = ["simple_solve.cc"],
-    deps = [
-        "//external:glog",
-        "@com_github_gflags_gflags//:gflags",
-        "@jsoncpp_git//:jsoncpp",
-        "//src/base",
-        "command_executer",
-    ],
-)
-
-cc_binary(
     name = "json2binary",
     srcs = ["json2binary.cc"],
     deps = [
@@ -81,37 +72,14 @@ cc_binary(
 cc_binary(
     name = "simulator",
     srcs = ["simulator.cc",
-            "command.h",
-            "command.cc",
-            "command_executer.h",
-            "command_executer.cc",
-            "command_util.h",
-            "command_util.cc"],
+            "nbt_loader.h"],
     copts = ["-std=c++14"],
     deps = [
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
-    ],
-)
-
-cc_binary(
-    name = "skeleton",
-    srcs = ["skeleton.cc",
-            "command.h",
-            "command.cc",
-            "command_executer.h",
-            "command_executer.cc",
-            "command_util.h",
-            "command_util.cc",
-    ],
-    copts = ["-std=c++14"],
-    deps = [
-        "//external:glog",
-        "@com_github_gflags_gflags//:gflags",
-        "@jsoncpp_git//:jsoncpp",
-        "//src/base",
+        ":command_executer",
     ],
 )
 
