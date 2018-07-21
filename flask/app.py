@@ -142,7 +142,7 @@ def list_problems() -> Result[List[Any]]:
         curr.execute(
             "select id, best.problem_id, solver_id, best.score, best.max_score, created_at"
             " from solutions inner join"
-            " (select problem_id, MIN(score) as score, MAX(score) as max_score from solutions group by problem_id) as best"
+            " (select problem_id, MIN(score) as score, MAX(score) as max_score from solutions where score > 0 group by problem_id) as best"
             " on solutions.problem_id = best.problem_id and solutions.score = best.score"
             " order by best.problem_id asc, solutions.score asc"
         )
