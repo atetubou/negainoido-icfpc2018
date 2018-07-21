@@ -34,6 +34,7 @@ uint32_t CLen(const Point& p);
 bool IsSLD(const Point& p);
 bool IsLLD(const Point& p);
 bool IsNCD(const Point& p);
+bool IsFCD(const Point& p);
 bool IsPath(const Point& p1, const Point& p2);
 bool ColidX(int from_x1, int to_x1, int from_x2, int to_x2);
 #endif
