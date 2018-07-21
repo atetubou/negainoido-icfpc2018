@@ -23,19 +23,27 @@ def eval_solution(cnx, solution_id):
     solution = curr.fetchone()
     assert(solution)
     name = solution["problem_id"]
-    curr.execute("select filepath from problems where name = %s", (name,))
+    curr.execute("select filepath, src_filepath from problems where name = %s", (name,))
     prob = curr.fetchone()
     assert(prob)
     prob_path = prob['filepath']
+    prob_srcpath = prob['src_filepath']
     
     dest = os.path.join(destpath, '%d.nbt' % solution_id)
     dest_json = os.path.join(destpath, '%d.nbt.json' % solution_id)
 
     dest = os.path.abspath(dest)
-    prob_path = os.path.abspath(prob_path)
-    prob_src_path = "-"
+    if prob_path:
+        prob_path = os.path.abspath(prob_path)
+    else:
+        prob_path = '-'
 
-    s = subprocess.check_output('python ../soren/main.py %s %s %s' % (prob_src_path,prob_path,dest), shell=True, universal_newlines =True)
+    if prob_srcpath:
+        prob_srcpath = os.path.abspath(prob_srcpath)
+    else:
+        prob_srcpath = '-'
+
+    s = subprocess.check_output('python ../soren/main.py %s %s %s' % (prob_srcpath,prob_path,dest), shell=True, universal_newlines =True)
     print(s)
     score = int(s)
     curr.execute("update solutions set score = %s where id = %s", (score,solution_id))

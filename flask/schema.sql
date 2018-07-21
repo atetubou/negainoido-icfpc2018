@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS test(
 CREATE TABLE IF NOT EXISTS problems(
     name VARCHAR(20) NOT NULL PRIMARY KEY,
     filepath TEXT,
+    src_filepath TEXT,
     created_at TIMESTAMP NOT NULL default current_timestamp
 );
 

@@ -11,24 +11,35 @@ dbconfig = {
     "host" : 'localhost',
 }
 cnx = mysql.connector.connect(**dbconfig)
-path="shared/problemsL/"
+paths=["shared/problemsL/", "shared/problemsF/"]
 destpath="static/problems"
 
-for fname in os.listdir(path):
-    base, ext = os.path.splitext(os.path.basename(fname))
-    if ext != ".mdl":
-        continue
-    name = base[:-4]
-    curr = cnx.cursor()
-    curr.execute("select name from problems where name = %s", (name,))
-    if curr.fetchone():
+for path in paths:
+    for fname in os.listdir(path):
+        base, ext = os.path.splitext(os.path.basename(fname))
+        if ext != ".mdl":
+            continue
+        name = base[:-4]
+        curr = cnx.cursor(dictionary=True)
+        curr.execute("select name, src_filepath, filepath from problems where name = %s", (name,))
+        row = curr.fetchone()
+        if not row:
+            curr.execute("insert into problems(name) values (%s)", (name,))
+        
+        curr.execute("select name, src_filepath, filepath from problems where name = %s", (name,))
+        row = curr.fetchone()
+        print(row,base,base[-3:])
+        if row['src_filepath'] is None and base[-3:] == 'src':
+            src_path = os.path.join(destpath, fname)
+            shutil.copy(os.path.join(path, fname), src_path)
+            curr.execute("update problems set src_filepath = %s where name = %s", (src_path, name))
+        if not row['filepath'] is None and base[-3:] == 'tgt':
+            dest_path = os.path.join(destpath, fname)
+            shutil.copy(os.path.join(path, fname), dest_path)
+            curr.execute("update problems set filepath = %s where name = %s", (dest_path, name))
+
         curr.close()
-        continue
-    shutil.copy(os.path.join(path, fname), os.path.join(destpath, fname))
-
-
-    curr.execute("insert into problems(name, filepath) values (%s,%s)", (name, os.path.join(destpath,fname))) 
-    curr.close()
+        cnx.commit()
 
 cnx.commit()
         
