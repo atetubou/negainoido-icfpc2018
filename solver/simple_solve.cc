@@ -212,6 +212,8 @@ int main(int argc, char** argv) {
 
   results.push_back(Command::make_halt(1));
 
+  results = MergeSMove(results);
+
   LOG(INFO) << "done path construction R=" << R
             << " total_visit=" << total_visit 
             << " total_move=" << total_move

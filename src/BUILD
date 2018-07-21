@@ -31,6 +31,7 @@ cc_library(
     copts = ["-std=c++14"],
     deps = ["//external:glog",
             "@jsoncpp_git//:jsoncpp",
+            "@com_google_absl//absl/types:span",
     ],
 )
 
@@ -69,20 +70,14 @@ cc_binary(
 
 cc_binary(
     name = "simulator",
-    srcs = ["simulator.cc",
-            "nbt_loader.h",
-            "command.h",
-            "command.cc",
-            "command_executer.h",
-            "command_executer.cc",
-            "command_util.h",
-            "command_util.cc"],
+    srcs = ["simulator.cc"],
     copts = ["-std=c++14"],
     deps = [
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
+        ":command_executer",
     ],
 )
 

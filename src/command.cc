@@ -183,3 +183,37 @@ Command Command::make_fusion_s(int id, Point nd) {
   ret.fusion_s_nd = nd;
   return ret;
 }
+
+std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
+  std::vector<Command> ret;
+
+  for (size_t i = 0; i < commands.size();) {
+    if (commands[i].type != Command::SMOVE ||
+        commands[i].smove_lld.Manhattan() != 1) {
+      ret.push_back(commands[i]);
+      ++i;
+      continue;
+    }
+    
+    size_t j = 0;
+    for (; i + j < commands.size() && j < 15; ++j) {
+      if (commands[i + j].type != Command::SMOVE) {
+        break;
+      }
+      if (commands[i].smove_lld != commands[i + j].smove_lld) {
+        break;
+      }
+    }
+
+    
+    Command c = commands[i];
+    c.smove_lld.x *= j;
+    c.smove_lld.y *= j;
+    c.smove_lld.z *= j;
+
+    ret.push_back(c);
+    i += j;
+  }
+
+  return ret;
+}
