@@ -32,14 +32,18 @@ int main(int argc, char* argv[]) {
   vvv M = ReadMDL(FLAGS_mdl_filename);
   int R = M.size();
 
-  std::ifstream is(std::string(FLAGS_nbt_json), std::ifstream::binary);
-  Json::Value root;
-  is >> root;
-
-  LOG(INFO) << "done read json";
   auto ce = std::make_unique<CommandExecuter>(R, false);
 
-  Json::Value turns = root["turn"];
+  Json::Value turns;
+  {
+    std::ifstream is(std::string(FLAGS_nbt_json), std::ifstream::binary);
+    Json::Value root;
+    is >> root;
+    turns = std::move(root["turn"]);
+  }
+
+  LOG(INFO) << "done read json";
+
   int n = turns.size();
   for (int i = 0; i < n; ++i) {
     std::vector<Command> commands;
