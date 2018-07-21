@@ -33,7 +33,11 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
   const int R = voxel_states.size();
   queue<Point> que;
   int count = 1;
-  vvv tmp_map(R,vv(R,v(R,0)));
+
+  static vvv tmp_map(R, vv(R, v(R, false)));
+  
+  vector<Point> visited;
+
   que.push(Point(current.x, current.y, current.z));
 
   while(!que.empty()) {
@@ -42,6 +46,7 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
 
     if (tmp_map[tar.x][tar.y][tar.z] > 0) continue;
     tmp_map[tar.x][tar.y][tar.z]  = count;
+    visited.push_back(tar);
     count++;
 
     if (dest == tar) {
@@ -73,16 +78,16 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
       int ny = rc.y + dy[i];
       int nz = rc.z + dz[i];
       if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
-        int tmpv = tmp_map[nx][ny][nz];
+        const int tmpv = tmp_map[nx][ny][nz];
         if (minc > tmpv && tmpv > 0) {
-          minc = tmpv;
           mind = i;
+          break;
         }
       }
     }
-    if (mind < 0) {
-      LOG(FATAL) << "Error in BFS to find path";
-    }
+    
+    LOG_IF(FATAL, mind < 0) << "Error in BFS to find path";
+
     rc.x = rc.x + dx[mind];
     rc.y = rc.y + dy[mind];
     rc.z = rc.z + dz[mind];
@@ -90,6 +95,10 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
   }
 
   reverse(rev_commands.begin(), rev_commands.end());
+
+  for (const auto& v : visited) {
+    tmp_map[v.x][v.y][v.z] = 0;
+  }
 
   return rev_commands;
 }
@@ -157,6 +166,8 @@ int main(int argc, char** argv) {
     }
   }
   
+  LOG(INFO) << "start path construction";
+
   for (size_t i = 0; i + 1 < visit_order.size(); ++i) {
     const auto cur = visit_order[i];
     const auto& next = visit_order[i + 1];
@@ -177,8 +188,11 @@ int main(int argc, char** argv) {
 
   results.push_back(Command::make_halt(1));
 
+  LOG(INFO) << "done path construction";
+
   Json::Value json;  
   json["turn"].append(Command::CommandsToJson(results));
+
   if (FLAGS_json) {
     cout << json << endl;
   } else {
