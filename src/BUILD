@@ -10,6 +10,15 @@ cc_binary(
 )
 
 cc_library(
+    name = "command_util",
+    srcs = ["command_util.h",
+            "command_util.cc",
+    ],
+    copts = ["-std=c++14"],
+    deps = []
+)
+
+cc_library(
     name = "command_executer",
     srcs = ["command.h",
             "command.cc",
@@ -113,5 +122,20 @@ cc_test(
     deps = [
         ":command_executer",
         "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_binary(
+    name = "ichigo",
+    copts = ["-std=c++14"],
+    srcs = ["ichigo.cc",
+            "command_util.h",
+            "command_util.cc",
+    ],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
     ],
 )

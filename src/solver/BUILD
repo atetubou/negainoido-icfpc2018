@@ -11,4 +11,3 @@ cc_binary(
         "//src/base",
     ],
 )
-
