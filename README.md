@@ -21,7 +21,7 @@ TODO(tikuta): write here
 
 このリポジトリにmasterではないブランチを作って、そこからmasterにpull request送るとCIが走ってくれます。
 
-## Cloud storage usagge
+## Cloud storage usage
 
 ### File copy
 
