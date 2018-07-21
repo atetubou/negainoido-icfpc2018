@@ -135,7 +135,7 @@ public:
       for(int x=0; x<R; x++) {
         for(int z=0; z<R; z++) {
           if (rank[x][y][z] > 1)
-            rank[x][y][z] = rank[x][y][z] * R + y;
+            rank[x][y][z] = rank[x][y][z] + y * (R*R+1);
         }
       }
     }
