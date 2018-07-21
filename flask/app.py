@@ -119,9 +119,12 @@ def list_problems() -> Result[List[Any]]:
     conn = get_connection()
     curr = conn.cursor(dictionary=True)
     try:
-        curr.execute("select name, solutions.id, solutions.solver_id, solutions.score, solutions.created_at from problems"
-                     " inner join solutions on solutions.problem_id = problems.name"
-                     " order by name asc, solutions.score asc"
+        curr.execute(
+            "select id, best.problem_id, solver_id, best.score, best.max_score, created_at"
+            " from solutions inner join"
+            " (select problem_id, MIN(score) as score, MAX(score) as max_score from solutions group by problem_id) as best"
+            " on solutions.problem_id = best.problem_id and solutions.score = best.score"
+            " order by best.problem_id asc, solutions.score asc"
         )
         return Ok(list(curr))
     finally:
