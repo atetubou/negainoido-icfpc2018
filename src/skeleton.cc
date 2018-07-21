@@ -168,11 +168,34 @@ public:
       prev[pos] = pos;
       while(!q.empty()) {
         Point v = q.front();
+        Path path;
+        Point w;
+
         q.pop();
         if (pos != v && rank[v.x][v.y][v.z] == target_rank) {
+          // check ground
+          bool ok = false;
+          for(int dx=-1; dx<=1; dx++) {
+            for(int dy=-1; dy<=1; dy++) {
+              for(int dz=-1; dz<=1; dz++) {
+                if (abs(dx) + abs(dy) + abs(dz) != 1) continue;
+                if (v.y == 0) {
+                  ok = true;
+                  goto CHK_GROUND_END;
+                }
+                int ax = v.x + dx, ay = v.y + dy, az = v.z + dz;
+                if (0 <= ax && ax < R && 0 <= ay && ay < R && 0 <= az && az < R && wall[v.x + dx][v.y + dy][v.z + dz]) {
+                  ok = true;
+                  goto CHK_GROUND_END;
+                }
+              }
+            }
+          }
+          if (!ok) goto CHK_GROUND_FAIL;
+CHK_GROUND_END:
+
 //          cout << pos << " -> " << v << " ; rank " << target_rank << endl;
-          Path path;
-          Point w = v;
+          w = v;
           while(w != pos) {
             path.push_back(w);
             w = prev[w];
@@ -186,6 +209,9 @@ public:
           pos = v;
 
           break;
+CHK_GROUND_FAIL:
+          ;
+
         }
         for(int dx=-1; dx<=1; dx++) {
           for(int dy=-1; dy<=1; dy++) {
