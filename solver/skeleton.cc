@@ -53,6 +53,16 @@ vvv InitVVV(int R) {
   return vvv(R, vv(R, v(R, 0)));
 }
 
+void PrintTurns(const std::vector<std::vector<Command>>& turns) {
+    Json::Value result;
+    result["turn"];
+    for (auto&commands : turns) {
+        Json::Value item = Command::CommandsToJson(commands);
+        result["turn"].append(item);
+    }
+    cout << Json2Binary(result);
+}
+
 const Point fill_here(-1, -1, -1);
 
 class Skeleton {
@@ -346,9 +356,10 @@ public:
 
 
   void ExecMovePointList(const vector<Point> &cmds) {
-    vector<Command> commands;
+    std::vector<vector<Command>> turns;
     Point pos;
     for(int i=0; i<(int)cmds.size(); i++) {
+      vector<Command> commands;
       if (cmds[i] == fill_here) {
         while((cmds[i] == fill_here || cmds[i] == pos) && i < (int)cmds.size()) i++;
         if (i >= (int)cmds.size() - 1) {
@@ -363,13 +374,17 @@ public:
         commands.emplace_back(Command::make_smove(1, cmds[i] - pos));
         pos = cmds[i];
       }
+      turns.push_back(commands);
     }
-    // Last move
-    commands.emplace_back(Command::make_halt(1));
-
-    ce.Execute(commands);
-//    cout << ce.json << endl;
-    cout << Json2Binary(ce.json);
+    { // Last move
+        std::vector<Command> commands;
+      commands.emplace_back(Command::make_halt(1));
+      turns.push_back(commands);
+    }
+    // ce.Execute(commands);
+    //    cout << ce.json << endl;
+    // cout << Json2Binary(ce.json);
+    PrintTurns(turns);
   }
 
 };
