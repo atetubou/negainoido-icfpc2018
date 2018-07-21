@@ -76,6 +76,9 @@ void WriteMDL(absl::string_view filename, const vvv &M) {
       }
     }
   }
+  if (i > 0) {
+    os.write((char *)&b, 1);
+  }
 }
 
 std::string encodecommand(const Json::Value& command) {
