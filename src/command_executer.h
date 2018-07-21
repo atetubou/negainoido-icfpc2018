@@ -6,20 +6,11 @@
 #include <set>
 #include <array>
 
+#include "command.h"
+#include "command_util.h"
+
 #include "glog/logging.h"
-
-struct Point {
-  int x;
-  int y;
-  int z;
-
-  Point() = default;
-  Point(int x, int y, int z) : x(x), y(y), z(z) {}
-  Point operator+ (const Point& p);
-  Point& operator+= (const Point& p);
-};
-bool operator==(const Point& p1, const Point& p2);
-bool operator!=(const Point& p1, const Point& p2);
+#include "json/json.h"
 
 enum Harmonics {
   LOW = 0,
@@ -49,13 +40,15 @@ class CommandExecuter {
   struct BotStatus {
     bool active;
     Point pos;
-    std::pair<int,int> seeds; // [x, y)
+    std::set<uint32_t> seeds;
     BotStatus();
     BotStatus(bool active_, const Point& pos_, const std::pair<int,int>& seeds);
   };
 
-  explicit CommandExecuter(int R);
-  ~CommandExecuter() = default;
+  CommandExecuter(int R, bool output_json);
+  ~CommandExecuter();
+
+  void Execute(const std::vector<Command>& commands);
 
   // Commands
   // Singleton Commands
@@ -64,17 +57,24 @@ class CommandExecuter {
   void Flip(const uint32_t bot_id);
   void SMove(const uint32_t bot_id, const Point& lld);
   void LMove(const uint32_t bot_id, const Point& sld1, const Point& sld2);
-  // TODO(udon)
+  void Fill(const uint32_t bot_id, const Point& nd);
+  void Fission(const uint32_t bot_id, const Point& nd, const uint32_t m);
+  void Fusion(const uint32_t bot_id1, const Point& nd1,
+              const uint32_t bot_id2, const Point& nd2);
 
  private:
   std::vector<std::pair<Point, Point>> v_cords;
   size_t num_active_bots;
   std::array<BotStatus, kMaxNumBots+1> bot_status;
   SystemStatus system_status;
+  bool output_json;
+  Json::Value json;
 
   // utility
   uint32_t GetBotsNum();
-  bool IsValidBotId(const uint32_t id);
+  bool IsActiveBotId(const uint32_t id);
+  bool IsValidCoordinate(const Point& p);
+  bool IsVoidCoordinate(const Point& p);
   bool IsVoidPath(const Point& p1, const Point& p2);
 };
 

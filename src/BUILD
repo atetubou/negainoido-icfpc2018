@@ -11,11 +11,17 @@ cc_binary(
 
 cc_library(
     name = "command_executer",
-    srcs = ["command_executer.h",
+    srcs = ["command.h",
+            "command.cc",
+            "command_executer.h",
             "command_executer.cc",
+            "command_util.h",
+            "command_util.cc",
     ],
     copts = ["-std=c++14"],
-    deps = ["//external:glog"],
+    deps = ["//external:glog",
+            "@jsoncpp_git//:jsoncpp",
+    ],
 )
 
 cc_binary(
@@ -30,8 +36,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "skeleton",
-    srcs = ["skeleton.cc"],
+    name = "mdl2txt_test",
+    srcs = ["mdl2txt_test.cc"],
     deps = [
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",

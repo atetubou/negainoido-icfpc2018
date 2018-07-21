@@ -10,7 +10,7 @@
 
 /*
 
-  bazel run //src:nbt_viewer -- --json --ndl_filename=/path/to/ndl_file
+  bazel run //src:nbt_viewer -- --json --nbt_filename=/path/to/nbt_file
 
 */
 
@@ -98,7 +98,7 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
     LOG_IF(FATAL, !getlong(llda, lldi, &dx, &dy, &dz))
       << "encoding error";
 
-    (*command)["command"] = "SMoeve";
+    (*command)["command"] = "SMove";
     (*command)["dx"] = dx;
     (*command)["dy"] = dy;
     (*command)["dz"] = dz;
