@@ -50,4 +50,6 @@ func main() {
 	if simulatorResult != officialResult {
 		log.Fatalf("Different! simulator %s vs official %s", simulatorResult, officialResult)
 	}
+
+	log.Print("OK!")
 }
