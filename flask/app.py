@@ -121,7 +121,7 @@ def list_problems() -> Result[List[Any]]:
     try:
         curr.execute("select name, solutions.id, solutions.score, solutions.created_at from problems"
                      " inner join solutions on solutions.problem_id = problems.name"
-                     " order by name asc"
+                     " order by name asc, solutions.score asc"
         )
         return Ok(list(curr))
     finally:
