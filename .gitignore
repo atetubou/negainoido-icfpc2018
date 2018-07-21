@@ -8,6 +8,3 @@
 /shared/*.mdl
 /shared/*.nbt
 /shared/problemsL.txt
-
-# TODO: remove this
-/tracer.png
