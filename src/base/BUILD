@@ -7,5 +7,6 @@ cc_library(
     deps = [
         "//external:glog",
         "@com_google_absl//absl/strings",
+        "@jsoncpp_git//:jsoncpp",
     ]
 )
