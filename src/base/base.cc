@@ -26,6 +26,7 @@ std::string ReadFile(absl::string_view filename) {
   return buffer;
 }
 
+
 vvv ReadMDL(absl::string_view filename) {
   std::string buffer = ReadFile(filename);
   int R = (unsigned int)buffer[0];
@@ -50,4 +51,29 @@ vvv ReadMDL(absl::string_view filename) {
     }
   }
   return M;
+}
+
+
+void WriteMDL(absl::string_view filename, const vvv &M) {
+	int R = (int)M.size();
+  std::ofstream os(std::string(filename), std::ios::binary | std::ios::out | std::ios::trunc);
+
+  LOG_IF(FATAL, !os) << "failed to read file " << filename;
+
+  os.write((char*)&R, 1);
+  int i = 0;
+  unsigned b = 0;
+  for (int x=0; x<R; ++x) {
+    for (int y=0; y<R; ++y) {
+      for (int z=0; z<R; ++z) {
+        b = b | (M[x][y][z]<<i);
+        i += 1;
+        if (i >= 8) {
+          os.write((char *)&b, 1);
+          i = 0;
+          b = 0;
+        }
+      }
+    }
+  }
 }
