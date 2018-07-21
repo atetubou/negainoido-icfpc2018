@@ -1,4 +1,9 @@
 #include "command.h"
+#include "glog/logging.h"
+
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
 
 // static
 Json::Value Command::CommandsToJson(const std::vector<Command>& commands) {
@@ -184,35 +189,90 @@ Command Command::make_fusion_s(int id, Point nd) {
   return ret;
 }
 
+static bool is_same_direction(Point l, Point r) {
+  if (l.x != 0 && r.x == 0) return false;
+  if (l.y != 0 && r.y == 0) return false;
+  if (l.z != 0 && r.z == 0) return false;
+  return true;
+}
+
 std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
   std::vector<Command> ret;
 
   for (size_t i = 0; i < commands.size();) {
-    if (commands[i].type != Command::SMOVE ||
-        commands[i].smove_lld.Manhattan() != 1) {
+    if (commands[i].type != Command::SMOVE) {
       ret.push_back(commands[i]);
       ++i;
       continue;
     }
     
+    size_t len = 0;
     size_t j = 0;
-    for (; i + j < commands.size() && j < 15; ++j) {
+    for (; i + j < commands.size(); ++j) {
       if (commands[i + j].type != Command::SMOVE) {
         break;
       }
-      if (commands[i].smove_lld != commands[i + j].smove_lld) {
-        break;
+    }
+    Command tmp = commands[i];
+    for (size_t k = i+1; k < i+j; k++) {
+      if (tmp.type == Command::SMOVE) {
+        if (tmp.smove_lld.Manhattan() == 0 || is_same_direction(tmp.smove_lld, commands[k].smove_lld)) {
+          tmp.smove_lld += commands[k].smove_lld;
+          if (tmp.smove_lld.Manhattan() >= 15) {
+            Point lld  = Point(
+              sgn(tmp.smove_lld.x) * 15,
+              sgn(tmp.smove_lld.y) * 15,
+              sgn(tmp.smove_lld.z) * 15
+            );
+
+            tmp.smove_lld -= lld;
+            ret.push_back(Command::make_smove(tmp.id, lld));
+          }
+        } else {
+          if (tmp.smove_lld.Manhattan() <= 5 && commands[k].smove_lld.Manhattan() <= 5) {
+            tmp = Command::make_lmove(tmp.id, tmp.smove_lld, commands[k].smove_lld);
+          } else {
+            ret.push_back(tmp);
+            tmp = commands[k];
+          }
+        }
+      // tmp.type == Command::LMOVE
+      } else {
+        if (is_same_direction(tmp.lmove_sld2, commands[k].smove_lld)) {
+          tmp.lmove_sld2 += commands[k].smove_lld;
+          if (tmp.lmove_sld2.Manhattan() >= 5) {
+            Point sld2 = Point(
+              sgn(tmp.lmove_sld2.x) * 5,
+              sgn(tmp.lmove_sld2.y) * 5,
+              sgn(tmp.lmove_sld2.z) * 5
+            );
+            ret.push_back(Command::make_lmove(tmp.id, tmp.lmove_sld1, sld2));
+            tmp.type = Command::SMOVE;
+            tmp.smove_lld = tmp.lmove_sld2 - sld2;
+            tmp.lmove_sld1 = Point(0,0,0);
+            tmp.lmove_sld2 = Point(0,0,0);
+          }
+        } else {
+          ret.push_back(tmp);
+          tmp = commands[k];
+        }
       }
     }
-
+    if (tmp.type != Command::SMOVE || tmp.smove_lld.Manhattan() > 0) {
+      if (tmp.type == Command::LMOVE && tmp.lmove_sld2.Manhattan() == 0) {
+        ret.push_back(Command::make_smove(tmp.id, tmp.lmove_sld1));
+      } else {
+        ret.push_back(tmp);
+      }
+    }
     
-    Command c = commands[i];
-    c.smove_lld.x *= j;
-    c.smove_lld.y *= j;
-    c.smove_lld.z *= j;
-
-    ret.push_back(c);
     i += j;
+  }
+
+  for (auto com : ret) {
+    if (com.type == Command::LMOVE) {
+      CHECK(com.lmove_sld1.Manhattan() != 0 && com.lmove_sld2.Manhattan() != 0) << com.lmove_sld1 << " " << com.lmove_sld2;
+    }
   }
 
   return ret;

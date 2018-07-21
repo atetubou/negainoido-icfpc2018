@@ -129,10 +129,13 @@ void flush_commands(vector<Command> &results) {
   Json::Value json;
   for (const auto& c : results) {
     std::vector<Command> commands = {c};
+    if (c.type == Command::LMOVE) {
+    }
     json["turn"].append(Command::CommandsToJson(commands));
   }
 
   cout << Json2Binary(json);
+  results.clear();
 }
 
 int main(int argc, char** argv) {
@@ -197,9 +200,9 @@ int main(int argc, char** argv) {
   LOG(INFO) << "start path construction";
 
   int total_move = 0;
+  vector<Command> result_buff;
 
   for (size_t i = 0; i + 1 < visit_order.size(); ++i) {
-    vector<Command> results;
     const auto cur = visit_order[i];
     const auto& next = visit_order[i + 1];
 
@@ -207,24 +210,23 @@ int main(int argc, char** argv) {
 
     total_move += commands.size();
 
-    results.push_back(commands[0]);
+    result_buff.push_back(commands[0]);
     if (i > 0) {
       const Point& nd = commands[0].smove_lld;
-      results.push_back(Command::make_fill(1, Point(-nd.x, -nd.y, -nd.z)));
+      result_buff.push_back(Command::make_fill(1, Point(-nd.x, -nd.y, -nd.z)));
+      result_buff = MergeSMove(result_buff);
+      flush_commands(result_buff);
       voxel_states[cur.x][cur.y][cur.z] = VoxelState::kALREADYFILLED;
     }
 
     for (size_t i = 1; i < commands.size(); ++i) {
-      results.push_back(commands[i]);
+      result_buff.push_back(commands[i]);
     }
-    results = MergeSMove(results);
-    flush_commands(results);
   }
 
-  vector<Command> results;
-  results.push_back(Command::make_halt(1));
-
-  results = MergeSMove(results);
+  result_buff.push_back(Command::make_halt(1));
+  result_buff = MergeSMove(result_buff);
+  flush_commands(result_buff);
 
   LOG(INFO) << "done path construction R=" << R
             << " total_visit=" << total_visit 
@@ -232,7 +234,6 @@ int main(int argc, char** argv) {
             << " move_per_voxel=" << static_cast<double>(total_move) / (visit_order.size() - 2)
             << " visit_per_voxel=" << static_cast<double>(total_visit) / (visit_order.size() - 2);
 
-  flush_commands(results);
 
   return 0;
 }
