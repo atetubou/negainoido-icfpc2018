@@ -1,5 +1,6 @@
 #include "json/json.h"
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 
 #include "src/base/base.h"
 #include "command_util.h"
@@ -65,8 +66,7 @@ vector<Command> get_commands_for_next(Point &current, Point &dest, vvv &voxels) 
         }
       }
       if (mind < 0) {
-        cerr << "Error in BFS to find path" << endl;
-        exit(1);
+        LOG(FATAL) << "Error in BFS to find path";
       }
       rc.x = rc.x + dx[mind];
       rc.y = rc.y + dy[mind];
@@ -143,8 +143,7 @@ int main(int argc, char** argv) {
           }
         }
         if (i==5) {
-          cerr << "In space ship" << endl;
-          exit(1);
+          LOG(FATAL) << "In space ship";
         }
       }
     }
