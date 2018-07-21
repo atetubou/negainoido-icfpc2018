@@ -134,6 +134,10 @@ int main(int argc, char** argv) {
 
   Json::Value result;
 
+  { // Fission Phase
+
+  }
+
   while (true) {
       if (is_completed(N, M)) {
           break;

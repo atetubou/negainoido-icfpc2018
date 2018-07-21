@@ -51,3 +51,16 @@ cc_binary(
         "//src:command_executer",
     ],
 )
+
+cc_binary(
+    name = "ichigo",
+    srcs = ["ichigo.cc"],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        "//src:command_executer",
+    ],
+)
