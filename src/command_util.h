@@ -15,6 +15,10 @@ struct Point {
   Point& operator+= (const Point& p);
   Point operator- (const Point& p) const;
   Point& operator-= (const Point& p);
+
+  int Manhattan() const {
+    return std::abs(x) + std::abs(y) + std::abs(z);
+  }
 };
 
 bool operator==(const Point& p1, const Point& p2);
