@@ -52,3 +52,16 @@ cc_binary(
         "//src:command_executer",
     ],
 )
+
+cc_binary(
+    name = "square_deleter",
+    srcs = [ "square_deleter.cc"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",  
+        "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
+        "//src:command_executer",
+        "//src/base",
+    ],
+)
