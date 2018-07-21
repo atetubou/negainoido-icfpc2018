@@ -82,7 +82,7 @@ std::ostream& operator << (std::ostream &out, const Point &p) {
   return out;
 }
 
-uint32_t CommandExecuter::GetBotsNum() {
+uint32_t CommandExecuter::GetActiveBotsNum() {
 #ifdef CE_DEBUG
   size_t cnt_num_active_bots = 0;
   for (int i = 1; i <= kMaxNumBots; i++) {
@@ -95,7 +95,7 @@ uint32_t CommandExecuter::GetBotsNum() {
 }
 
 bool CommandExecuter::IsActiveBotId(const uint32_t id) {
-  return 1 <= id && id <= GetBotsNum() && bot_status[id].active;
+  return 1 <= id && id <= kMaxNumBots && bot_status[id].active;
 }
 
 bool CommandExecuter::IsValidCoordinate(const Point& p) {
@@ -231,7 +231,7 @@ void CommandExecuter::Halt(const uint32_t bot_id) {
   CHECK(IsActiveBotId(bot_id));
   Point& p = bot_status[bot_id].pos;
   CHECK(p == Point(0,0,0));
-  CHECK(GetBotsNum() == 1);
+  CHECK(GetActiveBotsNum() == 1);
   CHECK(system_status.harmonics == LOW);
   bot_status[bot_id].active = false;
   num_active_bots--;
