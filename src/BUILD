@@ -43,6 +43,17 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
+)
+
+cc_binary(
+    name = "simple_solve",
+    srcs = ["simple_solve.cc"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        "command_executer",
     ],
 )
 
