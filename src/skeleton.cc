@@ -1,4 +1,4 @@
-// vim-compile: cd .. && bazel run //src:skeleton -- --mdl_filename=$PWD/a.mdl
+// vim-compile: cd .. && bazel run //src:skeleton -- --mdl_filename=/home/vagrant/icfpc/problems/LA004_tgt.mdl
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -53,40 +53,47 @@ vvv InitVVV(int R) {
   return vvv(R, vv(R, v(R, 0)));
 }
 
+const Point fill_here(-1, -1, -1);
+
 class Skeleton {
   vvv M;
   int R;
 
   CommandExecuter ce;
 
-  vector<vvv> Ms; // remaining vertices
-  vector<Path> skeletons; // extracted skeletons so far
-
-  vector<Path> skeleton; // final skeleton
+  vvv wall;
+  set<Point> grand;
 public:
-  Skeleton(const vvv &M) : M(M), R((int)M.size()), ce((int)M.size(), true) {}
+  Skeleton(const vvv &M) : M(M), R((int)M.size()), ce((int)M.size(), true) {
+    wall = InitVVV(R);
 
-  Path extract_a_skeleton(Point s) {
+    // add grand
+    for(int x=0; x<R; x++) {
+      for(int z=0; z<R; z++) {
+        if (M[x][0][z]) grand.insert(Point(x, 0, z));
+      }
+    }
+  }
+
+  Path extract_a_skeleton() {
+    if (grand.empty()) {
+      cerr << "No grand vertex!" << endl;
+      exit(1);
+    }
+    Point s = *grand.begin();
+
     queue<Point> q;
     map<Point, int> dist;
     map<Point, Point> prev;
     q.push(s);
     dist[s] = 0;
     Path path;
-    int target_y = find_one_basepoint(M, -1).y;
+    int maxdist = 0;
     while(!q.empty()) {
       Point v = q.front();
       q.pop();
       int d = dist[v];
-      if (v.y == target_y) {
-        while(s != v) {
-          path.push_back(v);
-//          cout << v.x << " " << v.y << " " << v.z << endl;
-          v = prev[v];
-        }
-        path.push_back(s);
-        return path;
-      }
+      maxdist = max(maxdist, d);
       for(int dx=-1; dx<=1; dx++) {
         for(int dy=-1; dy<=1; dy++) {
           for(int dz=-1; dz<=1; dz++) {
@@ -102,12 +109,57 @@ public:
         }
       }
     }
-    cerr << "FATAL: disconnected!?" << endl;
+
+    for(int y=0; y<R; y++) {
+      for(int x=0; x<R; x++) {
+        for(int z=0; z<R; z++) {
+          Point v(x, y, z);
+          if (dist[v] == maxdist) {
+            while(s != v) {
+              path.push_back(v);
+              v = prev[v];
+            }
+            path.push_back(s);
+            return path;
+          }
+        }
+      }
+    }
+    cerr << "FATAL: Empty at extract a skeleton" << endl;
     exit(1);
   }
 
+  bool IsMEmpty() {
+    for(int y=0; y<R; y++) {
+      for(int x=0; x<R; x++) {
+        for(int z=0; z<R; z++) {
+          if (M[x][y][z]) return false;
+        }
+      }
+    }
+    return true;
+  }
 
-  void Enbody(const vector<Point> &points) { // nikuzuke
+  void extract_skeletons() {
+    Point pos(0, 0, 0);
+    vector<Point> movepointlist;
+    while(!IsMEmpty()) {
+      Path path = extract_a_skeleton();
+      vvv rank = RankingAccordingToPath(path);
+      vector<Point> cmds = FillAccordingToRank(rank, pos);
+      pos = cmds.back();
+      movepointlist.insert(movepointlist.end(), cmds.begin(), cmds.end());
+    }
+
+    // move to the origin
+    vector<Point> cmds = MoveFromTo(pos, Point(0, 0, 0));
+    movepointlist.insert(movepointlist.end(), cmds.begin(), cmds.end());
+
+    ExecMovePointList(movepointlist);
+  }
+
+  vvv RankingAccordingToPath(const vector<Point> &points) {
+    // ranking voxel.  We regard nonzero ranking as a priority, and fill it in the order of priority.
     vvv rank = PointsToVVV(points, R);
 
     queue<Point> q;
@@ -123,7 +175,7 @@ public:
           if (max(abs(dx), abs(dz)) != 1) continue;
           Point w = v + Point(dx, 0, dz);
           if (w.x < 0 || R <= w.x || w.y < 0 || R <= w.y || w.z < 0 || R <= w.z) continue;
-          if (!M[w.x][w.y][w.z]) continue;
+          if (!M[w.x][w.y][w.z] || wall[w.x][w.y][w.z]) continue;
           if (rank[w.x][w.y][w.z]) continue;
           rank[w.x][w.y][w.z] = d + 1;
           q.push(w);
@@ -140,11 +192,12 @@ public:
       }
     }
 
-    FillAccordingToRank(rank, InitVVV(R), Point(0, 0, 0));
+    return rank;
   }
 
-  void FillAccordingToRank(vvv rank, vvv wall, Point pos) {
-    rank[0][0][0] = 1<<29; // return point
+  vector<Point> FillAccordingToRank(vvv rank, Point from) {
+    Point pos = from;
+//    rank[0][0][0] = 1<<29; // return point
     deque<int> ranks;
     for(int y=0; y<R; y++) {
       for(int x=0; x<R; x++) {
@@ -156,7 +209,6 @@ public:
     }
     sort(ranks.begin(), ranks.end());
 
-    const Point fill_here(-1, -1, -1);
     Path cmds;
     while(!ranks.empty()) {
       int target_rank = ranks.front();
@@ -172,29 +224,7 @@ public:
         Point w;
 
         q.pop();
-        if (pos != v && rank[v.x][v.y][v.z] == target_rank) {
-          // check ground
-          bool ok = false;
-          for(int dx=-1; dx<=1; dx++) {
-            for(int dy=-1; dy<=1; dy++) {
-              for(int dz=-1; dz<=1; dz++) {
-                if (abs(dx) + abs(dy) + abs(dz) != 1) continue;
-                if (v.y == 0) {
-                  ok = true;
-                  goto CHK_GROUND_END;
-                }
-                int ax = v.x + dx, ay = v.y + dy, az = v.z + dz;
-                if (0 <= ax && ax < R && 0 <= ay && ay < R && 0 <= az && az < R && wall[v.x + dx][v.y + dy][v.z + dz]) {
-                  ok = true;
-                  goto CHK_GROUND_END;
-                }
-              }
-            }
-          }
-          if (!ok) goto CHK_GROUND_FAIL;
-CHK_GROUND_END:
-
-//          cout << pos << " -> " << v << " ; rank " << target_rank << endl;
+        if (pos != v && rank[v.x][v.y][v.z] == target_rank && grand.count(v)) {
           w = v;
           while(w != pos) {
             path.push_back(w);
@@ -208,10 +238,20 @@ CHK_GROUND_END:
           wall[v.x][v.y][v.z] = 1; // fill
           pos = v;
 
+          M[v.x][v.y][v.z] = 0;
+          grand.erase(v);
+          for(int dx=-1; dx<=1; dx++) {
+            for(int dy=-1; dy<=1; dy++) {
+              for(int dz=-1; dz<=1; dz++) {
+                if (abs(dx) + abs(dy) + abs(dz) != 1) continue;
+                int ax = v.x + dx, ay = v.y + dy, az = v.z + dz;
+                if (0 <= ax && ax < R && 0 <= ay && ay < R && 0 <= az && az < R && M[ax][ay][az]) {
+                  grand.emplace(ax, ay, az);
+                }
+              }
+            }
+          }
           break;
-CHK_GROUND_FAIL:
-          ;
-
         }
         for(int dx=-1; dx<=1; dx++) {
           for(int dy=-1; dy<=1; dy++) {
@@ -229,17 +269,53 @@ CHK_GROUND_FAIL:
       }
     }
 
-    /*
-    for(int i=0; i<(int)cmds.size(); i++) {
-      cout << cmds[i] << endl;
+    cmds.push_back(pos);
+    return cmds;
+  }
+
+  Path MoveFromTo(const Point &from, const Point &to) {
+    map<Point, Point> prev;
+    queue<Point> q;
+    q.push(from);
+    prev[from] = from;
+    while(!q.empty()) {
+      Point v = q.front();
+      q.pop();
+      if (v == to) {
+        Path path;
+        Point w = v;
+        while(w != from) {
+          path.push_back(w);
+          w = prev[w];
+        }
+        path.push_back(from);
+        reverse(path.begin(), path.end());
+        return path;
+      }
+      for(int dx=-1; dx<=1; dx++) {
+        for(int dy=-1; dy<=1; dy++) {
+          for(int dz=-1; dz<=1; dz++) {
+            if (abs(dx) + abs(dy) + abs(dz) != 1) continue;
+            Point w = v + Point(dx, dy, dz);
+            if (w.x < 0 || R <= w.x || w.y < 0 || R <= w.y || w.z < 0 || R <= w.z) continue;
+            if (wall[w.x][w.y][w.z]) continue;
+            if (prev.count(w)) continue;
+            prev[w] = v;
+            q.push(w);
+          }
+        }
+      }
     }
-    */
+    cerr << "FATAL: could not back" << endl;
+    exit(1);
+  }
 
 
+
+  void ExecMovePointList(const vector<Point> &cmds) {
     vector<Command> commands;
-    pos = Point(0, 0, 0);
+    Point pos;
     for(int i=0; i<(int)cmds.size(); i++) {
-//      cout << cmds[i] << "; " << pos << endl;
       if (cmds[i] == fill_here) {
         while((cmds[i] == fill_here || cmds[i] == pos) && i < (int)cmds.size()) i++;
         if (i >= (int)cmds.size() - 1) {
@@ -278,7 +354,6 @@ int main(int argc, char* argv[]) {
 //  OutputMDL(M);
 
   auto skeleton = std::make_unique<Skeleton>(M);
-  Path path = skeleton->extract_a_skeleton(find_one_basepoint(M));
-  skeleton->Enbody(path);
+  skeleton->extract_skeletons();
 //  OutputMDL(PointsToVVV(path, R));
 }

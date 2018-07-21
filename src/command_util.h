@@ -8,7 +8,8 @@ struct Point {
   int y;
   int z;
 
-  Point() = default;
+//  Point() = default;
+  Point() : x(0), y(0), z(0) {}
   Point(int x, int y, int z) : x(x), y(y), z(z) {}
   Point operator+ (const Point& p) const;
   Point& operator+= (const Point& p);
