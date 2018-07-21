@@ -35,6 +35,17 @@ TEST(CommandExecuter, CreateAndDestory) {
   CheckDefaultBotHasAlltheSeeds(b);
 }
 
+TEST(CommandExecuter, Halt) {
+  const int R = 10;
+  auto ce = std::make_unique<CommandExecuter>(R, false);
+  EXPECT_EQ(ce->GetActiveBotsNum(), 1u);
+  Command command;
+  command.id = 1;
+  command.type = Command::Type::HALT;
+  ce->Execute({command});
+  EXPECT_EQ(ce->GetActiveBotsNum(), 0u);
+}
+
 TEST(CommandExecuter, Wait) {
   const int R = 10;
   auto ce = std::make_unique<CommandExecuter>(R, false);
@@ -54,7 +65,7 @@ TEST(CommandExecuter, Wait) {
   CheckDefaultBotHasAlltheSeeds(b_aft);
 }
 
-TEST(CommandExecuter, Flip) {
+TEST(CommandExecuter, TwoFlip) {
   const int R = 10;
   auto ce = std::make_unique<CommandExecuter>(R, false);
   const auto s_bef_energy = ce->GetSystemStatus().energy;
@@ -87,7 +98,7 @@ TEST(CommandExecuter, Flip) {
   CheckDefaultBotHasAlltheSeeds(b_aft);
 }
 
-TEST(CommandExecuter, SMove) {
+TEST(CommandExecuter, OneSMove) {
   const int R = 250;
   auto ce = std::make_unique<CommandExecuter>(R, false);
   const auto s_bef_energy = ce->GetSystemStatus().energy;
@@ -100,15 +111,94 @@ TEST(CommandExecuter, SMove) {
   ce->Execute({command});
   const auto& s_aft = ce->GetSystemStatus();
   const auto& b_aft = ce->GetBotStatus();
-  EXPECT_EQ(s_aft.energy - s_bef_energy, 3 * R * R * R + 2 * length + 20 * bef_active_bots);
+  EXPECT_EQ(s_aft.energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots + 2 * length);
   EXPECT_EQ(s_aft.harmonics, LOW);
   EXPECT_EQ(b_aft[1].pos, Point(length,0,0));
   EXPECT_EQ(b_aft[1].active, true);
   CheckDefaultBotHasAlltheSeeds(b_aft);
 }
 
-// TODO(hiroh): test HALT
-// TEST(CommandExecuter, Halt) {
-//   const int R = 10;
-//   auto ce = std::make_unique<CommandExecuter>(R, false);
-// }
+TEST(CommandExecuter, OneLMove) {
+  const int R = 250;
+  auto ce = std::make_unique<CommandExecuter>(R, false);
+  const auto s_bef_energy = ce->GetSystemStatus().energy;
+  const size_t bef_active_bots = ce->GetActiveBotsNum();
+  const int length = 5;
+  Command command;
+  command.id = 1;
+  command.type = Command::Type::LMOVE;
+  command.lmove_sld1 = Point(0, length, 0);
+  command.lmove_sld2 = Point(length, 0, 0);
+  ce->Execute({command});
+  const auto& s_aft = ce->GetSystemStatus();
+  const auto& b_aft = ce->GetBotStatus();
+  EXPECT_EQ(s_aft.energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots + 2 * (length + 2 + length));
+  EXPECT_EQ(s_aft.harmonics, LOW);
+  EXPECT_EQ(b_aft[1].pos, Point(length,length,0));
+  EXPECT_EQ(b_aft[1].active, true);
+  CheckDefaultBotHasAlltheSeeds(b_aft);
+}
+
+TEST(CommandExecuter, TwoFill) {
+  const int R = 20;
+  auto ce = std::make_unique<CommandExecuter>(R, false);
+  const auto s_bef_energy = ce->GetSystemStatus().energy;
+  const size_t bef_active_bots = ce->GetActiveBotsNum();
+  Command command1;
+  command1.id = 1;
+  command1.type = Command::Type::FILL;
+  command1.fill_nd = Point(0, 1, 1);
+  ce->Execute({command1});
+  const auto s_flp1_energy = ce->GetSystemStatus().energy;
+  EXPECT_EQ(s_flp1_energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots + 12);
+  EXPECT_EQ(ce->GetSystemStatus().matrix[0][1][1], FULL);
+  const size_t flp1_active_bots = ce->GetActiveBotsNum();
+  Command command2;
+  command2.id = 1;
+  command2.type = Command::Type::FILL;
+  command2.fill_nd = Point(0, 1, 1);
+  ce->Execute({command2});
+  const auto s_flp2_energy = ce->GetSystemStatus().energy;
+  EXPECT_EQ(s_flp2_energy - s_flp1_energy, 3 * R * R * R + 20 * flp1_active_bots + 6);
+  EXPECT_EQ(ce->GetSystemStatus().matrix[0][1][1], FULL);
+  const auto& b_aft = ce->GetBotStatus();
+  EXPECT_EQ(b_aft[1].pos, Point(0,0,0));
+  EXPECT_EQ(b_aft[1].active, true);
+  CheckDefaultBotHasAlltheSeeds(b_aft);
+}
+
+TEST(CommandExecuter, OneFission) {
+  const int R = 10;
+  auto ce = std::make_unique<CommandExecuter>(R, false);
+  const auto s_bef_energy = ce->GetSystemStatus().energy;
+  const size_t bef_active_bots = ce->GetActiveBotsNum();
+  // const auto& b_bef = ce->GetBotStatus();
+  Command command;
+  const int M = 15;
+  command.id = 1;
+  command.type = Command::Type::FISSION;
+  command.fission_nd = Point(0, 1, 1);
+  command.fission_m = M;
+  ce->Execute({command});
+  const auto s_aft_energy = ce->GetSystemStatus().energy;
+  const size_t aft_active_bots = ce->GetActiveBotsNum();
+  EXPECT_EQ(aft_active_bots, 2);
+  EXPECT_EQ(s_aft_energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots + 24);
+  const auto& b_aft = ce->GetBotStatus();
+  EXPECT_EQ(b_aft[1].pos, Point(0,0,0));
+  EXPECT_EQ(b_aft[2].pos, Point(0,1,1));
+  EXPECT_EQ(b_aft[1].active, true);
+  EXPECT_EQ(b_aft[2].active, true);
+  EXPECT_EQ(b_aft[1].seeds.size(), CommandExecuter::kMaxNumBots - M - 1 - 1);
+  EXPECT_EQ(b_aft[2].seeds.size(), M);
+  for (int i = 3 ; i < M + 3; i++) {
+    EXPECT_TRUE(b_aft[2].seeds.find(i) != b_aft[2].seeds.end());
+  }
+  for (int i = M + 3 ; i <= CommandExecuter::kMaxNumBots; i++) {
+    EXPECT_TRUE(b_aft[1].seeds.find(i) != b_aft[1].seeds.end());
+  }
+
+
+}
+
+// TODO(hiroh): test Fusion
