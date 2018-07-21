@@ -169,8 +169,8 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
 
   int fusion_count = 0;
   // Execute FusionP and FusionS
-  for (auto com1 : commands) {
-    for (auto com2 : commands) {
+  for (const auto& com1 : commands) {
+    for (const auto& com2 : commands) {
       if (com1.id != com2.id &&
           com1.type == Command::Type::FUSION_P &&
           com2.type == Command::Type::FUSION_S) {
@@ -234,9 +234,10 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
       bool cold_x = ColidX(vcord1.from.x, vcord1.to.x, vcord2.from.x, vcord2.to.x);
       bool cold_y = ColidX(vcord1.from.y, vcord1.to.y, vcord2.from.y, vcord2.to.y);
       bool cold_z = ColidX(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
-      LOG_ASSERT(cold_x && cold_y && cold_z) << "Invalid Move (Colid)\n"
-                                                << "vc1: id=" << vcord1.id << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
-                                                << "vc2: id=" << vcord2.id << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
+      LOG_ASSERT(cold_x && cold_y && cold_z) 
+        << "Invalid Move (Colid)\n"
+        << "vc1: id=" << vcord1.id << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
+        << "vc2: id=" << vcord2.id << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
     }
   }
 
@@ -244,6 +245,8 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     auto turn_json = Command::CommandsToJson(commands);
     json["turn"].append(std::move(turn_json));
   }
+
+  v_cords.clear();
 }
 
 Json::Value CommandExecuter::GetJson() {

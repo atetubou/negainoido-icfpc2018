@@ -23,6 +23,7 @@ int main(int argc, char* argv[]) {
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_mdl_filename.empty() or FLAGS_nbt_json.empty()) {
+    std::cerr << "Specify --mdl_filename and --nbt_json";
     exit(1);
   }
 
@@ -33,25 +34,29 @@ int main(int argc, char* argv[]) {
   Json::Value root;
   is >> root;
 
+  LOG(INFO) << "done read json";
   auto ce = std::make_unique<CommandExecuter>(R, false);
+
+  LOG(INFO) << "done command executor";
 
   Json::Value turns = root["turn"];
   int n = turns.size();
   for (int i = 0; i < n; ++i) {
-      std::vector<Command> commands;
-      int m = turns[i].size();
-      if (FLAGS_verbose) {
-          std::cout << turns[i] << std::endl;
-      }
-      for (int j = 0; j < m; ++j) {
-          Command c = Command::JsonToCommand(turns[i][j]);
-          commands.push_back(c);
-      }
-      ce->Execute(commands);
-      if (FLAGS_verbose) {
-          std::cout << "Energy: " << ce->GetSystemStatus().energy << std::endl;
-      }
+    std::vector<Command> commands;
+    int m = turns[i].size();
+    if (FLAGS_verbose) {
+      LOG(INFO) << turns[i];
+    }
+    for (int j = 0; j < m; ++j) {
+      Command c = Command::JsonToCommand(turns[i][j]);
+      commands.push_back(c);
+    }
+    ce->Execute(commands);
+    if (FLAGS_verbose) {
+      LOG(INFO) << "Energy: " << ce->GetSystemStatus().energy;
+    }
   }
+
   std::cout << ce->GetSystemStatus().energy << std::endl;
 
   return 0;
