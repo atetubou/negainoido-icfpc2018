@@ -70,8 +70,8 @@ cc_binary(
 )
 
 cc_binary(
-    name = "a",
-    srcs = ["a.cc",
+    name = "simulator",
+    srcs = ["simulator.cc",
             "command.h",
             "command.cc",
             "command_executer.h",
