@@ -11,6 +11,7 @@ using namespace std;
 
 #include "src/base/base.h"
 #include "src/command_util.h"
+#include "src/command_executer.h"
 
 DEFINE_string(mdl_filename, "", "filepath of mdl");
 
@@ -50,12 +51,14 @@ class Skeleton {
   vvv M;
   int R;
 
+  CommandExecuter ce;
+
   vector<vvv> Ms; // remaining vertices
   vector<Path> skeletons; // extracted skeletons so far
 
   vector<Path> skeleton; // final skeleton
 public:
-  Skeleton(const vvv &M) : M(M), R((int)M.size()) {}
+  Skeleton(const vvv &M) : M(M), R((int)M.size()), ce((int)M.size(), true) {}
 
   Path extract_a_skeleton(Point s) {
     queue<Point> q;
@@ -72,6 +75,7 @@ public:
       if (v.y == target_y) {
         while(s != v) {
           path.push_back(v);
+//          cout << v.x << " " << v.y << " " << v.z << endl;
           v = prev[v];
         }
         path.push_back(s);
@@ -98,7 +102,7 @@ public:
 
 
   void Enbody(const vector<Point> &points) { // nikuzuke
-    vvv dist = PointsToVVV(points, R);
+    vvv rank = PointsToVVV(points, R);
 
     queue<Point> q;
     for(const auto &v : points) {
@@ -107,21 +111,33 @@ public:
     while(!q.empty()) {
       Point v = q.front();
       q.pop();
-      int d = dist[v.x][v.y][v.z];
+      int d = rank[v.x][v.y][v.z];
       for(int dx=-1; dx<=1; dx++) {
         for(int dz=-1; dz<=1; dz++) {
-          if (abs(dx) + abs(dz) != 1) continue;
+          if (max(abs(dx), abs(dz)) != 1) continue;
           Point w = v + Point(dx, 0, dz);
           if (w.x < 0 || R <= w.x || w.y < 0 || R <= w.y || w.z < 0 || R <= w.z) continue;
           if (!M[w.x][w.y][w.z]) continue;
-          if (dist[w.x][w.y][w.z]) continue;
-          dist[w.x][w.y][w.z] = d + 1;
+          if (rank[w.x][w.y][w.z]) continue;
+          rank[w.x][w.y][w.z] = d + 1;
           q.push(w);
         }
       }
     }
 
-    OutputMDL(dist);
+    for(int y=0; y<R; y++) {
+      for(int x=0; x<R; x++) {
+        for(int z=0; z<R; z++) {
+          if (rank[x][y][z])
+            rank[x][y][z] = rank[x][y][z] * R + y;
+        }
+      }
+    }
+
+    ce.SMove(1, Point(1, 0, 0));
+
+
+    OutputMDL(rank);
   }
 
   void Enbody_sliced() {

@@ -86,7 +86,7 @@ void OutputMDL(const vvv &M) {
   for (int y=0; y<R; ++y) {
     for (int x=0;x<R;++x) {
       for (int z=0;z<R;++z) {
-        std::cout << M[x][y][z];
+        std::cout << M[x][y][z] << " ";
       }
       std::cout << std::endl;
     }
