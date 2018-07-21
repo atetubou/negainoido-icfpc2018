@@ -1,6 +1,21 @@
 from selenium.webdriver import Chrome, ChromeOptions
 from time import sleep
 import re
+import sys
+import os
+
+# example: `python main.py LA001.mdl LA001.nbt`
+
+base_path = os.path.dirname(os.path.abspath(__file__))
+
+mdl = os.path.sys.argv[1]
+nbt = sys.argv[2]
+url = 'file://' + base_path + '/tracer.html'
+
+if not os.path.isabs(mdl):
+    mdl = os.path.normpath(os.path.join(base_path, mdl))
+if not os.path.isabs(nbt):
+    nbt = os.path.normpath(os.path.join(base_path, nbt))
 
 options = ChromeOptions()
 # ヘッドレスモードを有効にする（次の行をコメントアウトすると画面が表示される）。
@@ -8,15 +23,16 @@ options.add_argument('--headless')
 # ChromeのWebDriverオブジェクトを作成する。
 driver = Chrome(options=options)
 
-driver.get('file:///home/garasubo/workspace/icfpc2018/downloads/html/tracer.html')
+driver.get(url)
+driver.save_screenshot('tracer.png')
 
 assert 'ICFP' in driver.title
 
 # find input model file
 model_input = driver.find_element_by_id('tgtModelFileIn')
-model_input.send_keys("/home/garasubo/workspace/icfpc2018/downloads/problemsL/LA001_tgt.mdl")
+model_input.send_keys(mdl)
 tracer_input = driver.find_element_by_id('traceFileIn')
-tracer_input.send_keys("/home/garasubo/workspace/icfpc2018/solutions/LA001.nbt")
+tracer_input.send_keys(nbt)
 driver.find_element_by_id('execTrace').click()
 
 wait_limit = 30
