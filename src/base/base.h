@@ -15,4 +15,6 @@ using vvv = std::vector<vv>;
 vvv ReadMDL(absl::string_view filename);
 void WriteMDL(absl::string_view filename, const vvv &M);
 
+void OutputMDL(const vvv &M);
+
 #endif // SRC_BASE_BASE_H_

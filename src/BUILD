@@ -45,3 +45,21 @@ cc_binary(
         "//src/base",
     ],
 )
+
+cc_binary(
+    name = "skeleton",
+    srcs = ["skeleton.cc",
+            "command.h",
+            "command.cc",
+            "command_executer.h",
+            "command_executer.cc",
+            "command_util.h",
+            "command_util.cc",
+    ],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+    ],
+)

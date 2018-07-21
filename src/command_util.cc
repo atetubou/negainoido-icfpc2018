@@ -1,4 +1,5 @@
 #include "command_util.h"
+#include <tuple>
 
 // Point
 Point Point::operator+ (const Point& p) {
@@ -21,4 +22,8 @@ bool operator==(const Point& p1, const Point& p2) {
 
 bool operator!=(const Point& p1, const Point& p2) {
     return !(p1 == p2);
+}
+
+bool operator<(const Point& p1, const Point& p2) {
+    return std::make_tuple(p1.x, p1.y, p1.z) < std::make_tuple(p2.x, p2.y, p2.z);
 }
