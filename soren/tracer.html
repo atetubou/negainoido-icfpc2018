@@ -13,15 +13,15 @@
     <![endif]-->
 
     <!-- Begin Jekyll SEO tag v2.5.0 -->
-<title>Execute Trace (Lightning, No Visualizer) | ICFP Programming Contest 2018</title>
+<title>Execute Trace (Full, No Visualizer) | ICFP Programming Contest 2018</title>
 <meta name="generator" content="Jekyll v3.7.3">
-<meta property="og:title" content="Execute Trace (Lightning, No Visualizer)">
+<meta property="og:title" content="Execute Trace (Full, No Visualizer)">
 <meta property="og:locale" content="en_US">
-<link rel="canonical" href="https://icfpcontest2018.github.io/lgtn/exec-trace-novis.html">
-<meta property="og:url" content="https://icfpcontest2018.github.io/lgtn/exec-trace-novis.html">
+<link rel="canonical" href="https://icfpcontest2018.github.io/full/exec-trace-novis.html">
+<meta property="og:url" content="https://icfpcontest2018.github.io/full/exec-trace-novis.html">
 <meta property="og:site_name" content="ICFP Programming Contest 2018">
 <script type="application/ld+json">
-{"@type":"WebPage","url":"https://icfpcontest2018.github.io/lgtn/exec-trace-novis.html","headline":"Execute Trace (Lightning, No Visualizer)","@context":"http://schema.org"}</script>
+{"@type":"WebPage","url":"https://icfpcontest2018.github.io/full/exec-trace-novis.html","headline":"Execute Trace (Full, No Visualizer)","@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 
   <style type="text/css">.vimvixen-console-frame {
@@ -64,17 +64,28 @@
     <div id="content-wrapper">
       <div class="wide-inner clearfix">
         <section id="main-content" style="width: 100%;">
-          <h1 id="execute-trace-lightning-no-visualizer">Execute Trace (Lightning, No Visualizer)</h1>
+          <h1 id="execute-trace-full-no-visualizer">Execute Trace (Full, No Visualizer)</h1>
 
 <form>
 
+<input id="full" value="true" type="hidden">
+
 <p>
-<label for="tgtModelFileIn">Target Model:</label><br>
+<label for="srcModelFileIn">Source Model:</label>
+<input id="srcModelEmpty" type="checkbox">
+<label for="srcModelEmpty">empty</label><br>
+<input accept=".mdl" id="srcModelFileIn" type="file">
+</p>
+
+<p>
+<label for="tgtModelFileIn">Target Model:</label>
+<input id="tgtModelEmpty" type="checkbox">
+<label for="tgtModelEmpty">empty</label><br>
 <input accept=".mdl" id="tgtModelFileIn" type="file">
 </p>
 
 <p>
-<label for="traceFileIn">Trace:</label><br>
+<label for="traceFileIn">Trace:</label>
 <input accept=".nbt" id="traceFileIn" type="file">
 </p>
 
@@ -82,15 +93,10 @@
 <p>
 <label for="stepsPerFrame">Steps per Refresh:</label><br>
 <select id="stepsPerFrame">
-<option value="-60">1/60</option>
-<option value="-30">1/30</option>
-<option value="1">1</option>
-<option value="100">100</option>
-<option value="500">500</option>
 <option value="1000">1000</option>
 <option value="2000">2000</option>
 <option value="3000">3000</option>
-<option selected="selected" value="4000">4000</option>
+<option selected="selected" value="8000">8000</option>
 </select>
 </p>
 
@@ -112,9 +118,12 @@ var vis = null;
 <script src="tracer_files/load-file-utils.js"></script>
 
 <script>
+var srcModelBData = null;
 var tgtModelBData = null;
 var traceBData = null;
 (function () {
+  var srcModelEmpty = document.getElementById('srcModelEmpty');
+  var tgtModelEmpty = document.getElementById('tgtModelEmpty');
   var execTrace = document.getElementById('execTrace');
   function onStart() {
     document.getElementById('stdout').innerHTML = "";
@@ -122,16 +131,47 @@ var traceBData = null;
     execTrace.disabled = true;
   }
   function onSuccess() {
-    if (tgtModelBData && traceBData) {
+    if ((srcModelBData || srcModelEmpty.checked) &&
+        (tgtModelBData || tgtModelEmpty.checked) &&
+        !(srcModelEmpty.checked && tgtModelEmpty.checked) &&
+        traceBData) {
       execTrace.disabled = false;
     }
   }
+  mkLoadBDataFromFile
+  ('srcModel',
+   function () { srcModelBData = null; onStart(); },
+   function () { },
+   onSuccess,
+   function(data) { srcModelBData = data; });
+  document.getElementById('srcModelEmpty').addEventListener('change',
+    function (e) { onStart();
+                   if (e.target.checked) {
+                     srcModelBData = null;
+                     document.getElementById('srcModelFileIn').disabled = true;
+                     document.getElementById('srcModelFileIn').value = "";
+                   } else {
+                     document.getElementById('srcModelFileIn').disabled = false;
+                   }
+                   onSuccess();
+    }, false);
   mkLoadBDataFromFile
   ('tgtModel',
    function () { tgtModelBData = null; onStart(); },
    function () { },
    onSuccess,
    function(data) { tgtModelBData = data; });
+  document.getElementById('tgtModelEmpty').addEventListener('change',
+    function (e) { onStart();
+                   if (e.target.checked) {
+                     tgtModelBData = null;
+                     document.getElementById('tgtModelFileIn').disabled = true;
+                     document.getElementById('tgtModelFileIn').value = "";
+                   } else {
+                     document.getElementById('tgtModelFileIn').disabled = false;
+                   }
+                   onSuccess();
+    }, false);
   mkLoadBDataFromFile
   ('trace',
    function () { traceBData = null; onStart(); },

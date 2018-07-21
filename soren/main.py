@@ -8,14 +8,24 @@ import os
 
 base_path = os.path.dirname(os.path.abspath(__file__))
 
-mdl = sys.argv[1]
-nbt = sys.argv[2]
+src = sys.argv[1]
+tgt = sys.argv[2]
+nbt = sys.argv[3]
 url = 'file://' + base_path + '/tracer.html'
 
-if not os.path.isabs(mdl):
-    mdl = os.path.normpath(os.path.join(base_path, mdl))
+if src == '-':
+    src = None
+elif not os.path.isabs(src):
+    src = os.path.normpath(os.path.join(base_path, src))
 else:
-    mdl = os.path.normpath(mdl)
+    src = os.path.normpath(src)
+
+if tgt == '-':
+    tgt = None
+elif not os.path.isabs(tgt):
+    tgt = os.path.normpath(os.path.join(base_path, tgt))
+else:
+    tgt = os.path.normpath(tgt)
 if not os.path.isabs(nbt):
     nbt = os.path.normpath(os.path.join(base_path, nbt))
 else:
@@ -33,8 +43,18 @@ driver.save_screenshot('tracer.png')
 assert 'ICFP' in driver.title
 
 # find input model file
-model_input = driver.find_element_by_id('tgtModelFileIn')
-model_input.send_keys(mdl)
+if src != None:
+    src_input = driver.find_element_by_id('srcModelFileIn')
+    src_input.send_keys(src)
+else:
+    driver.find_element_by_id('srcModelEmpty').click()
+
+if tgt != None:
+    model_input = driver.find_element_by_id('tgtModelFileIn')
+    model_input.send_keys(tgt)
+else:
+    driver.find_element_by_id('tgtModelEmpty').click()
+
 tracer_input = driver.find_element_by_id('traceFileIn')
 tracer_input.send_keys(nbt)
 driver.find_element_by_id('execTrace').click()
@@ -59,6 +79,6 @@ if energy == None:
 print(energy.group(1))
 
 # スクリーンショットを撮る。
-# driver.save_screenshot('tracer.png')
+driver.save_screenshot('tracer.png')
 
 driver.quit()  # ブラウザーを終了する
