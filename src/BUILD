@@ -2,7 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 cc_binary(
     name = "nbt_viewer",
-    srcs = ["nbt_viewer.cc"],
+    srcs = ["nbt_viewer.cc", "nbt_loader.h"],
     deps = [
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",
@@ -70,6 +70,7 @@ cc_binary(
 cc_binary(
     name = "simulator",
     srcs = ["simulator.cc",
+            "nbt_loader.h",
             "command.h",
             "command.cc",
             "command_executer.h",
