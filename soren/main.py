@@ -78,6 +78,6 @@ if energy == None:
 print(energy.group(1))
 
 # スクリーンショットを撮る。
-driver.save_screenshot('tracer.png')
+#driver.save_screenshot('tracer.png')
 
 driver.quit()  # ブラウザーを終了する
