@@ -209,6 +209,48 @@ std::string encodecommand(const Json::Value& command) {
     return {static_cast<char>((nd << 3) | 0b101), static_cast<char>(command["m"].asInt())};
   }
 
+  if (command_name == "Void") {
+    CHECK(command.isMember("dx") && command["dx"].isInt()) << command;
+    CHECK(command.isMember("dy") && command["dy"].isInt()) << command;
+    CHECK(command.isMember("dz") && command["dz"].isInt()) << command;
+    
+    int nd = getnd(command["dx"].asInt(), command["dy"].asInt(), command["dz"].asInt());
+    return {static_cast<char>((nd << 3) | 0b010)};
+  }
+
+  if (command_name == "GFill") {
+    CHECK(command.isMember("dx1") && command["dx1"].isInt()) << command;
+    CHECK(command.isMember("dy1") && command["dy1"].isInt()) << command;
+    CHECK(command.isMember("dz1") && command["dz1"].isInt()) << command;
+    
+    CHECK(command.isMember("dx2") && command["dx2"].isInt()) << command;
+    CHECK(command.isMember("dy2") && command["dy2"].isInt()) << command;
+    CHECK(command.isMember("dz2") && command["dz2"].isInt()) << command;
+
+    int nd = getnd(command["dx1"].asInt(), command["dy1"].asInt(), command["dz1"].asInt());
+    return {static_cast<char>((nd << 3) | 0b001),
+        static_cast<char>(command["dx2"].asInt()),
+        static_cast<char>(command["dy2"].asInt()),
+        static_cast<char>(command["dz2"].asInt())};
+  }
+
+  if (command_name == "GVoid") {
+    CHECK(command.isMember("dx1") && command["dx1"].isInt()) << command;
+    CHECK(command.isMember("dy1") && command["dy1"].isInt()) << command;
+    CHECK(command.isMember("dz1") && command["dz1"].isInt()) << command;
+    
+    CHECK(command.isMember("dx2") && command["dx2"].isInt()) << command;
+    CHECK(command.isMember("dy2") && command["dy2"].isInt()) << command;
+    CHECK(command.isMember("dz2") && command["dz2"].isInt()) << command;
+
+    int nd = getnd(command["dx1"].asInt(), command["dy1"].asInt(), command["dz1"].asInt());
+    return {static_cast<char>((nd << 3) | 0b001),
+        static_cast<char>(command["dx2"].asInt()),
+        static_cast<char>(command["dy2"].asInt()),
+        static_cast<char>(command["dz2"].asInt())};
+  }
+
+
   LOG(FATAL) << "unsupported json command " << command;
   return "";
 }
