@@ -237,8 +237,7 @@ TEST(CommandExecuter, OneFission) {
   for (int i = M + 3 ; i <= CommandExecuter::kMaxNumBots; i++) {
     EXPECT_TRUE(b_aft[1].seeds.find(i) != b_aft[1].seeds.end());
   }
-
-
 }
 
 // TODO(hiroh): test Fusion
+// TODO(hiroh): test Gvoid

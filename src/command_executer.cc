@@ -251,6 +251,40 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     }
   }
 
+  // GVoid
+  std::map<std::pair<Point, Point>, std::vector<std::pair<uint32_t, Point>>> gvoid_group;
+  for (size_t i = 0; i < commands.size(); i++) {
+    const auto& com = commands[i];
+    if (com.type != Command::Type::GVOID) {
+      continue;
+    }
+    auto bot_id = com.id;
+    LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+    LOG_ASSERT(IsNCD(com.gvoid_nd)) << com.gvoid_nd;
+    LOG_ASSERT(IsFCD(com.gvoid_fd)) << com.gvoid_fd;
+    auto pos = bot_status[bot_id].pos;
+    auto r1 = pos + com.gvoid_nd;
+    auto r2 = r1 + com.gvoid_fd;
+    LOG_ASSERT(IsValidCoordinate(r1)) << r1;
+    LOG_ASSERT(IsValidCoordinate(r2)) << r2;
+    auto r3 = Point(std::min(r1.x, r2.x), std::min(r1.y, r2.y), std::min(r1.z, r2.z));
+    auto r4 = Point(std::max(r1.x, r2.x), std::max(r1.y, r2.y),std::max(r1.z, r2.z));
+    LOG_ASSERT(IsValidCoordinate(r3)) << r3;
+    LOG_ASSERT(IsValidCoordinate(r4)) << r4;
+
+    gvoid_group[std::make_pair(r3, r4)].emplace_back(i, r1);
+  }
+  for (const auto& gg : gvoid_group) {
+    std::vector<uint32_t> bot_ids(gg.second.size());
+    for (size_t i = 0; i < gg.second.size(); i++) {
+      bot_ids[i] = gg.second[i].first;
+      for (size_t j = i + 1; j < gg.second.size(); j++) {
+        LOG_ASSERT(gg.second[i].second != gg.second[j].second) << i << " " << j << " " << gg.second[i].second;
+      }
+    }
+    GVoid(bot_ids, gg.first.first, gg.first.second);
+  }
+
   // Execute other commands
   for (const auto& c : commands) {
     auto id = c.id;
@@ -284,6 +318,9 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
       // do nothing
       fusion_count--;
       break;
+    case Command::Type::GVOID:
+      // do nothing here.
+      break;
     }
   }
 
@@ -292,14 +329,20 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   // Check volatile cordinates
   for (const auto& vcord1 : v_cords) {
     for (const auto& vcord2 : v_cords) {
-      if (vcord1.id == vcord2.id) {
-        continue;
+      bool colid = false;
+      if (vcord1.id == VolCord::kGVoid || vcord1.id == VolCord::kGFill ) {
+        // TODO(hiroh)
+      } else if (vcord1.id == VolCord::kGVoid || vcord1.id == VolCord::kGFill) {
+        // TODO(hiroh)
+      } else {
+        if (vcord1.id == vcord2.id) {
+          continue;
+        }
+        bool cold_x = ColidX(vcord1.from.x, vcord1.to.x, vcord2.from.x, vcord2.to.x);
+        bool cold_y = ColidX(vcord1.from.y, vcord1.to.y, vcord2.from.y, vcord2.to.y);
+        bool cold_z = ColidX(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
+        colid = cold_x && cold_y && cold_z;
       }
-
-      bool cold_x = ColidX(vcord1.from.x, vcord1.to.x, vcord2.from.x, vcord2.to.x);
-      bool cold_y = ColidX(vcord1.from.y, vcord1.to.y, vcord2.from.y, vcord2.to.y);
-      bool cold_z = ColidX(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
-      bool colid = cold_x && cold_y && cold_z;
       LOG_ASSERT(!colid)
         << "Invalid Move (Colid)\n"
         << "vc1: id=" << vcord1.id << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
@@ -421,10 +464,6 @@ void CommandExecuter::Void(const uint32_t bot_id, const Point& nd) {
   v_cords.emplace_back(bot_id, c1, c1);
 
   // TODO(hiroh): Update status for Grounded?
-  // For IsGrounded
-  // if (c1.y == 0 || grounded_memo[c1.x][c1.y - 1][c1.z]) {
-  //   grounded_memo[c1.x][c1.y][c1.z] = true;
-  // }
 }
 
 void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint32_t m) {
@@ -520,4 +559,34 @@ void CommandExecuter::Fusion(const uint32_t bot_id1, const Point& nd1,
 
   v_cords.emplace_back(bot_id1, bot1.pos, bot1.pos);
   v_cords.emplace_back(bot_id2, bot2.pos, bot2.pos);
+}
+
+void CommandExecuter::GVoid(const std::vector<uint32_t>& bot_ids,
+                            const Point& r1, const Point& r2) {
+  const size_t N = bot_ids.size();
+  LOG_ASSERT(N == 2 || N == 4 || N == 8) << N;
+  if (N == 2) { // Line Case
+    LOG_ASSERT(IsPath(r1, r2)) << r1 << " " << r2;
+  } else if (N == 4) { // Lectangle Case
+    LOG_ASSERT(r1.x == r2.x || r1.y == r2.y || r1.z == r2.z) << r1 << " " << r2;
+  } else { // N == 8
+    LOG_ASSERT(r1.x != r2.x && r1.y != r2.y && r1.z != r2.z) << r1 << " " << r2;;
+  }
+  for (int x = r1.x; x <= r2.x; x++) {
+    for (int y = r1.y; x <= r2.y; y++) {
+      for (int z = r1.z; z <= r2.z; z++) {
+        if (system_status.matrix[x][y][z] == FULL) {
+          system_status.matrix[x][y][z] = VOID;
+          system_status.energy -= 12;
+        } else {
+          system_status.energy += 3;
+        }
+      }
+    }
+  }
+  for (const auto& id : bot_ids) {
+    v_cords.emplace_back(id, bot_status[id].pos, bot_status[id].pos);
+  }
+  v_cords.emplace_back(VolCord::kGVoid, r1, r2);
+  // TODO(hiroh): Update status for Grounded?
 }

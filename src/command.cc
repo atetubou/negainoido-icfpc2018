@@ -185,7 +185,7 @@ Command Command::make_void(int id, Point nd) {
   ret.id = id;
   ret.type = VOID;
   ret.void_nd = nd;
-  return Command();
+  return ret;
 }
 
 Command Command::make_fusion_p(int id, Point nd) {
@@ -209,7 +209,12 @@ Command Command::make_gfill(int id, Point nd, Point fd) {
 }
 
 Command Command::make_gvoid(int id, Point nd, Point fd) {
-  return Command();
+  Command ret;
+  ret.id = id;
+  ret.type = GVOID;
+  ret.gvoid_nd = nd;
+  ret.gvoid_fd = fd;
+  return ret;
 }
 
 static bool is_same_direction(Point l, Point r) {

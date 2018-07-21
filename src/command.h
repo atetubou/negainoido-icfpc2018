@@ -45,6 +45,9 @@ struct Command {
   Point fusion_p_nd;
   // FUSION_S
   Point fusion_s_nd;
+  // GVOID
+  Point gvoid_nd;
+  Point gvoid_fd;
 
   static Json::Value CommandsToJson(const std::vector<Command>& commands);
   static Command JsonToCommand(const Json::Value);
