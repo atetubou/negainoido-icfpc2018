@@ -175,6 +175,37 @@ TEST(CommandExecuter, TwoFill) {
   CheckDefaultBotHasAlltheSeeds(b_aft);
 }
 
+TEST(CommandExecuter, FillAndRemove) {
+  const int R = 20;
+  auto ce = std::make_unique<CommandExecuter>(R, false);
+  const auto s_bef_energy = ce->GetSystemStatus().energy;
+  const size_t bef_active_bots = ce->GetActiveBotsNum();
+  Command command1;
+  command1.id = 1;
+  command1.type = Command::Type::FILL;
+  command1.fill_nd = Point(1, 0, 1);
+  std::vector<Command> com1 = {command1};
+  ce->Execute(com1);
+  const auto s_flp1_energy = ce->GetSystemStatus().energy;
+  EXPECT_EQ(s_flp1_energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots + 12);
+  EXPECT_EQ(ce->GetSystemStatus().matrix[1][0][1], FULL);
+  const size_t flp1_active_bots = ce->GetActiveBotsNum();
+  Command command2;
+  command2.id = 1;
+  command2.type = Command::Type::VOID;
+  command2.void_nd = Point(1, 0, 1);
+  std::vector<Command> com2 = {command2};
+  ce->Execute(com2);
+  const auto s_flp2_energy = ce->GetSystemStatus().energy;
+  EXPECT_EQ(s_flp2_energy - s_flp1_energy, 3 * R * R * R + 20 * flp1_active_bots - 12);
+  EXPECT_EQ(ce->GetSystemStatus().matrix[1][0][1], VOID);
+  const auto& b_aft = ce->GetBotStatus();
+  EXPECT_EQ(b_aft[1].pos, Point(0,0,0));
+  EXPECT_EQ(b_aft[1].active, true);
+  CheckDefaultBotHasAlltheSeeds(b_aft);
+}
+
+
 TEST(CommandExecuter, OneFission) {
   const int R = 10;
   auto ce = std::make_unique<CommandExecuter>(R, false);

@@ -276,6 +276,9 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     case Command::Type::FILL:
       Fill(id, c.fill_nd);
       break;
+    case Command::Type::VOID:
+      Void(id, c.void_nd);
+      break;
     case Command::Type::FUSION_P:
     case Command::Type::FUSION_S:
       // do nothing
@@ -397,6 +400,31 @@ void CommandExecuter::LMove(const uint32_t bot_id, const Point& sld1, const Poin
   v_cords.emplace_back(bot_id, c0, c1);
   v_cords.emplace_back(bot_id, c1, c2);
   system_status.energy += 2 * (MLen(sld1) + 2 + MLen(sld2));
+}
+
+void CommandExecuter::Void(const uint32_t bot_id, const Point& nd) {
+  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  LOG_ASSERT(IsNCD(nd)) << nd;
+  BotStatus& bot = bot_status[bot_id];
+  Point c0 = bot.pos;
+  Point c1 = c0 + nd;
+  LOG_ASSERT(IsValidCoordinate(c1)) << c1;
+
+  if (system_status.matrix[c1.x][c1.y][c1.z] == FULL) {
+    system_status.matrix[c1.x][c1.y][c1.z] = VOID;
+    system_status.energy -= 12;
+  } else {
+    system_status.energy += 3;
+  }
+
+  v_cords.emplace_back(bot_id, c0, c0);
+  v_cords.emplace_back(bot_id, c1, c1);
+
+  // TODO(hiroh): Update status for Grounded?
+  // For IsGrounded
+  // if (c1.y == 0 || grounded_memo[c1.x][c1.y - 1][c1.z]) {
+  //   grounded_memo[c1.x][c1.y][c1.z] = true;
+  // }
 }
 
 void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint32_t m) {
