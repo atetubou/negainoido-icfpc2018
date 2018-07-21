@@ -29,8 +29,8 @@ std::string ReadFile(absl::string_view filename) {
 
 
 vvv ReadMDL(absl::string_view filename) {
-  std::string buffer = ReadFile(filename);
-  int R = (unsigned int)buffer[0];
+  const std::string buffer = ReadFile(filename);
+  int R = static_cast<unsigned char>(buffer[0]);
   int idx = 0;
   
   vvv M(R, vv(R, v(R, 0)));
