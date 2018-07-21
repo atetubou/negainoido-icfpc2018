@@ -41,6 +41,7 @@ Json::Value Command::CommandsToJson(const std::vector<Command>& commands) {
       command["dx"] = c.fission_nd.x;
       command["dy"] = c.fission_nd.y;
       command["dz"] = c.fission_nd.z;
+      command["m"] = c.fission_m;
       break;
     case FILL:
       command["command"] = "Fill";
@@ -217,7 +218,7 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
       ++i;
       continue;
     }
-    
+
     size_t len = 0;
     size_t j = 0;
     for (; i + j < commands.size(); ++j) {
@@ -277,7 +278,7 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
         ret.push_back(tmp);
       }
     }
-    
+
     i += j;
   }
 
