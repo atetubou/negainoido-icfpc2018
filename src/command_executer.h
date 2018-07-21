@@ -47,6 +47,14 @@ class CommandExecuter {
 
   void Execute(const std::vector<Command>& commands);
 
+  const SystemStatus& GetSystemStatus() {
+    return system_status;
+  }
+  const std::array<BotStatus, kMaxNumBots+1>& GetBotStatus() {
+    return bot_status;
+  }
+  uint32_t GetActiveBotsNum();
+
   // Commands
   // Singleton Commands
   void Halt(const uint32_t bot_id);
@@ -74,7 +82,6 @@ class CommandExecuter {
   Json::Value json;
 
   // utility
-  uint32_t GetBotsNum();
   bool IsActiveBotId(const uint32_t id);
   bool IsValidCoordinate(const Point& p);
   bool IsVoidCoordinate(const Point& p);
