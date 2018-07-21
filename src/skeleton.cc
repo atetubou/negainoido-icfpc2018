@@ -31,7 +31,7 @@ Point find_one_basepoint(const vvv &M, int diff = 1) { // return lowest point if
   return Point(-1, -1, -1); // error
 }
 
-vvv PathToVVV(const Path &path, int R = -1) {
+vvv PointsToVVV(const Path &path, int R = -1) {
   if (R == -1) {
     for(const auto &v : path) {
       R = max(R, v.x + 1);
@@ -48,13 +48,14 @@ vvv PathToVVV(const Path &path, int R = -1) {
 
 class Skeleton {
   vvv M;
+  int R;
 
   vector<vvv> Ms; // remaining vertices
   vector<Path> skeletons; // extracted skeletons so far
 
   vector<Path> skeleton; // final skeleton
 public:
-  Skeleton(const vvv &M) : M(M) {}
+  Skeleton(const vvv &M) : M(M), R((int)M.size()) {}
 
   Path extract_a_skeleton(Point s) {
     queue<Point> q;
@@ -81,6 +82,8 @@ public:
           for(int dz=-1; dz<=1; dz++) {
             if (abs(dx) + abs(dy) + abs(dz) != 1) continue;
             Point w = v + Point(dx, dy, dz);
+            if (w.x < 0 || R <= w.x || w.y < 0 || R <= w.y || w.z < 0 || R <= w.z) continue;
+            if (!M[w.x][w.y][w.z]) continue;
             if (dist.count(w)) continue;
             dist[w] = d + 1;
             prev[w] = v;
@@ -91,6 +94,34 @@ public:
     }
     cerr << "FATAL: disconnected!?" << endl;
     exit(1);
+  }
+
+
+  void Enbody(const vector<Point> &points) { // nikuzuke
+    vvv dist = PointsToVVV(points, R);
+
+    queue<Point> q;
+    for(const auto &v : points) {
+      q.push(v);
+    }
+    while(!q.empty()) {
+      Point v = q.front();
+      q.pop();
+      int d = dist[v.x][v.y][v.z];
+      for(int dx=-1; dx<=1; dx++) {
+        for(int dz=-1; dz<=1; dz++) {
+          if (abs(dx) + abs(dz) != 1) continue;
+          Point w = v + Point(dx, 0, dz);
+          if (w.x < 0 || R <= w.x || w.y < 0 || R <= w.y || w.z < 0 || R <= w.z) continue;
+          if (!M[w.x][w.y][w.z]) continue;
+          if (dist[w.x][w.y][w.z]) continue;
+          dist[w.x][w.y][w.z] = d + 1;
+          q.push(w);
+        }
+      }
+    }
+
+    OutputMDL(dist);
   }
 
 };
@@ -110,5 +141,6 @@ int main(int argc, char* argv[]) {
 
   Skeleton skeleton(M);
   Path path = skeleton.extract_a_skeleton(find_one_basepoint(M));
-  OutputMDL(PathToVVV(path, R));
+  skeleton.Enbody(path);
+//  OutputMDL(PointsToVVV(path, R));
 }
