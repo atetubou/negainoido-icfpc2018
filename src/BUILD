@@ -105,6 +105,7 @@ cc_binary(
         "//src/base",
     ],
 )
+
 cc_test(
     name = "command_executer_test",
     srcs = ["command_executer_test.cc"],
