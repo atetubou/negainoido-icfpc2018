@@ -58,7 +58,7 @@ bool IsLLD(const Point& p) {
 }
 
 bool IsNCD(const Point& p) {
-  return IsLCD(p) && 0< MLen(p) && MLen(p) <= 2 && CLen(p) == 1;
+  return 0 < MLen(p) && MLen(p) <= 2 && CLen(p) == 1;
 }
 
 bool IsPath(const Point& p1, const Point& p2) {
@@ -244,6 +244,11 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     auto turn_json = Command::CommandsToJson(commands);
     json["turn"].append(std::move(turn_json));
   }
+}
+
+Json::Value CommandExecuter::GetJson() {
+  CHECK(output_json);
+  return json;
 }
 
 void CommandExecuter::PrintTraceAsJson() {
