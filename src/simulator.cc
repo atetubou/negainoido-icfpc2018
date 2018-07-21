@@ -27,6 +27,8 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
+  LOG(INFO) << "start execution";
+
   vvv M = ReadMDL(FLAGS_mdl_filename);
   int R = M.size();
 
@@ -36,8 +38,6 @@ int main(int argc, char* argv[]) {
 
   LOG(INFO) << "done read json";
   auto ce = std::make_unique<CommandExecuter>(R, false);
-
-  LOG(INFO) << "done command executor";
 
   Json::Value turns = root["turn"];
   int n = turns.size();
@@ -56,6 +56,8 @@ int main(int argc, char* argv[]) {
       LOG(INFO) << "Energy: " << ce->GetSystemStatus().energy;
     }
   }
+
+  LOG(INFO) << "done command execute";
 
   std::cout << ce->GetSystemStatus().energy << std::endl;
 
