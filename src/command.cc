@@ -218,19 +218,18 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
         if (tmp.smove_lld.Manhattan() == 0 || is_same_direction(tmp.smove_lld, commands[k].smove_lld)) {
           tmp.smove_lld += commands[k].smove_lld;
           if (tmp.smove_lld.Manhattan() >= 15) {
-            Command tmp2 = tmp;
-            tmp2.smove_lld.x = sgn(tmp.smove_lld.x) * 15;
-            tmp2.smove_lld.y = sgn(tmp.smove_lld.y) * 15;
-            tmp2.smove_lld.z = sgn(tmp.smove_lld.z) * 15;
-            tmp.smove_lld -= tmp2.smove_lld;
-            ret.push_back(tmp2);
+            Point lld  = Point(
+              sgn(tmp.smove_lld.x) * 15,
+              sgn(tmp.smove_lld.y) * 15,
+              sgn(tmp.smove_lld.z) * 15
+            );
+
+            tmp.smove_lld -= lld;
+            ret.push_back(Command::make_smove(tmp.id, lld));
           }
         } else {
           if (tmp.smove_lld.Manhattan() <= 5 && commands[k].smove_lld.Manhattan() <= 5) {
-            tmp.type = Command::LMOVE;
-            tmp.lmove_sld1 = tmp.smove_lld;
-            tmp.lmove_sld2 = commands[k].smove_lld;
-            tmp.smove_lld = Point(0,0,0);
+            tmp = Command::make_lmove(tmp.id, tmp.smove_lld, commands[k].smove_lld);
           } else {
             ret.push_back(tmp);
             tmp = commands[k];
@@ -241,13 +240,14 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
         if (is_same_direction(tmp.lmove_sld2, commands[k].smove_lld)) {
           tmp.lmove_sld2 += commands[k].smove_lld;
           if (tmp.lmove_sld2.Manhattan() >= 5) {
-            Command tmp2 = tmp;
-            tmp2.lmove_sld2.x = sgn(tmp.lmove_sld2.x) * 5;
-            tmp2.lmove_sld2.y = sgn(tmp.lmove_sld2.y) * 5;
-            tmp2.lmove_sld2.z = sgn(tmp.lmove_sld2.z) * 5;
-            ret.push_back(tmp2);
+            Point sld2 = Point(
+              sgn(tmp.lmove_sld2.x) * 5,
+              sgn(tmp.lmove_sld2.y) * 5,
+              sgn(tmp.lmove_sld2.z) * 5
+            );
+            ret.push_back(Command::make_lmove(tmp.id, tmp.lmove_sld1, sld2));
             tmp.type = Command::SMOVE;
-            tmp.smove_lld = tmp.lmove_sld2 - tmp2.lmove_sld2;
+            tmp.smove_lld = tmp.lmove_sld2 - sld2;
             tmp.lmove_sld1 = Point(0,0,0);
             tmp.lmove_sld2 = Point(0,0,0);
           }
