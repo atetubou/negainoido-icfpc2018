@@ -33,37 +33,54 @@ int total_visit = 0;
 vector<Command> get_commands_for_next(const Point& current, const Point& dest, 
                                       const evvv& voxel_states) {
   const int R = voxel_states.size();
-  queue<Point> que;
+
+  struct State {
+    State(int estimated, int current_cost, const Point& p) :
+      estimated(estimated), current_cost(current_cost), p(p) {};
+    
+    int estimated;
+    int current_cost;
+    Point p;
+    
+    bool operator<(const State& o) const {
+      return estimated > o.estimated;
+    }
+  };
+
+  std::priority_queue<State> que;
   int count = 1;
 
-  static vvv tmp_map(R, vv(R, v(R, false)));
+  static vvv tmp_map(R, vv(R, v(R, -1)));
   
   vector<Point> visited;
 
-  que.push(Point(current.x, current.y, current.z));
+  que.push(State((dest - current).Manhattan(), 0, current));
 
   while(!que.empty()) {
-    const Point tar = que.front();
+    const State st = que.top();
+    const Point cur = st.p;
     que.pop();
 
-    if (tmp_map[tar.x][tar.y][tar.z] > 0) continue;
-    tmp_map[tar.x][tar.y][tar.z]  = count;
-    visited.push_back(tar);
+    if (tmp_map[cur.x][cur.y][cur.z] >= 0) continue;
+    tmp_map[cur.x][cur.y][cur.z]  = st.current_cost;
+    visited.push_back(cur);
     ++total_visit;
     count++;
 
-    if (dest == tar) {
+    if (dest == cur) {
       break;
     }
 
     for(int i=0;i<6;i++) {
-      int nx = tar.x + dx[i];
-      int ny = tar.y + dy[i];
-      int nz = tar.z + dz[i];
+      int nx = cur.x + dx[i];
+      int ny = cur.y + dy[i];
+      int nz = cur.z + dz[i];
       if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
+        if (tmp_map[nx][ny][nz] >= 0) continue;
+
         if (voxel_states[nx][ny][nz] != VoxelState::kALREADYFILLED) {
           Point np = Point(nx,ny,nz);
-          que.push(np);
+          que.push(State(st.current_cost + 1 + (np - dest).Manhattan(), st.current_cost + 1, np));
         }
       }
     }
@@ -82,7 +99,7 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
       int nz = rc.z + dz[i];
       if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
         const int tmpv = tmp_map[nx][ny][nz];
-        if (minc > tmpv && tmpv > 0) {
+        if (minc > tmpv && tmpv >= 0) {
           mind = i;
           break;
         }
@@ -100,7 +117,7 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
   reverse(rev_commands.begin(), rev_commands.end());
 
   for (const auto& v : visited) {
-    tmp_map[v.x][v.y][v.z] = 0;
+    tmp_map[v.x][v.y][v.z] = -1;
   }
 
   return rev_commands;
