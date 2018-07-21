@@ -22,6 +22,7 @@ vector<Command> get_commands_for_next(Point &current, Point &dest, vvv &voxels) 
     queue<Point> que;
     int count = 1;
     vvv tmp_map(R,vv(R,v(R,0)));
+    cout << "R: " << R << endl;
     que.push(Point(current.x, current.y, current.z));
     cout << "bfs current: (" << current.x << "," << current.y << "," << current.z << ")" << endl;
     cout << "bfs dest: (" << dest.x << "," << dest.y << "," << dest.z << ")" << endl;
@@ -34,6 +35,7 @@ vector<Command> get_commands_for_next(Point &current, Point &dest, vvv &voxels) 
       count++;
 
       if (dest == tar) {
+        cout << "Reach dest" << endl;
         break;
       }
 
@@ -108,7 +110,6 @@ int main(int argc, char** argv) {
     int cost = pque.top().first;
     pque.pop();
     if (tar_voxels[tar.x][tar.y][tar.z] != 1) continue;
-    tar_voxels[tar.x][tar.y][tar.z] = 2;
 
     cout << "try to fill (" << tar.x << "," << tar.y << "," << tar.z << ")" << endl;
 
@@ -127,10 +128,16 @@ int main(int argc, char** argv) {
       results.push_back(command);
     }
 
-    Point next;
+    tar_voxels[tar.x][tar.y][tar.z] = 2;
+    Point next = tar;
     if (!pque.empty()) {
       next = pque.top().second;
-    } else {
+      while(tar_voxels[next.x][next.y][next.z] != 1 && !pque.empty()) {
+        pque.pop();
+        next = pque.top().second;
+      }
+    } 
+    if (next == tar){
       for(int i=0;i<6;i++) {
         int nx = tar.x + dx[i];
         int ny = tar.y + dy[i];
