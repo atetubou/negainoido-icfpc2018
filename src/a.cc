@@ -13,10 +13,11 @@
 
 DEFINE_string(mdl_filename, "", "filepath of mdl (.mdl)");
 DEFINE_string(nbt_json, "", "file path of nbt (.json)");
+DEFINE_bool(verbose, false, "verbose");
 
 int main(int argc, char* argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
 
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_mdl_filename.empty() or FLAGS_nbt_json.empty()) {
     exit(1);
   }
@@ -35,13 +36,19 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < n; ++i) {
       std::vector<Command> commands;
       int m = turns[i].size();
-      std::cout << turns[i] << std::endl;
+      if (FLAGS_verbose) {
+          std::cout << turns[i] << std::endl;
+      }
       for (int j = 0; j < m; ++j) {
           Command c = Command::JsonToCommand(turns[i][j]);
           commands.push_back(c);
       }
       ce->Execute(commands);
+      if (FLAGS_verbose) {
+          std::cout << "Energy: " << ce->GetSystemStatus().energy << std::endl;
+      }
   }
+  std::cout << ce->GetSystemStatus().energy << std::endl;
 
   return 0;
 }
