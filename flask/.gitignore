@@ -13,4 +13,5 @@ nohup.out
 *.nbt
 *.nbt.json
 *.mdl
+*.zip
 

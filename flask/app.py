@@ -7,6 +7,7 @@ from result import Ok, Ng, Result
 from typing import TypeVar,Generic,List,Any,Callable,cast
 import math
 from table import problem_size
+import subprocess
 
 app = Flask(__name__)
 dbconfig = {
@@ -50,6 +51,15 @@ def get_connection():
 @api('/test_error', 'index.html')
 def test_error():
     return Ng('test message')
+
+@api('/gen_zip', 'gen_zip.html', methods=['GET','POST'])
+def gen_zip() -> Result[Any]:
+    if request.method != 'POST':
+        return Ok(list(os.listdir('static/zip')))
+
+    subprocess.call('python dump_best_solutions.py', shell =True)
+    return Ok(list(os.listdir('static/zip')))
+
 
 @api('/test_insert', 'test_insert.html', methods=['GET','POST'])
 def test_insert() -> Result[None]:
