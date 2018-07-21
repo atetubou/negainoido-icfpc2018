@@ -179,6 +179,18 @@ std::vector<std::pair<int, int>> Getdxzs(int R, int n) {
   return dxzs;
 }
 
+bool IsAllEmpty(int y, int lx, int lz, int hx, int hz, const vvv& voxels) {
+  for (int x = lx; x <= hx; ++x) {
+    for (int z = lz; z <= hz; ++z) {
+      if (voxels[x][y][z]) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   
@@ -270,14 +282,20 @@ int main(int argc, char** argv) {
       }
       
       for (const auto& xz : dxzs) {
-        json["turn"].append(GVoids(n + 1));
+        if (!IsAllEmpty(y - 1, lx, lz, hx, hz, voxels)) {
+          json["turn"].append(GVoids(n + 1));
+        }
+
         json["turn"].append(SMoves(xz.first, 0, xz.second));
         lx += xz.first;
         hx += xz.first;
         lz += xz.second;
         hz += xz.second;
       }
-      json["turn"].append(GVoids(n + 1));
+
+      if (!IsAllEmpty(y - 1, lx, lz, hx, hz, voxels)) {
+        json["turn"].append(GVoids(n + 1));
+      }
 
       json["turn"].append(SMoves(0, -1, 0));
 
