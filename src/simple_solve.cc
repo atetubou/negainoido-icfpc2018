@@ -24,6 +24,7 @@ vector<Command> get_commands_for_next(Point &current, Point &dest, vvv &voxels) 
     int count = 1;
     vvv tmp_map(R,vv(R,v(R,0)));
     que.push(Point(current.x, current.y, current.z));
+
     while(!que.empty()) {
       Point tar = que.front();
       que.pop();
@@ -48,6 +49,9 @@ vector<Command> get_commands_for_next(Point &current, Point &dest, vvv &voxels) 
         }
       }
     }
+
+    LOG_IF(FATAL, tmp_map[dest.x][dest.y][dest.z] == 0) << "can not reach to dest";
+
     vector<Command> rev_commands;
     Point rc = dest;
     while(rc != current) {
@@ -88,9 +92,11 @@ int main(int argc, char** argv) {
 
   priority_queue<pair<int, Point>, vector< pair<int, Point> >, greater< pair<int, Point> > > pque;
 
-  for (int x = 0; x < (int)tar_voxels.size(); x++)  for (int y = 0; y < (int)tar_voxels[x].size(); y++) for(int z = 0; z < (int) tar_voxels[y].size(); z++) {
-    if (tar_voxels[x][y][z] == 1 && y == 0) {
-      pque.push(make_pair(x+z, Point(x,0, z)));
+  for (int x = 0; x < (int)tar_voxels.size(); x++) {
+    for(int z = 0; z < (int) tar_voxels[0].size(); z++) {
+      if (tar_voxels[x][0][z] == 1) {
+        pque.push(make_pair(x+z, Point(x, 0, z)));
+      }
     }
   }
 
@@ -99,12 +105,15 @@ int main(int argc, char** argv) {
 
   int R = tar_voxels.size();
 
+  vector<Point> visit_order;
+  visit_order.emplace_back(0, 0, 0);
+
   while(!pque.empty()) {
     Point tar = pque.top().second;
     int cost = pque.top().first;
     pque.pop();
-    if (tar_voxels[tar.x][tar.y][tar.z] != 1) continue;
 
+    CHECK_EQ(tar_voxels[tar.x][tar.y][tar.z], 1);
 
     for(int i=0;i<6;i++) {
       int nx = tar.x + dx[i];
@@ -112,7 +121,7 @@ int main(int argc, char** argv) {
       int nz = tar.z + dz[i];
       if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
         if (tar_voxels[nx][ny][nz] == 1) {
-          pque.push(make_pair(cost+1, Point(nx,ny,nz)));
+          pque.push(make_pair(nx + ny + nz, Point(nx,ny,nz)));
         }
       }
     }
@@ -125,6 +134,7 @@ int main(int argc, char** argv) {
     Point next = tar;
     if (!pque.empty()) {
       next = pque.top().second;
+      CHECK_NE(tar_voxels[next.x][next.y][next.z], 0);
       while(tar_voxels[next.x][next.y][next.z] != 1 && !pque.empty()) {
         pque.pop();
         next = pque.top().second;
@@ -142,9 +152,8 @@ int main(int argc, char** argv) {
             break;
           }
         }
-        if (i==5) {
-          LOG(FATAL) << "In space ship";
-        }
+        
+        LOG_IF(FATAL, i == 5) << "In space ship";
       }
     }
 

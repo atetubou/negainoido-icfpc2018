@@ -10,6 +10,7 @@
 // Constructors
 CommandExecuter::SystemStatus::SystemStatus(int r)
   : R(r), energy(0), harmonics(LOW) {
+  LOG_ASSERT(r <= kMaxResolution) << r;
   // TODO(hiroh): can this be replaced by matrix{}?
   memset(matrix, 0, sizeof(matrix));
 }
