@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
     LOG(INFO) << "read from json";
     std::ifstream is(std::string(FLAGS_nbt_filename), std::ifstream::binary);
     Json::Value root; is >> root;
-    Json::Value turns = std::move(root["turn"]);
+    turns = std::move(root["turn"]);
   } else {
     LOG(INFO) << "read from binary";
     nbt_content = ReadFile(FLAGS_nbt_filename);
@@ -59,6 +59,7 @@ int main(int argc, char* argv[]) {
   if (FLAGS_from_json) {
 
     int n = turns.size();
+    LOG(INFO) << "JSON length: " << n;
     for (int i = 0; i < n; ++i) {
       std::vector<Command> commands;
       int m = turns[i].size();
@@ -72,6 +73,7 @@ int main(int argc, char* argv[]) {
       ce->Execute(commands);
       if (FLAGS_verbose) {
         LOG(INFO) << "Energy: " << ce->GetSystemStatus().energy;
+        LOG(INFO) << "Harmonics: " << ce->GetSystemStatus().harmonics;
       }
     }
 
@@ -98,13 +100,40 @@ int main(int argc, char* argv[]) {
         ce->Execute(commands);
         if (FLAGS_verbose) {
             LOG(INFO) << "Energy: " << ce->GetSystemStatus().energy;
+            LOG(INFO) << "Harmonics: " << ce->GetSystemStatus().harmonics;
         }
     }
   }
 
   LOG(INFO) << "done command execute";
+  LOG(INFO) << "active bots num: " << ce->GetActiveBotsNum();
+  LOG(INFO) << "Harmonics: " << ce->GetSystemStatus().harmonics;
+
+  // Halt?
+  if (ce->GetActiveBotsNum() > 0) {
+      std::cout << -1 << std::endl;
+      exit(1);
+  }
+
+  // Low?
+  if (ce->GetSystemStatus().harmonics != LOW) {
+      std::cout << -2 << std::endl;
+      exit(1);
+  }
+
+  // Full?
+  auto&N = ce->GetSystemStatus().matrix;
+  for (int x = 0; x < R; ++x) {
+    for (int y = 0; y < R; ++y) {
+      for (int z = 0; z < R; ++z) {
+        if (M[x][y][z] != N[x][y][z]) {
+          std::cout << -3 << std::endl;
+          exit(1);
+        }
+      }
+    }
+  }
 
   std::cout << ce->GetSystemStatus().energy << std::endl;
-
   return 0;
 }
