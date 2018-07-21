@@ -10,9 +10,9 @@ struct Point {
 
   Point() = default;
   Point(int x, int y, int z) : x(x), y(y), z(z) {}
-  Point operator+ (const Point& p);
+  Point operator+ (const Point& p) const;
   Point& operator+= (const Point& p);
-  Point operator- (const Point& p);
+  Point operator- (const Point& p) const;
   Point& operator-= (const Point& p);
 };
 
