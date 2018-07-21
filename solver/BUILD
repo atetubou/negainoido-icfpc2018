@@ -32,6 +32,7 @@ cc_binary(
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
         "//src/base",
         "//src:command_executer",
     ],
