@@ -63,6 +63,10 @@ class CommandExecuter {
 
  private:
   struct VolCord {
+    enum {
+      kGFill = 1106,
+      kGVoid = 1111,
+    };
     uint32_t id;
     Point from;
     Point to; // enclosed region [From, To].
@@ -93,9 +97,13 @@ class CommandExecuter {
   void SMove(const uint32_t bot_id, const Point& lld);
   void LMove(const uint32_t bot_id, const Point& sld1, const Point& sld2);
   void Fill(const uint32_t bot_id, const Point& nd);
+  void Void(const uint32_t bot_id, const Point& nd);
+
   void Fission(const uint32_t bot_id, const Point& nd, const uint32_t m);
   void Fusion(const uint32_t bot_id1, const Point& nd1,
               const uint32_t bot_id2, const Point& nd2);
+  void GVoid(const std::vector<uint32_t>& bot_ids,
+             const Point& r1, const Point& r2);
 };
 
 #endif

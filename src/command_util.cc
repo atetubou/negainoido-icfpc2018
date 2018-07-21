@@ -79,6 +79,10 @@ bool IsNCD(const Point& p) {
   return 0 < MLen(p) && MLen(p) <= 2 && CLen(p) == 1;
 }
 
+bool IsFCD(const Point& p) {
+  return 0 < CLen(p) && CLen(p) <= 30;
+}
+
 bool IsPath(const Point& p1, const Point& p2) {
   Point p(abs(p1.x - p2.x),
           abs(p1.y - p2.y),

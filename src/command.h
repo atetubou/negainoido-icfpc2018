@@ -34,6 +34,8 @@ struct Command {
   // Lmove
   Point lmove_sld1;
   Point lmove_sld2;
+  // Void
+  Point void_nd;
   // FISSION
   Point fission_nd;
   uint32_t fission_m;
@@ -43,6 +45,9 @@ struct Command {
   Point fusion_p_nd;
   // FUSION_S
   Point fusion_s_nd;
+  // GVOID
+  Point gvoid_nd;
+  Point gvoid_fd;
 
   static Json::Value CommandsToJson(const std::vector<Command>& commands);
   static Command JsonToCommand(const Json::Value);

@@ -36,11 +36,18 @@ Json::Value Command::CommandsToJson(const std::vector<Command>& commands) {
       command["dy2"] = c.lmove_sld2.y;
       command["dz2"] = c.lmove_sld2.z;
       break;
+    case VOID:
+      command["command"] = "Void";
+      command["dx"] = c.void_nd.x;
+      command["dy"] = c.void_nd.y;
+      command["dz"] = c.void_nd.z;
+      break;
     case FISSION:
       command["command"] = "Fission";
       command["dx"] = c.fission_nd.x;
       command["dy"] = c.fission_nd.y;
       command["dz"] = c.fission_nd.z;
+      command["m"] = c.fission_m;
       break;
     case FILL:
       command["command"] = "Fill";
@@ -174,7 +181,11 @@ Command Command::make_fill(int id, Point nd) {
 }
 
 Command Command::make_void(int id, Point nd) {
-  return Command();
+  Command ret;
+  ret.id = id;
+  ret.type = VOID;
+  ret.void_nd = nd;
+  return ret;
 }
 
 Command Command::make_fusion_p(int id, Point nd) {
@@ -198,7 +209,12 @@ Command Command::make_gfill(int id, Point nd, Point fd) {
 }
 
 Command Command::make_gvoid(int id, Point nd, Point fd) {
-  return Command();
+  Command ret;
+  ret.id = id;
+  ret.type = GVOID;
+  ret.gvoid_nd = nd;
+  ret.gvoid_fd = fd;
+  return ret;
 }
 
 static bool is_same_direction(Point l, Point r) {
@@ -217,7 +233,7 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
       ++i;
       continue;
     }
-    
+
     size_t len = 0;
     size_t j = 0;
     for (; i + j < commands.size(); ++j) {
@@ -277,7 +293,7 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
         ret.push_back(tmp);
       }
     }
-    
+
     i += j;
   }
 
