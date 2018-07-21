@@ -43,6 +43,7 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
+    ],
 )
 
 cc_binary(
