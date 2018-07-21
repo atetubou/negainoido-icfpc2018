@@ -28,6 +28,8 @@ using ev = std::vector<VoxelState>;
 using evv = std::vector<ev>;
 using evvv = std::vector<evv>;
 
+int total_visit = 0;
+
 vector<Command> get_commands_for_next(const Point& current, const Point& dest, 
                                       const evvv& voxel_states) {
   const int R = voxel_states.size();
@@ -47,6 +49,7 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
     if (tmp_map[tar.x][tar.y][tar.z] > 0) continue;
     tmp_map[tar.x][tar.y][tar.z]  = count;
     visited.push_back(tar);
+    ++total_visit;
     count++;
 
     if (dest == tar) {
@@ -188,7 +191,7 @@ int main(int argc, char** argv) {
 
   results.push_back(Command::make_halt(1));
 
-  LOG(INFO) << "done path construction";
+  LOG(INFO) << "done path construction total_visit " << total_visit;
 
   Json::Value json;  
   json["turn"].append(Command::CommandsToJson(results));
