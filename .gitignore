@@ -5,3 +5,6 @@
 /bazel-testlogs
 *.swap
 *~
+/shared/*.mdl
+/shared/*.nbt
+/shared/problemsL.txt

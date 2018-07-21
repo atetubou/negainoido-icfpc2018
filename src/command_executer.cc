@@ -38,60 +38,6 @@ CommandExecuter::CommandExecuter(int R, bool output_json)
 
 CommandExecuter::~CommandExecuter() {}
 
-// Utilities
-bool IsLCD(const Point& p) {
-  if ((p.x != 0 && p.y == 0 && p.z == 0) ||
-      (p.x == 0 && p.y != 0 && p.z == 0) ||
-      (p.x == 0 && p.y == 0 && p.z != 0)) {
-    return true;
-  }
-  return false;
-}
-
-uint32_t MLen(const Point& p) {
-  return abs(p.x) + abs(p.y) + abs(p.z);
-}
-
-uint32_t CLen(const Point& p) {
-  return std::max({abs(p.x), abs(p.y), abs(p.z)});
-}
-
-bool IsSLD(const Point& p) {
-  return IsLCD(p) && MLen(p) <= 5;
-}
-
-bool IsLLD(const Point& p) {
-  return IsLCD(p) && MLen(p) <= 15;
-}
-
-bool IsNCD(const Point& p) {
-  return 0 < MLen(p) && MLen(p) <= 2 && CLen(p) == 1;
-}
-
-bool IsPath(const Point& p1, const Point& p2) {
-  Point p(abs(p1.x - p2.x),
-          abs(p1.y - p2.y),
-          abs(p1.z - p2.z));
-  return IsLCD(p);
-}
-
-bool ColidX(int from_x1, int to_x1, int from_x2, int to_x2) {
-
-  if (from_x1 > to_x1)
-    std::swap(from_x1, to_x1);
-
-  if (from_x2 > to_x2)
-    std::swap(from_x2, to_x2);
-
-  if (from_x1 <= from_x2 && from_x2 <= to_x1)
-    return true;
-
-  if (from_x2 <= from_x1 && from_x1 <= to_x2)
-    return true;
-
-  return false;
-}
-
 uint32_t CommandExecuter::GetActiveBotsNum() {
 #ifdef CE_DEBUG
   size_t cnt_num_active_bots = 0;
@@ -166,11 +112,13 @@ bool CommandExecuter::IsGrounded(const Point& p) {
   if (always_low) {
     return grounded_memo[p.x][p.y][p.z];
   } else {
-    return IsGroundedSlow(p);
+    return IsGroundedSlow(p, false);
   }
 }
 
-bool CommandExecuter::IsGroundedSlow(const Point& p) {
+bool CommandExecuter::IsGroundedSlow(const Point& p, bool check_all_mode) {
+  // If check_all_mode is 'true', ignore p and
+  // check if every FULL point is grounded
 
   const int adj_dx[] = {-1, 1, 0, 0, 0, 0};
   const int adj_dy[] = { 0, 0,-1, 1, 0, 0};
@@ -179,10 +127,17 @@ bool CommandExecuter::IsGroundedSlow(const Point& p) {
   static int memo[kMaxResolution][kMaxResolution][kMaxResolution];
 
   const int R = system_status.R;
-  for (int x=0; x<R; ++x)
-    for (int y=0; y<R; ++y)
-        for (int z=0; z<R; ++z)
-          memo[x][y][z] = 0;
+  int full_num = 0;
+  for (int x=0; x<R; ++x) {
+    for (int y=0; y<R; ++y) {
+      for (int z=0; z<R; ++z) {
+        memo[x][y][z] = 0;
+        if (system_status.matrix[x][y][z] == FULL) {
+          full_num++;
+        }
+      }
+    }
+  }
 
   SystemStatus& status = system_status;
 
@@ -192,6 +147,7 @@ bool CommandExecuter::IsGroundedSlow(const Point& p) {
       if (status.matrix[x][0][z] == VOID) continue;
       s.push(Point(x, 0, z));
       memo[x][0][z] = 1;
+      full_num--;
     }
   }
 
@@ -206,15 +162,67 @@ bool CommandExecuter::IsGroundedSlow(const Point& p) {
         if (memo[x][y][z]) continue;
         if (status.matrix[x][y][z] == VOID) continue;
         memo[x][y][z] = 1;
+        full_num--;
         s.push(Point(x, y, z));
       }
   }
 
-  return (memo[p.x][p.y][p.z] == 1);
+  if (check_all_mode) {
+    return full_num == 0;
+  } else {
+    return (memo[p.x][p.y][p.z] == 1);
+  }
+}
+
+void CommandExecuter::VerifyWellFormedSystem() {
+  // Check if the harmonics is Low, then all Full voxels of the matrix are grounded.
+  CHECK(system_status.harmonics == HIGH ||
+        IsGroundedSlow(Point(0,0,0), true));
+
+  // The position of each active nanobot is distinct and is Void in the matrix.
+  std::set<Point> p_set;
+  std::set<uint32_t> seed_set;
+  uint32_t len = 0;
+  for (int i = 0; i < CommandExecuter::kMaxNumBots; ++i) {
+    if (bot_status[i].active) {
+      Point &p = bot_status[i].pos;
+      p_set.insert(p);
+      LOG_ASSERT(system_status.matrix[p.x][p.y][p.z] == VOID) << p;
+
+      for (auto x : bot_status[i].seeds) {
+        seed_set.insert(x);
+      }
+      len += bot_status[i].seeds.size();
+    }
+  }
+  CHECK(p_set.size() == num_active_bots);
+
+  // The seeds of each active nanobot are disjoint.
+  CHECK(seed_set.size() == len);
+
+  // The seeds of each active nanobot does not include
+  // the identifier of any active nanobot.
+  for (auto seed : seed_set) {
+    CHECK(!bot_status[seed].active);
+  }
+}
+
+void VerifyCommandSeq(const std::vector<Command>& commands) {
+
+  std::set<uint32_t> bot_id_set;
+  for (auto c : commands) {
+    bot_id_set.insert(c.id);
+  }
+
+  CHECK(commands.size() == bot_id_set.size());
 }
 
 void CommandExecuter::Execute(const std::vector<Command>& commands) {
-// Update energy
+
+  VerifyWellFormedSystem();
+  VerifyCommandSeq(commands);
+
+  // Update energy
   const long long R = system_status.R;
   if (system_status.harmonics == HIGH) {
     system_status.energy += 30 * R * R * R;

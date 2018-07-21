@@ -84,7 +84,8 @@ class CommandExecuter {
   bool IsVoidCoordinate(const Point& p);
   bool IsVoidPath(const Point& p1, const Point& p2);
 
-  bool IsGroundedSlow(const Point&);
+  bool IsGroundedSlow(const Point&, bool);
+  void VerifyWellFormedSystem();
 
   void Halt(const uint32_t bot_id);
   void Wait(const uint32_t bot_id);
