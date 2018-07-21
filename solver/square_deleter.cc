@@ -184,12 +184,28 @@ int main(int argc, char** argv) {
   
   const vvv voxels = ReadMDL(FLAGS_mdl_filename);
   const int R = voxels.size();
-  
+
+  int maxy = 0;
+  for (int y = R - 1; y >= 0; --y) {
+    for (int x = 0; x < R; ++x) {
+      for (int z = 0; z < R; ++z) {
+        if (voxels[x][y][z]) {
+          maxy = y + 1;
+          break;
+        }
+      }
+    }
+    
+    if (maxy) {
+      break;
+    }
+  }
+
   // TODO(tikuta): replace commands
   Json::Value json;
   
-  for (int y = 0; y < R - 1; ) {
-    int ny = std::min(y + 15, R - 1);
+  for (int y = 0; y < maxy - 1; ) {
+    int ny = std::min(y + 15, maxy - 1);
     Json::Value smove = SMove(1, 0, ny - y, 0);
 
     json["turn"].append(ToArray({smove}));
@@ -242,7 +258,7 @@ int main(int argc, char** argv) {
   int hz = n + 1;
   
   {
-    for (int y = R - 1; y >= 1; --y) {
+    for (int y = maxy; y >= 1; --y) {
       // Flip
       if (y == 1) {
         json["turn"].append(ToArray({
