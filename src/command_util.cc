@@ -36,15 +36,11 @@ bool operator!=(const Point& p1, const Point& p2) {
 }
 
 bool operator<(const Point& p1, const Point& p2) {
-  if (p1.x < p2.x) return true;
-  if (p1.z < p2.z) return true;
-  return p1.y < p2.y;
+  return std::make_tuple(p1.x, p1.z, p1.y) < std::make_tuple(p2.x, p2.z, p2.y);
 }
 
 bool operator>(const Point& p1, const Point& p2) {
-  if (p1.x > p2.x) return true;
-  if (p1.z > p2.z) return true;
-  return p1.y > p2.y;
+  return std::make_tuple(p1.x, p1.z, p1.y) > std::make_tuple(p2.x, p2.z, p2.y);
 }
 
 std::ostream& operator << (std::ostream &out, const Point &p) {
