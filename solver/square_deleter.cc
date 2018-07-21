@@ -10,6 +10,7 @@
 #include "src/command.h"
 
 DEFINE_string(mdl_filename, "", "filepath of mdl");
+DEFINE_bool(flip, false, "do flip?");
 
 Json::Value SMove(int bot_id, int dx, int dy, int dz) {
   Json::Value json;
@@ -143,8 +144,6 @@ std::vector<std::pair<int, int>> Getdxzs(int R, int n) {
   int dz[] = {0, 1, 0, 1};
   int didx = 0;
 
-  bool end = false;
-
   while (true) {
     int i = 1;
     for (; i <= n; ++i) {
@@ -154,18 +153,15 @@ std::vector<std::pair<int, int>> Getdxzs(int R, int n) {
       }
     }
     
-    if (i == 1 && end) {
+    if (i == 1 && dz[didx] == 1) {
       break;
     }
 
     if (i == 1) {
       didx = (didx + 1) % 4;
-      end = true;
       continue;
     }
 
-    end = false;
-    
     --i;
     dxzs.emplace_back(dx[didx] * i, dz[didx] * i);
     
@@ -174,6 +170,10 @@ std::vector<std::pair<int, int>> Getdxzs(int R, int n) {
 
     lz += dz[didx] * i;
     hz += dz[didx] * i;
+
+    if (dz[didx] == 1) {
+      didx = (didx + 1) % 4;
+    }
   }
 
   return dxzs;
@@ -238,13 +238,15 @@ int main(int argc, char** argv) {
       }));  
   
   
-  // Flip
-  json["turn"].append(ToArray({
-        Flip(1),
-          Wait(2),
-          Wait(3),
-          Wait(4),
-      }));
+  if (FLAGS_flip) {
+    // Flip
+    json["turn"].append(ToArray({
+          Flip(1),
+            Wait(2),
+            Wait(3),
+            Wait(4),
+            }));
+  }
 
   // TODO: 30x30
 
@@ -257,8 +259,8 @@ int main(int argc, char** argv) {
   
   {
     for (int y = maxy; y >= 1; --y) {
-      // Flip
-      if (y == 1) {
+      if (y == 1 && FLAGS_flip) {
+        // Flip
         json["turn"].append(ToArray({
               Flip(1),
                 Wait(2),
@@ -266,8 +268,7 @@ int main(int argc, char** argv) {
                 Wait(4),
                 }));
       }
-
-
+      
       for (const auto& xz : dxzs) {
         json["turn"].append(GVoids(n + 1));
         json["turn"].append(SMoves(xz.first, 0, xz.second));
