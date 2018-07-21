@@ -66,6 +66,32 @@ def test_insert() -> Result[None]:
         curr.close()
         conn.close()
 
+@api('/submit_solution', 'submit_solution.html', methods=['GET','POST'])
+def submit_solution() -> Result[None]:
+    if request.method != 'POST':
+        return Ok(None)
+
+    problem_id = request.form.get('problem_id', None)
+    solver_id = request.form.get('solver_id', None)
+    comment = request.form.get('comment', None)
+    nbt = request.files.get('nbt', None)
+
+    if not problem_id:
+        return Ng('problem_id is missing')
+    if not solver_id:
+        return Ng('solver_id is missing')
+    if not nbt:
+        return Ng('nbt file is missing')
+
+    conn = get_connection()
+    curr = conn.cursor()
+    curr.execute('insert into solutions(problem_id,solver_id,comment) values(%s,%s,%s)',(problem_id, solver_id, comment))
+    id = curr.lastrowid
+    nbt.save('static/solutions/%d.nbt' % id)
+    conn.commit()
+    return Ok(None)
+       
+
 @api('/test_select', 'test_select.html')
 def test_select() -> Result[List[Any]]:
     conn = get_connection()
@@ -82,7 +108,7 @@ def list_solution() -> Result[List[Any]]:
     conn = get_connection()
     curr = conn.cursor(dictionary=True)
     try:
-        curr.execute("select id,problem_id,solver_id, score, comment, created_at from solutions order by id desc limit 100")
+        curr.execute("select id,problem_id,solver_id, score, comment, created_at from solutions order by id desc")
         return Ok(list(curr))
     finally:
         curr.close()
@@ -100,6 +126,7 @@ def list_problem() -> Result[List[Any]]:
     finally:
         curr.close()
         conn.close()
+
 
 @api('/list_solution/<int:id>', 'solution_id.html')
 def solution_id(id : int) -> Result[Any]:

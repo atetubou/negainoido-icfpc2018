@@ -3,6 +3,8 @@ if [ ! -e env ]; then
     virtualenv env
 fi
 
+(cd ../; bazel build //...)
+
 source env/bin/activate
 set -eu
 source secret.sh
@@ -11,6 +13,7 @@ mysql -u $DBUSER -p"$DBPASS" $DBNAME < schema.sql
 
 python import_problems.py
 python import_default_solution.py
+./launch_batch.sh
 
 ./run_test.sh 
 if [ $FLASK_ENV = production ]; then
