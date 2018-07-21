@@ -8,14 +8,18 @@ import os
 
 base_path = os.path.dirname(os.path.abspath(__file__))
 
-mdl = os.path.sys.argv[1]
+mdl = sys.argv[1]
 nbt = sys.argv[2]
 url = 'file://' + base_path + '/tracer.html'
 
 if not os.path.isabs(mdl):
     mdl = os.path.normpath(os.path.join(base_path, mdl))
+else:
+    mdl = os.path.normpath(mdl)
 if not os.path.isabs(nbt):
     nbt = os.path.normpath(os.path.join(base_path, nbt))
+else:
+    nbt = os.path.normpath(nbt)
 
 options = ChromeOptions()
 # ヘッドレスモードを有効にする（次の行をコメントアウトすると画面が表示される）。
