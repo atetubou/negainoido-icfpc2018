@@ -28,7 +28,6 @@ options.add_argument('--headless')
 driver = Chrome(options=options)
 
 driver.get(url)
-driver.save_screenshot('tracer.png')
 
 assert 'ICFP' in driver.title
 
