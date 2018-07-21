@@ -1,3 +1,5 @@
+package(default_visibility = ["//visibility:public"])
+
 cc_binary(
     name = "nbt_viewer",
     srcs = ["nbt_viewer.cc"],
@@ -7,6 +9,14 @@ cc_binary(
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
     ],
+)
+
+cc_library(
+    name = "command_util",
+    srcs = ["command_util.h",
+            "command_util.cc",
+    ],
+    copts = ["-std=c++14"],
 )
 
 cc_library(
