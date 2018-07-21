@@ -27,4 +27,13 @@ bool operator<(const Point& p1, const Point& p2);
 
 bool operator>(const Point& p1, const Point& p2);
 std::ostream& operator << (std::ostream &out, const Point &p);
+
+bool IsLCD(const Point& p);
+uint32_t MLen(const Point& p);
+uint32_t CLen(const Point& p);
+bool IsSLD(const Point& p);
+bool IsLLD(const Point& p);
+bool IsNCD(const Point& p);
+bool IsPath(const Point& p1, const Point& p2);
+bool ColidX(int from_x1, int to_x1, int from_x2, int to_x2);
 #endif
