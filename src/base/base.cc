@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include "glog/logging.h"
+#include <iostream>
 
 std::string ReadFile(absl::string_view filename) {
   // http://www.cplusplus.com/reference/istream/istream/read/
@@ -75,6 +76,24 @@ void WriteMDL(absl::string_view filename, const vvv &M) {
         }
       }
     }
+  }
+  if (i > 0) {
+    os.write((char *)&b, 1);
+  }
+}
+
+// Ouptut MDL file to stdout from bottom to top
+void OutputMDL(const vvv &M) {
+  int R = (int)M.size();
+
+  for (int y=0; y<R; ++y) {
+    for (int x=0;x<R;++x) {
+      for (int z=0;z<R;++z) {
+        std::cout << M[x][y][z] << " ";
+      }
+      std::cout << std::endl;
+    }
+    std::cout << std::endl;
   }
 }
 

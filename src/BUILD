@@ -86,3 +86,32 @@ cc_binary(
         "//src/base",
     ],
 )
+
+cc_binary(
+    name = "skeleton",
+    srcs = ["skeleton.cc",
+            "command.h",
+            "command.cc",
+            "command_executer.h",
+            "command_executer.cc",
+            "command_util.h",
+            "command_util.cc",
+    ],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+    ],
+)
+
+cc_test(
+    name = "command_executer_test",
+    srcs = ["command_executer_test.cc"],
+    copts = ["-std=c++14"],
+    deps = [
+        ":command_executer",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

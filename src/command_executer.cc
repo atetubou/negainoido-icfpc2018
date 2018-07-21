@@ -1,5 +1,6 @@
 #include "command_executer.h"
 
+#include <iostream>
 #include <algorithm>
 
 #define UNREACHABLE() CHECK(false)
@@ -9,6 +10,7 @@
 // Constructors
 CommandExecuter::SystemStatus::SystemStatus(int r)
   : R(r), energy(0), harmonics(LOW) {
+  LOG_ASSERT(r <= kMaxResolution) << r;
   // TODO(hiroh): can this be replaced by matrix{}?
   memset(matrix, 0, sizeof(matrix));
 }
@@ -56,7 +58,7 @@ bool IsLLD(const Point& p) {
 }
 
 bool IsNCD(const Point& p) {
-  return IsLCD(p) && 0< MLen(p) && MLen(p) <= 2 && CLen(p) == 1;
+  return 0 < MLen(p) && MLen(p) <= 2 && CLen(p) == 1;
 }
 
 bool IsPath(const Point& p1, const Point& p2) {
@@ -66,14 +68,21 @@ bool IsPath(const Point& p1, const Point& p2) {
   return IsLCD(p);
 }
 
-bool Colid(int from_x1, int to_x1, int from_x2, int to_x2) {
-  if (to_x1 < from_x2) {
-    return false;
-  } else if (from_x2 > to_x1) {
-    return from_x1 <= to_x2;
-  } else {//to_x1 == from_x2
+bool ColidX(int from_x1, int to_x1, int from_x2, int to_x2) {
+
+  if (from_x1 > to_x1)
+    std::swap(from_x1, to_x1);
+
+  if (from_x2 > to_x2)
+    std::swap(from_x2, to_x2);
+
+  if (from_x1 <= from_x2 && from_x2 <= to_x1)
     return true;
-  }
+
+  if (from_x2 <= from_x1 && from_x1 <= to_x2)
+    return true;
+
+  return false;
 }
 
 uint32_t CommandExecuter::GetActiveBotsNum() {
@@ -147,8 +156,19 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
 }
 
 void CommandExecuter::Execute(const std::vector<Command>& commands) {
-  int fusion_count = 0;
 
+  // Update energy
+  const long long R = system_status.R;
+  if (system_status.harmonics == HIGH) {
+    system_status.energy += 30 * R * R * R;
+  } else {
+    system_status.energy += 3 * R * R * R;
+  }
+
+  system_status.energy += 20 * num_active_bots;
+
+  int fusion_count = 0;
+  // Execute FusionP and FusionS
   for (auto com1 : commands) {
     for (auto com2 : commands) {
       if (com1.id != com2.id &&
@@ -166,6 +186,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     }
   }
 
+  // Execute other commands
   for (const auto& c : commands) {
     auto id = c.id;
     switch(c.type) {
@@ -199,15 +220,20 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   }
 
   LOG_ASSERT(fusion_count == 0) << fusion_count;
+
   // Check volatile cordinates
   for (const auto& vcord1 : v_cords) {
     for (const auto& vcord2 : v_cords) {
       if (vcord1.id == vcord2.id) {
         continue;
       }
-      bool cold_x = Colid(vcord1.from.x, vcord1.to.x, vcord2.from.x, vcord2.to.x);
-      bool cold_y = Colid(vcord1.from.y, vcord1.to.y, vcord2.from.y, vcord2.to.y);
-      bool cold_z = Colid(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
+
+      LOG_ASSERT(IsLCD(vcord1.from - vcord1.to)) << vcord1.from << " " << vcord1.to;
+      LOG_ASSERT(IsLCD(vcord2.from - vcord2.to)) << vcord2.from << " " << vcord2.to;
+
+      bool cold_x = ColidX(vcord1.from.x, vcord1.to.x, vcord2.from.x, vcord2.to.x);
+      bool cold_y = ColidX(vcord1.from.y, vcord1.to.y, vcord2.from.y, vcord2.to.y);
+      bool cold_z = ColidX(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
       LOG_ASSERT(cold_x && cold_y && cold_z) << "Invalid Move (Colid)\n"
                                                 << "vc1: id=" << vcord1.id << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
                                                 << "vc2: id=" << vcord2.id << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
@@ -217,6 +243,17 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   if (output_json) {
     auto turn_json = Command::CommandsToJson(commands);
     json["turn"].append(std::move(turn_json));
+  }
+}
+
+Json::Value CommandExecuter::GetJson() {
+  CHECK(output_json);
+  return json;
+}
+
+void CommandExecuter::PrintTraceAsJson() {
+  if (output_json) {
+    std::cout << json << std::endl;
   }
 }
 
@@ -292,7 +329,7 @@ void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint
   LOG_ASSERT(!bot_status[bot_id].seeds.empty()) << bot_status[bot_id].seeds.size();
   BotStatus& bot = bot_status[bot_id];
   Point c0 = bot.pos;
-  Point c1 = c1 + nd;
+  Point c1 = c0 + nd;
   LOG_ASSERT(IsValidCoordinate(c1)) << c1;
   LOG_ASSERT(IsVoidCoordinate(c1)) << c1;
 
@@ -302,7 +339,7 @@ void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint
   auto seeds_iter = bot.seeds.begin();
 
   uint32_t newbot_id = *seeds_iter++;
-  LOG_ASSERT(bot_status[newbot_id].active == false);
+  LOG_ASSERT(bot_status[newbot_id].active == false) << newbot_id;
   BotStatus& newbot = bot_status[newbot_id];
   newbot.active = true;
   newbot.pos = c1;
