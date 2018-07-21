@@ -30,11 +30,9 @@ class CommandExecuter {
   };
   struct SystemStatus {
     const int R = 0;
-    int energy;
+    long long energy;
     Harmonics harmonics;
     VoxelState matrix[kMaxResolution][kMaxResolution][kMaxResolution];
-    // TODO(hiroh): represent active bot in more efficient way.
-    // might be, bool active_bots[kMaxNumBots + 1];
     explicit SystemStatus(int r);
   };
   struct BotStatus {
@@ -42,13 +40,20 @@ class CommandExecuter {
     Point pos;
     std::set<uint32_t> seeds;
     BotStatus();
-    BotStatus(bool active_, const Point& pos_, const std::pair<int,int>& seeds);
   };
 
   CommandExecuter(int R, bool output_json);
   ~CommandExecuter();
 
   void Execute(const std::vector<Command>& commands);
+
+  const SystemStatus& GetSystemStatus() {
+    return system_status;
+  }
+  const std::array<BotStatus, kMaxNumBots+1>& GetBotStatus() {
+    return bot_status;
+  }
+  uint32_t GetActiveBotsNum();
 
   // Commands
   // Singleton Commands
@@ -77,7 +82,6 @@ class CommandExecuter {
   Json::Value json;
 
   // utility
-  uint32_t GetBotsNum();
   bool IsActiveBotId(const uint32_t id);
   bool IsValidCoordinate(const Point& p);
   bool IsVoidCoordinate(const Point& p);
