@@ -1,4 +1,4 @@
-// vim-compile: cd .. && bazel run //src:skeleton -- --mdl_filename=/home/vagrant/icfpc/problems/LA004_tgt.mdl
+// vim-compile: cd .. && bazel run //src:skeleton -- --mdl_filename=/home/vagrant/icfpc/problems/LA049_tgt.mdl
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -99,6 +99,7 @@ public:
         for(int dy=-1; dy<=1; dy++) {
           for(int dz=-1; dz<=1; dz++) {
             if (abs(dx) + abs(dy) + abs(dz) != 1) continue;
+            if (dy < 0) continue; // may be bad?
             Point w = v + Point(dx, dy, dz);
             if (w.x < 0 || R <= w.x || w.y < 0 || R <= w.y || w.z < 0 || R <= w.z) continue;
             if (!M[w.x][w.y][w.z]) continue;
@@ -149,18 +150,7 @@ public:
     }
     return true;
   }
-
-  void extract_skeletons() {
-    Point pos(0, 0, 0);
-    vector<Point> movepointlist;
-    while(!IsMEmpty()) {
-      Path path = extract_a_skeleton();
-      cerr << "OK" << endl;
-      vvv rank = RankingAccordingToPath(path);
-      vector<Point> cmds = FillAccordingToRank(rank, pos);
-      pos = cmds.back();
-      movepointlist.insert(movepointlist.end(), cmds.begin(), cmds.end());
-
+  int CountM() {
       int mcount = 0;
       for(int y=0; y<R; y++) {
         for(int x=0; x<R; x++) {
@@ -169,6 +159,28 @@ public:
           }
         }
       }
+      return mcount;
+  }
+
+  void extract_skeletons() {
+    Point pos(0, 0, 0);
+    vector<Point> movepointlist;
+    int lastmcount = CountM();
+    while(!IsMEmpty()) {
+      Path path = extract_a_skeleton();
+      cerr << "OK" << endl;
+      vvv rank = RankingAccordingToPath(path);
+      vector<Point> cmds = FillAccordingToRank(rank, pos);
+      pos = cmds.back();
+      movepointlist.insert(movepointlist.end(), cmds.begin(), cmds.end());
+
+      int mcount = CountM();
+      if (lastmcount == mcount) {
+        cerr << "No progress! Aborting" << endl;
+        break;
+//        exit(1);
+      }
+      lastmcount = mcount;
       cerr << mcount << " " << grand.size() << endl; 
     }
 
