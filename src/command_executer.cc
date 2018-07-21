@@ -154,8 +154,19 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
 }
 
 void CommandExecuter::Execute(const std::vector<Command>& commands) {
-  int fusion_count = 0;
 
+  // Update energy
+  const long long R = system_status.R;
+  if (system_status.harmonics == HIGH) {
+    system_status.energy += 30 * R * R * R;
+  } else {
+    system_status.energy += 3 * R * R * R;
+  }
+
+  system_status.energy += 20 * num_active_bots;
+
+  int fusion_count = 0;
+  // Execute FusionP and FusionS
   for (auto com1 : commands) {
     for (auto com2 : commands) {
       if (com1.id != com2.id &&
@@ -173,6 +184,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     }
   }
 
+  // Execute other commands
   for (const auto& c : commands) {
     auto id = c.id;
     switch(c.type) {
@@ -206,6 +218,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   }
 
   LOG_ASSERT(fusion_count == 0) << fusion_count;
+
   // Check volatile cordinates
   for (const auto& vcord1 : v_cords) {
     for (const auto& vcord2 : v_cords) {
