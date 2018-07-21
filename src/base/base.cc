@@ -195,7 +195,7 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(command.isMember("dz") && command["dz"].isInt()) << command;
     
     int nd = getnd(command["dx"].asInt(), command["dy"].asInt(), command["dz"].asInt());
-    return {static_cast<char>((nd << 3) | 0b111)};    
+    return {static_cast<char>((nd << 3) | 0b110)};    
   }
 
   if (command_name == "Fission") {
@@ -244,10 +244,10 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(command.isMember("dz2") && command["dz2"].isInt()) << command;
 
     int nd = getnd(command["dx1"].asInt(), command["dy1"].asInt(), command["dz1"].asInt());
-    return {static_cast<char>((nd << 3) | 0b001),
-        static_cast<char>(command["dx2"].asInt()),
-        static_cast<char>(command["dy2"].asInt()),
-        static_cast<char>(command["dz2"].asInt())};
+    return {static_cast<char>((nd << 3) | 0b000),
+        static_cast<char>(command["dx2"].asInt() + 30),
+        static_cast<char>(command["dy2"].asInt() + 30),
+        static_cast<char>(command["dz2"].asInt() + 30)};
   }
 
 
