@@ -30,13 +30,12 @@ int main(int argc, char* argv[]) {
 
   auto ce = std::make_unique<CommandExecuter>(R, false);
 
-
-
   Json::Value turns = root["turn"];
   int n = turns.size();
   for (int i = 0; i < n; ++i) {
       std::vector<Command> commands;
       int m = turns[i].size();
+      std::cout << turns[i] << std::endl;
       for (int j = 0; j < m; ++j) {
           Command c = Command::JsonToCommand(turns[i][j]);
           commands.push_back(c);
