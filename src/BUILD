@@ -70,7 +70,8 @@ cc_binary(
 
 cc_binary(
     name = "simulator",
-    srcs = ["simulator.cc"],
+    srcs = ["simulator.cc",
+            "nbt_loader.h"],
     copts = ["-std=c++14"],
     deps = [
         "//external:glog",
