@@ -143,7 +143,7 @@ public:
     FillAccordingToRank(rank, InitVVV(R), Point(0, 0, 0));
 
 
-    OutputMDL(rank);
+//    OutputMDL(rank);
   }
 
   void FillAccordingToRank(vvv rank, vvv wall, Point pos) {
@@ -206,10 +206,7 @@ public:
     }
 
 
-    for(int i=0; i<(int)30; i++) {
-      cout << cmds[i] << endl;
-    }
-
+    vector<Command> commands;
     pos = Point(0, 0, 0);
     for(int i=0; i<(int)cmds.size(); i++) {
 //      cout << cmds[i] << "; " << pos << endl;
@@ -217,19 +214,20 @@ public:
         while((cmds[i] == fill_here || cmds[i] == pos) && i < (int)cmds.size()) i++;
         if (i >= (int)cmds.size() - 1) {
           // Last move
-          ce.Halt(1);
+          commands.emplace_back(Command::make_halt(1));
         } else {
-          ce.SMove(1, cmds[i] - pos);
-          ce.Fill(1, pos - cmds[i]);
+          commands.emplace_back(Command::make_smove(1, cmds[i] - pos));
+          commands.emplace_back(Command::make_fill(1, pos - cmds[i]));
           pos = cmds[i];
         }
       } else {
         if (cmds[i] == pos) continue;
-        ce.SMove(1, cmds[i] - pos);
+        commands.emplace_back(Command::make_smove(1, cmds[i] - pos));
         pos = cmds[i];
       }
     }
 
+    ce.Execute(commands);
     ce.PrintTraceAsJson();
   }
 
