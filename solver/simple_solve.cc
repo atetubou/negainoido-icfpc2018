@@ -218,8 +218,11 @@ int main(int argc, char** argv) {
             << " move_per_voxel=" << static_cast<double>(total_move) / (visit_order.size() - 2)
             << " visit_per_voxel=" << static_cast<double>(total_visit) / (visit_order.size() - 2);
 
-  Json::Value json;  
-  json["turn"].append(Command::CommandsToJson(results));
+  Json::Value json;
+  for (const auto& c : results) {
+    std::vector<Command> commands = {c};
+    json["turn"].append(Command::CommandsToJson(commands));
+  }
 
   if (FLAGS_json) {
     cout << json << endl;
