@@ -161,6 +161,35 @@ std::string encodecommand(const Json::Value& command) {
     return {static_cast<char>((nd << 3) | 0b011)};
   }
 
+  if (command_name == "FusionP") {
+    CHECK(command.isMember("dx") && command["dx"].isInt()) << command;
+    CHECK(command.isMember("dy") && command["dy"].isInt()) << command;
+    CHECK(command.isMember("dz") && command["dz"].isInt()) << command;
+    
+    int nd = getnd(command["dx"].asInt(), command["dy"].asInt(), command["dz"].asInt());
+    return {static_cast<char>((nd << 3) | 0b111)};    
+  }
+
+  if (command_name == "FusionS") {
+    CHECK(command.isMember("dx") && command["dx"].isInt()) << command;
+    CHECK(command.isMember("dy") && command["dy"].isInt()) << command;
+    CHECK(command.isMember("dz") && command["dz"].isInt()) << command;
+    
+    int nd = getnd(command["dx"].asInt(), command["dy"].asInt(), command["dz"].asInt());
+    return {static_cast<char>((nd << 3) | 0b111)};    
+  }
+
+  if (command_name == "Fission") {
+    CHECK(command.isMember("dx") && command["dx"].isInt()) << command;
+    CHECK(command.isMember("dy") && command["dy"].isInt()) << command;
+    CHECK(command.isMember("dz") && command["dz"].isInt()) << command;
+
+    CHECK(command.isMember("m") && command["m"].isInt()) << command;
+
+    int nd = getnd(command["dx"].asInt(), command["dy"].asInt(), command["dz"].asInt());
+    return {static_cast<char>((nd << 3) | 0b101), static_cast<char>(command["m"].asInt())};
+  }
+
   LOG(FATAL) << "unsupported json command " << command;
   return "";
 }
