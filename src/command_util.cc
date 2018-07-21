@@ -45,3 +45,8 @@ bool operator>(const Point& p1, const Point& p2) {
   if (p1.z > p2.z) return true;
   return p1.y > p2.y;
 }
+
+std::ostream& operator << (std::ostream &out, const Point &p) {
+  out << "(" << p.x << ", " << p.y << ", " << p.z << ")";
+  return out;
+}
