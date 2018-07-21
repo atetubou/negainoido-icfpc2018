@@ -122,6 +122,28 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
 }
 
 void CommandExecuter::Execute(const std::vector<Command>& commands) {
+
+  // TODO(hiroh): Check volatile coordinates
+
+  int fusion_count = 0;
+
+  for (auto com1 : commands) {
+    for (auto com2 : commands) {
+      if (com1.id != com2.id &&
+          com1.type == Command::Type::FUSION_P &&
+          com2.type == Command::Type::FUSION_S) {
+        BotStatus& bot1 = bot_status[com1.id];
+        BotStatus& bot2 = bot_status[com2.id];
+
+        if (bot1.pos + com1.fusion_p_nd == bot2.pos &&
+            bot2.pos + com2.fusion_s_nd == bot1.pos) {
+          Fusion(com1.id, com1.fusion_p_nd, com2.id, com1.fusion_s_nd);
+          fusion_count += 2;
+        }
+      }
+    }
+  }
+
   for (const auto& c : commands) {
     auto id = c.id;
     switch(c.type) {
@@ -129,31 +151,33 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
       Halt(id);
       break;
     case Command::Type::WAIT:
-      UNREACHABLE();
+      Wait(id);
       break;
     case Command::Type::FLIP:
-      UNREACHABLE();
+      Flip(id);
       break;
     case Command::Type::SMOVE:
       SMove(id, c.smove_lld);
       break;
     case Command::Type::LMOVE:
-      UNREACHABLE();
+      LMove(id, c.lmove_sld1, c.lmove_sld2);
       break;
     case Command::Type::FISSION:
-      UNREACHABLE();
+      Fission(id, c.fission_nd, c.fission_m);
       break;
     case Command::Type::FILL:
       Fill(id, c.fill_nd);
       break;
     case Command::Type::FUSION_P:
-      UNREACHABLE();
-      break;
     case Command::Type::FUSION_S:
-      UNREACHABLE();
+      // do nothing
+      fusion_count--;
       break;
     }
   }
+
+  CHECK(fusion_count == 0);
+
   if (output_json) {
     auto turn_json = Command::CommandsToJson(commands);
     json["turn"].append(std::move(turn_json));
