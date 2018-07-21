@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Solutions</h1>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th> id </th>
+        <th> problem_id </th>
+        <th> solver_id </th>
+        <th> score </th>
+        <th> created_at </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in data %}
+      <tr>
+        <td> 
+          <a href="{{ url_for('solution_id_as_html', id = r['id']) }}">
+            {{ r['id'] }}
+          </a></td>
+        <td> {{ r['problem_id']  }} </td>
+        <td> {{ r['solver_id'] }} </td>
+        <td> {{ r['score']  }} </td>
+        <td> {{ r['created_at'] }} </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

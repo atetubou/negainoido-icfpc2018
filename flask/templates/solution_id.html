@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Select Test</h1>
+  <label>id:</label> <a> {{ data['id']}} </a><br />
+  <label>problem_id:</label> <a> {{ data['problem_id']}} </a><br />
+  <label>solver_id:</label> <a> {{ data['solver_id']}} </a><br />
+  <label>score:</label> <a> {{ data['score']}} </a><br />
+  <label>created_at:</label> <a> {{ data['created_at']}} </a> <br />
+  <label>comment:</label><br />
+      <pre><code>{{data['comment']}}</code></pre>
+{% endblock %}

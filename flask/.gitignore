@@ -3,8 +3,12 @@ tests/__pycache__/
 debug.log
 uwsgi.log
 uwsgi.pid
+shared
 env/
 reload.trigger
 secret.sh
 nohup.out
+*.nbt
+*.nbt.json
+*.mdl
 

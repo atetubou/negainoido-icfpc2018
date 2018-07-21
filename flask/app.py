@@ -77,6 +77,44 @@ def test_select() -> Result[List[Any]]:
         curr.close()
         conn.close()
 
+@api('/list_solution', 'list_solution.html')
+def list_solution() -> Result[List[Any]]:
+    conn = get_connection()
+    curr = conn.cursor(dictionary=True)
+    try:
+        curr.execute("select id,problem_id,solver_id, score, comment, created_at from solutions order by id desc limit 100")
+        return Ok(list(curr))
+    finally:
+        curr.close()
+        conn.close()
+
+@api('/list_problem', 'list_problem.html')
+def list_problem() -> Result[List[Any]]:
+    conn = get_connection()
+    curr = conn.cursor(dictionary=True)
+    try:
+        curr.execute("select name, MAX(solutions.score), solutions.score from problems"
+                     "inner join solutions on solutions.problem_id = problems.name"
+                     "order by id asc")
+        return Ok(list(curr))
+    finally:
+        curr.close()
+        conn.close()
+
+@api('/list_solution/<int:id>', 'solution_id.html')
+def solution_id(id : int) -> Result[Any]:
+    conn = get_connection()
+    curr = conn.cursor(dictionary=True)
+    try:
+        res = curr.execute("select id,problem_id,solver_id, score, comment, created_at from solutions where id = %s", (id,))
+        row = curr.fetchone()
+        if row:
+            return Ok(row)
+        else:
+            return Ng('no data for key ' + str(id))
+    finally:
+        curr.close()
+        conn.close()
 @api('/test_select/<int:id>', 'test_select_id.html')
 def test_select_id(id : int) -> Result[Any]:
     conn = get_connection()

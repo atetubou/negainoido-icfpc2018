@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Solutions</h1>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th> name </th>
+        <th> created_at </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in data %}
+      <tr>
+        <td> 
+          <a href="{{ url_for('problem_id_as_html', id = r['name']) }}">
+            {{ r['name'] }}
+          </a></td>
+        <td> {{ r['created_at'] }} </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

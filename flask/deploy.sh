@@ -9,6 +9,9 @@ source secret.sh
 pip install -r requirements.txt
 mysql -u $DBUSER -p"$DBPASS" $DBNAME < schema.sql
 
+python import_problems.py
+python import_default_solution.py
+
 ./run_test.sh 
 if [ $FLASK_ENV = production ]; then
     if [ ! -f uwsgi.pid ] || ! kill -0 $(cat uwsgi.pid) 2>/dev/null; then
