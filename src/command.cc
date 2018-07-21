@@ -36,6 +36,12 @@ Json::Value Command::CommandsToJson(const std::vector<Command>& commands) {
       command["dy2"] = c.lmove_sld2.y;
       command["dz2"] = c.lmove_sld2.z;
       break;
+    case VOID:
+      command["command"] = "Void";
+      command["dx"] = c.void_nd.x;
+      command["dy"] = c.void_nd.y;
+      command["dz"] = c.void_nd.z;
+      break;
     case FISSION:
       command["command"] = "Fission";
       command["dx"] = c.fission_nd.x;
@@ -175,6 +181,10 @@ Command Command::make_fill(int id, Point nd) {
 }
 
 Command Command::make_void(int id, Point nd) {
+  Command ret;
+  ret.id = id;
+  ret.type = VOID;
+  ret.void_nd = nd;
   return Command();
 }
 

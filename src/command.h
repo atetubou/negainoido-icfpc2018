@@ -34,6 +34,8 @@ struct Command {
   // Lmove
   Point lmove_sld1;
   Point lmove_sld2;
+  // Void
+  Point void_nd;
   // FISSION
   Point fission_nd;
   uint32_t fission_m;
