@@ -124,6 +124,9 @@ public:
     OutputMDL(dist);
   }
 
+  void Enbody_sliced() {
+  }
+
 };
 
 int main(int argc, char* argv[]) {
