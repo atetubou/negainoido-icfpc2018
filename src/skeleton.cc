@@ -134,16 +134,13 @@ public:
     for(int y=0; y<R; y++) {
       for(int x=0; x<R; x++) {
         for(int z=0; z<R; z++) {
-          if (rank[x][y][z])
+          if (rank[x][y][z] > 1)
             rank[x][y][z] = rank[x][y][z] * R + y;
         }
       }
     }
 
     FillAccordingToRank(rank, InitVVV(R), Point(0, 0, 0));
-
-
-//    OutputMDL(rank);
   }
 
   void FillAccordingToRank(vvv rank, vvv wall, Point pos) {
@@ -172,7 +169,8 @@ public:
       while(!q.empty()) {
         Point v = q.front();
         q.pop();
-        if (rank[v.x][v.y][v.z] == target_rank) {
+        if (pos != v && rank[v.x][v.y][v.z] == target_rank) {
+//          cout << pos << " -> " << v << " ; rank " << target_rank << endl;
           Path path;
           Point w = v;
           while(w != pos) {
@@ -205,6 +203,12 @@ public:
       }
     }
 
+    /*
+    for(int i=0; i<(int)cmds.size(); i++) {
+      cout << cmds[i] << endl;
+    }
+    */
+
 
     vector<Command> commands;
     pos = Point(0, 0, 0);
@@ -228,7 +232,8 @@ public:
     }
 
     ce.Execute(commands);
-    ce.PrintTraceAsJson();
+//    cout << ce.json << endl;
+    cout << Json2Binary(ce.json);
   }
 
 };
