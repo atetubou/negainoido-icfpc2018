@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 #include "json/json.h"
 
 #include "absl/types/span.h"
@@ -12,7 +13,7 @@ DEFINE_string(mdl_filename, "", "filepath of mdl");
 
 Json::Value SMove(int bot_id, int dx, int dy, int dz) {
   Json::Value json;
-  json["Command"] = "SMoeve";
+  json["command"] = "SMove";
   json["bot_id"] = bot_id;
   json["dx"] = dx;
   json["dy"] = dy;
@@ -22,7 +23,7 @@ Json::Value SMove(int bot_id, int dx, int dy, int dz) {
 
 Json::Value FusionP(int bot_id, int dx, int dy, int dz) {
   Json::Value json;
-  json["Command"] = "FusionP";
+  json["command"] = "FusionP";
   json["bot_id"] = bot_id;
   json["dx"] = dx;
   json["dy"] = dy;
@@ -32,7 +33,7 @@ Json::Value FusionP(int bot_id, int dx, int dy, int dz) {
 
 Json::Value FusionS(int bot_id, int dx, int dy, int dz) {
   Json::Value json;
-  json["Command"] = "FusionS";
+  json["command"] = "FusionS";
   json["bot_id"] = bot_id;
   json["dx"] = dx;
   json["dy"] = dy;
@@ -43,28 +44,28 @@ Json::Value FusionS(int bot_id, int dx, int dy, int dz) {
 
 Json::Value Wait(int bot_id) {
   Json::Value json;
-  json["Command"] = "Wait";
+  json["command"] = "Wait";
   json["bot_id"] = bot_id;
   return json;
 }
 
 Json::Value Halt(int bot_id) {
   Json::Value json;
-  json["Command"] = "Halt";
+  json["command"] = "Halt";
   json["bot_id"] = bot_id;
   return json;
 }
 
 Json::Value Flip(int bot_id) {
   Json::Value json;
-  json["Command"] = "Flip";
+  json["command"] = "Flip";
   json["bot_id"] = bot_id;
   return json;
 }
 
 Json::Value Fission(int bot_id, int dx, int dy, int dz, int m) {
   Json::Value json;
-  json["Command"] = "Fission";
+  json["command"] = "Fission";
   json["bot_id"] = bot_id;
   json["dx"] = dx;
   json["dy"] = dy;
@@ -84,7 +85,7 @@ Json::Value ToArray(absl::Span<const Json::Value> values) {
 Json::Value GVoid(int bot_id, int dx1, int dy1, int dz1,
                   int dx2, int dy2, int dz2) {
   Json::Value json;
-  json["Command"] = "GVoid";
+  json["command"] = "GVoid";
   json["bot_id"] = bot_id;
 
   // nd
@@ -209,8 +210,8 @@ int main(int argc, char** argv) {
   
   // Fission2
   json["turn"].append(ToArray({
-        Fission(1, 0, 0, 1, 1),        
-          Fission(2, 0, 0, 1, 1),        
+        Fission(1, 0, 0, 1, 0),
+          Fission(2, 0, 0, 1, 0),
       }));  
   
   json["turn"].append(ToArray({
@@ -229,10 +230,11 @@ int main(int argc, char** argv) {
           Wait(4),
       }));
 
-  
   // TODO: 30x30
 
   auto dxzs = Getdxzs(R, n);  
+
+  LOG(INFO) << GVoids(n + 1);
 
   int lx = 0;
   int hx = n + 1;
@@ -319,5 +321,6 @@ int main(int argc, char** argv) {
   
   json["turn"].append(ToArray({Halt(1)}));
 
-  std::cout << Json2Binary(json);
+  std::string nbt_content = Json2Binary(json);
+  std::cout << nbt_content;
 }
