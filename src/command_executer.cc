@@ -1,5 +1,6 @@
 #include "command_executer.h"
 
+#include <iostream>
 #include <algorithm>
 
 #define UNREACHABLE() CHECK(false)
@@ -241,6 +242,12 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   if (output_json) {
     auto turn_json = Command::CommandsToJson(commands);
     json["turn"].append(std::move(turn_json));
+  }
+}
+
+void CommandExecuter::PrintTraceAsJson() {
+  if (output_json) {
+    std::cout << json << std::endl;
   }
 }
 
