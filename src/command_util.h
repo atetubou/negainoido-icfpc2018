@@ -19,6 +19,7 @@ struct Point {
 bool operator==(const Point& p1, const Point& p2);
 bool operator!=(const Point& p1, const Point& p2);
 bool operator<(const Point& p1, const Point& p2);
+
 bool operator>(const Point& p1, const Point& p2);
 std::ostream& operator << (std::ostream &out, const Point &p);
 #endif

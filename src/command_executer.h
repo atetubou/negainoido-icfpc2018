@@ -68,11 +68,7 @@ class CommandExecuter {
   void Fusion(const uint32_t bot_id1, const Point& nd1,
               const uint32_t bot_id2, const Point& nd2);
 
-  // utility
-  bool IsActiveBotId(const uint32_t id);
-  bool IsValidCoordinate(const Point& p);
-  bool IsVoidCoordinate(const Point& p);
-  bool IsVoidPath(const Point& p1, const Point& p2);
+  Json::Value json;
 
  private:
   struct VolCord {
@@ -86,7 +82,12 @@ class CommandExecuter {
   std::array<BotStatus, kMaxNumBots+1> bot_status;
   SystemStatus system_status;
   bool output_json;
-  Json::Value json;
+
+  // utility
+  bool IsActiveBotId(const uint32_t id);
+  bool IsValidCoordinate(const Point& p);
+  bool IsVoidCoordinate(const Point& p);
+  bool IsVoidPath(const Point& p1, const Point& p2);
 };
 
 #endif
