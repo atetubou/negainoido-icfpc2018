@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	problem = flag.String("problem", "LA001", `problem name e.g. "LA001"`)
-	solver  = flag.String("solver", "//solver:simple_solve", "ai target")
+	problem   = flag.String("problem", "LA001", `problem name e.g. "LA001"`)
+	solver    = flag.String("solver", "//solver:simple_solve", "ai target")
+	skipSetup = flag.Bool("skip-setup", true, "specify to skip setup file")
 )
 
 func runCommands(command string) {
@@ -36,7 +37,9 @@ func setupFiles() {
 func main() {
 	flag.Parse()
 
-	setupFiles()
+	if !*skipSetup {
+		setupFiles()
+	}
 
 	runCommands(fmt.Sprintf("bazel run %s -- --mdl_filename=$(pwd)/shared/%s_tgt.mdl > /tmp/nbt.nbt", *solver, *problem))
 	simulatorResult := runCommandsOutput(fmt.Sprintf("bazel run //src:simulator -- --mdl_filename=$(pwd)/shared/%s_tgt.mdl --nbt_filename=/tmp/nbt.nbt", *problem))
