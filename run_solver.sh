@@ -5,7 +5,7 @@ OUT_DIR=$2
 SOLVER=${3:-simple_solve}
 echo $MDL_PATH $OUT_DIR $SOLVER
 
-mkdir -f $OUT_DIR
+mkdir -p $OUT_DIR
 
 for mdl in $MDL_PATH/*.mdl; do
     if [ -f $mdl ]; then
