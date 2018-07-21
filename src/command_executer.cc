@@ -292,7 +292,7 @@ void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint
   LOG_ASSERT(!bot_status[bot_id].seeds.empty()) << bot_status[bot_id].seeds.size();
   BotStatus& bot = bot_status[bot_id];
   Point c0 = bot.pos;
-  Point c1 = c1 + nd;
+  Point c1 = c0 + nd;
   LOG_ASSERT(IsValidCoordinate(c1)) << c1;
   LOG_ASSERT(IsVoidCoordinate(c1)) << c1;
 
@@ -302,7 +302,7 @@ void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint
   auto seeds_iter = bot.seeds.begin();
 
   uint32_t newbot_id = *seeds_iter++;
-  LOG_ASSERT(bot_status[newbot_id].active == false);
+  LOG_ASSERT(bot_status[newbot_id].active == false) << newbot_id;
   BotStatus& newbot = bot_status[newbot_id];
   newbot.active = true;
   newbot.pos = c1;
