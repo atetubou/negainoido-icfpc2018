@@ -29,6 +29,8 @@ CommandExecuter::CommandExecuter(int R, bool output_json)
   }
 }
 
+CommandExecuter::~CommandExecuter() {}
+
 // Utilities
 bool IsLCD(const Point& p) {
   if ((p.x != 0 && p.y == 0 && p.z == 0) ||

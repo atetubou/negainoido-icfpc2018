@@ -60,3 +60,9 @@ Json::Value Command::CommandsToJson(const std::vector<Command>& commands) {
   }
   return turn;
 }
+
+Command Command::JsonToCommand(const Json::Value turn) {
+    Command c = Command();
+    c.type = Command::HALT;
+    return c;
+}
