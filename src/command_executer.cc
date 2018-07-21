@@ -66,6 +66,21 @@ bool IsPath(const Point& p1, const Point& p2) {
   return IsLCD(p);
 }
 
+bool Colid(int from_x1, int to_x1, int from_x2, int to_x2) {
+  if (to_x1 < from_x2) {
+    return false;
+  } else if (from_x2 > to_x1) {
+    return from_x1 <= to_x2;
+  } else {//to_x1 == from_x2
+    return true;
+  }
+}
+
+std::ostream& operator << (std::ostream &out, const Point &p) {
+  out << "(" << p.x << ", " << p.y << ", " << p.z << ")";
+  return out;
+}
+
 uint32_t CommandExecuter::GetBotsNum() {
   return num_active_bots;
 }
@@ -122,9 +137,6 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
 }
 
 void CommandExecuter::Execute(const std::vector<Command>& commands) {
-
-  // TODO(hiroh): Check volatile coordinates
-
   int fusion_count = 0;
 
   for (auto com1 : commands) {
@@ -177,6 +189,21 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   }
 
   CHECK(fusion_count == 0);
+  // Check volatile cordinates
+
+  for (const auto& vcord1 : v_cords) {
+    for (const auto& vcord2 : v_cords) {
+      if (vcord1.id == vcord2.id) {
+        continue;
+      }
+      bool cold_x = Colid(vcord1.from.x, vcord1.to.x, vcord2.from.x, vcord2.to.x);
+      bool cold_y = Colid(vcord1.from.y, vcord1.to.y, vcord2.from.y, vcord2.to.y);
+      bool cold_z = Colid(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
+      LOG_IF(FATAL, cold_x && cold_y && cold_z) << "Invalid Move (Colid)\n"
+                                                << "vc1: id=" << vcord1.id << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
+                                                << "vc2: id=" << vcord2.id << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
+    }
+  }
 
   if (output_json) {
     auto turn_json = Command::CommandsToJson(commands);
@@ -199,14 +226,14 @@ void CommandExecuter::Wait(const uint32_t bot_id) {
   CHECK(IsActiveBotId(bot_id));
 
   Point c = bot_status[bot_id].pos;
-  v_cords.push_back(std::make_pair(c, c));
+  v_cords.emplace_back(bot_id, c, c);
 }
 
 void CommandExecuter::Flip(const uint32_t bot_id) {
   CHECK(IsActiveBotId(bot_id));
 
   Point c = bot_status[bot_id].pos;
-  v_cords.push_back(std::make_pair(c, c));
+  v_cords.emplace_back(bot_id, c, c);
 
   if (system_status.harmonics == HIGH) {
     system_status.harmonics = LOW;
@@ -227,7 +254,7 @@ void CommandExecuter::SMove(const uint32_t bot_id, const Point& lld) {
   CHECK(IsValidCoordinate(c1));
   CHECK(IsVoidPath(c0, c1));
 
-  v_cords.push_back(std::make_pair(c0, c1));
+  v_cords.emplace_back(bot_id, c0, c1);
   system_status.energy += 2 * MLen(lld);
 }
 
@@ -245,8 +272,8 @@ void CommandExecuter::LMove(const uint32_t bot_id, const Point& sld1, const Poin
   CHECK(IsVoidPath(c1, c2));
 
   bot_status[bot_id].pos = c2;
-  v_cords.push_back(std::make_pair(c0, c1));
-  v_cords.push_back(std::make_pair(c1, c2));
+  v_cords.emplace_back(bot_id, c0, c1);
+  v_cords.emplace_back(bot_id, c1, c2);
   system_status.energy += 2 * (MLen(sld1) + 2 + MLen(sld2));
 }
 
@@ -286,8 +313,8 @@ void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint
 
   system_status.energy += 24;
 
-  v_cords.push_back(std::make_pair(c0, c0));
-  v_cords.push_back(std::make_pair(c1, c1));
+  v_cords.emplace_back(bot_id, c0, c0);
+  v_cords.emplace_back(bot_id, c1, c1);
 }
 
 void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
@@ -306,8 +333,8 @@ void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
     system_status.energy += 6;
   }
 
-  v_cords.push_back(std::make_pair(c0, c0));
-  v_cords.push_back(std::make_pair(c1, c1));
+  v_cords.emplace_back(bot_id, c0, c0);
+  v_cords.emplace_back(bot_id, c1, c1);
 }
 
 void CommandExecuter::Fusion(const uint32_t bot_id1, const Point& nd1,
@@ -335,6 +362,7 @@ void CommandExecuter::Fusion(const uint32_t bot_id1, const Point& nd1,
 
     system_status.energy -= 24;
 
-    v_cords.push_back(std::make_pair(bot1.pos, bot1.pos));
-    v_cords.push_back(std::make_pair(bot2.pos, bot2.pos));
+    // TODO(hiroh): suspect this
+    v_cords.emplace_back(bot_id1, bot1.pos, bot1.pos);
+    v_cords.emplace_back(bot_id2, bot2.pos, bot2.pos);
 }

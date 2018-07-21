@@ -63,7 +63,13 @@ class CommandExecuter {
               const uint32_t bot_id2, const Point& nd2);
 
  private:
-  std::vector<std::pair<Point, Point>> v_cords;
+  struct VolCord {
+    uint32_t id;
+    Point from;
+    Point to; // enclosed region [From, To].
+    VolCord(uint32_t id, const Point& from, const Point& to) : id(id), from(std::move(from)), to(std::move(to)) {}
+  };
+  std::vector<VolCord> v_cords;
   size_t num_active_bots;
   std::array<BotStatus, kMaxNumBots+1> bot_status;
   SystemStatus system_status;
