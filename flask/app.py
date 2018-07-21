@@ -141,6 +141,7 @@ def list_problems() -> Result[List[Any]]:
         for i in range(len(ret)):
             r = problem_size(ret[i]['problem_id'])
             ret[i]['estimated_score'] = score(r, ret[i]['max_score'], ret[i]['score'])
+            ret[i]['r'] = r
 
         return Ok(ret)
     finally:
