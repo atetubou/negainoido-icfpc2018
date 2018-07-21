@@ -119,7 +119,7 @@ def list_problems() -> Result[List[Any]]:
     conn = get_connection()
     curr = conn.cursor(dictionary=True)
     try:
-        curr.execute("select name, solutions.id, solutions.score, solutions.created_at from problems"
+        curr.execute("select name, solutions.id, solutions.solver_id, solutions.score, solutions.created_at from problems"
                      " inner join solutions on solutions.problem_id = problems.name"
                      " order by name asc, solutions.score asc"
         )
