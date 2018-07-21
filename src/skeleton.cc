@@ -146,7 +146,8 @@ public:
     OutputMDL(rank);
   }
 
-  void FillAccordingToRank(const vvv &rank, vvv wall, Point pos) {
+  void FillAccordingToRank(vvv rank, vvv wall, Point pos) {
+    rank[0][0][0] = 1<<29; // return point
     deque<int> ranks;
     for(int y=0; y<R; y++) {
       for(int x=0; x<R; x++) {
@@ -204,13 +205,32 @@ public:
       }
     }
 
-    for(int i=0; i<(int)cmds.size(); i++) {
+
+    for(int i=0; i<(int)30; i++) {
       cout << cmds[i] << endl;
     }
 
+    pos = Point(0, 0, 0);
+    for(int i=0; i<(int)cmds.size(); i++) {
+//      cout << cmds[i] << "; " << pos << endl;
+      if (cmds[i] == fill_here) {
+        while((cmds[i] == fill_here || cmds[i] == pos) && i < (int)cmds.size()) i++;
+        if (i >= (int)cmds.size() - 1) {
+          // Last move
+          ce.Halt(1);
+        } else {
+          ce.SMove(1, cmds[i] - pos);
+          ce.Fill(1, pos - cmds[i]);
+          pos = cmds[i];
+        }
+      } else {
+        if (cmds[i] == pos) continue;
+        ce.SMove(1, cmds[i] - pos);
+        pos = cmds[i];
+      }
+    }
 
-//    ce.SMove(1, Point(1, 0, 0));
-
+    ce.PrintTraceAsJson();
   }
 
 };
