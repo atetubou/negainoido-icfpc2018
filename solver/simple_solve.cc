@@ -129,6 +129,8 @@ void flush_commands(vector<Command> &results) {
   Json::Value json;
   for (const auto& c : results) {
     std::vector<Command> commands = {c};
+    if (c.type == Command::LMOVE) {
+    }
     json["turn"].append(Command::CommandsToJson(commands));
   }
 

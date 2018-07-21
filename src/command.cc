@@ -1,4 +1,5 @@
 #include "command.h"
+#include "glog/logging.h"
 
 template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
@@ -258,10 +259,20 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
       }
     }
     if (tmp.type != Command::SMOVE || tmp.smove_lld.Manhattan() > 0) {
-      ret.push_back(tmp);
+      if (tmp.type == Command::LMOVE && tmp.lmove_sld2.Manhattan() == 0) {
+        ret.push_back(Command::make_smove(tmp.id, tmp.lmove_sld1));
+      } else {
+        ret.push_back(tmp);
+      }
     }
     
     i += j;
+  }
+
+  for (auto com : ret) {
+    if (com.type == Command::LMOVE) {
+      CHECK(com.lmove_sld1.Manhattan() != 0 && com.lmove_sld2.Manhattan() != 0) << com.lmove_sld1 << " " << com.lmove_sld2;
+    }
   }
 
   return ret;
