@@ -6,6 +6,7 @@ import os
 from result import Ok, Ng, Result
 from typing import TypeVar,Generic,List,Any,Callable,cast
 import math
+from table import problem_size
 
 app = Flask(__name__)
 dbconfig = {
@@ -122,6 +123,7 @@ def list_solution() -> Result[List[Any]]:
         curr.close()
         conn.close()
 
+
 @api('/list_problems', 'list_problems.html')
 def list_problems() -> Result[List[Any]]:
     conn = get_connection()
@@ -137,7 +139,7 @@ def list_problems() -> Result[List[Any]]:
 
         ret = list(curr)
         for i in range(len(ret)):
-            r = 100
+            r = problem_size(ret[i]['problem_id'])
             ret[i]['estimated_score'] = score(r, ret[i]['max_score'], ret[i]['score'])
 
         return Ok(ret)
