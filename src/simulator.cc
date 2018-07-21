@@ -1,3 +1,7 @@
+/*
+ * bazel run //src:nbt_viewer -- --nbt_filename=$HOME/Downloads/c/dfltTracesL/LA001.nbt --json | jq . > ~/Downloads/c/dfltTracesL/LA001.json
+ * bazel run //src:simulator -- --verbose --mdl_filename $HOME/Downloads/c/problemsL/LA001_tgt.mdl --nbt_json $HOME/Downloads/c/dfltTracesL/LA001.json
+ */
 #include <iostream>
 #include <fstream>
 #include <vector>
