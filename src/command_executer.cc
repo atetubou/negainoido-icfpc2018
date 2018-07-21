@@ -156,8 +156,7 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
 }
 
 void CommandExecuter::Execute(const std::vector<Command>& commands) {
-
-  // Update energy
+// Update energy
   const long long R = system_status.R;
   if (system_status.harmonics == HIGH) {
     system_status.energy += 30 * R * R * R;
@@ -234,7 +233,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
       bool cold_x = ColidX(vcord1.from.x, vcord1.to.x, vcord2.from.x, vcord2.to.x);
       bool cold_y = ColidX(vcord1.from.y, vcord1.to.y, vcord2.from.y, vcord2.to.y);
       bool cold_z = ColidX(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
-      LOG_ASSERT(cold_x && cold_y && cold_z) 
+      LOG_ASSERT(cold_x && cold_y && cold_z)
         << "Invalid Move (Colid)\n"
         << "vc1: id=" << vcord1.id << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
         << "vc2: id=" << vcord2.id << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
@@ -242,6 +241,13 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   }
 
   if (output_json) {
+    // Sort
+    auto commands_ = commands;
+    std::sort(commands_.begin(), commands_.end(),
+              [](const auto& c1, const auto& c2) {
+                return c1.id < c2.id;
+              });
+
     auto turn_json = Command::CommandsToJson(commands);
     json["turn"].append(std::move(turn_json));
   }

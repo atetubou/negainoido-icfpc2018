@@ -42,7 +42,8 @@ TEST(CommandExecuter, Halt) {
   Command command;
   command.id = 1;
   command.type = Command::Type::HALT;
-  ce->Execute({command});
+  std::vector<Command> com = {command};
+  ce->Execute(com);
   EXPECT_EQ(ce->GetActiveBotsNum(), 0u);
 }
 
@@ -55,7 +56,8 @@ TEST(CommandExecuter, Wait) {
   Command command;
   command.id = 1;
   command.type = Command::Type::WAIT;
-  ce->Execute({command});
+  std::vector<Command> com = {command};
+  ce->Execute(com);
   const auto& s_aft = ce->GetSystemStatus();
   const auto& b_aft = ce->GetBotStatus();
   EXPECT_EQ(s_aft.energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots);
@@ -76,7 +78,8 @@ TEST(CommandExecuter, TwoFlip) {
   Command command1;
   command1.id = 1;
   command1.type = Command::Type::FLIP;
-  ce->Execute({command1});
+  std::vector<Command> com1 = {command1};
+  ce->Execute(com1);
   const auto s_flp1_energy = ce->GetSystemStatus().energy;
   const auto s_flp1_harmonics = ce->GetSystemStatus().harmonics;
   EXPECT_EQ(s_flp1_harmonics, HIGH);
@@ -86,7 +89,8 @@ TEST(CommandExecuter, TwoFlip) {
   Command command2;
   command2.id = 1;
   command2.type = Command::Type::FLIP;
-  ce->Execute({command2});
+  std::vector<Command> com2 = {command2};
+  ce->Execute(com2);
   const auto s_flp2_energy = ce->GetSystemStatus().energy;
   const auto s_flp2_harmonics = ce->GetSystemStatus().harmonics;
   EXPECT_EQ(s_flp2_energy - s_flp1_energy, 30 * R * R * R + 20 * flp1_active_bots);
@@ -108,7 +112,8 @@ TEST(CommandExecuter, OneSMove) {
   command.id = 1;
   command.type = Command::Type::SMOVE;
   command.smove_lld = Point(length,0,0);
-  ce->Execute({command});
+  std::vector<Command> com = {command};
+  ce->Execute(com);
   const auto& s_aft = ce->GetSystemStatus();
   const auto& b_aft = ce->GetBotStatus();
   EXPECT_EQ(s_aft.energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots + 2 * length);
@@ -129,7 +134,8 @@ TEST(CommandExecuter, OneLMove) {
   command.type = Command::Type::LMOVE;
   command.lmove_sld1 = Point(0, length, 0);
   command.lmove_sld2 = Point(length, 0, 0);
-  ce->Execute({command});
+  std::vector<Command> com = {command};
+  ce->Execute(com);
   const auto& s_aft = ce->GetSystemStatus();
   const auto& b_aft = ce->GetBotStatus();
   EXPECT_EQ(s_aft.energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots + 2 * (length + 2 + length));
@@ -148,7 +154,8 @@ TEST(CommandExecuter, TwoFill) {
   command1.id = 1;
   command1.type = Command::Type::FILL;
   command1.fill_nd = Point(0, 1, 1);
-  ce->Execute({command1});
+  std::vector<Command> com1 = {command1};
+  ce->Execute(com1);
   const auto s_flp1_energy = ce->GetSystemStatus().energy;
   EXPECT_EQ(s_flp1_energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots + 12);
   EXPECT_EQ(ce->GetSystemStatus().matrix[0][1][1], FULL);
@@ -157,7 +164,8 @@ TEST(CommandExecuter, TwoFill) {
   command2.id = 1;
   command2.type = Command::Type::FILL;
   command2.fill_nd = Point(0, 1, 1);
-  ce->Execute({command2});
+  std::vector<Command> com2 = {command2};
+  ce->Execute(com2);
   const auto s_flp2_energy = ce->GetSystemStatus().energy;
   EXPECT_EQ(s_flp2_energy - s_flp1_energy, 3 * R * R * R + 20 * flp1_active_bots + 6);
   EXPECT_EQ(ce->GetSystemStatus().matrix[0][1][1], FULL);
@@ -179,7 +187,8 @@ TEST(CommandExecuter, OneFission) {
   command.type = Command::Type::FISSION;
   command.fission_nd = Point(0, 1, 1);
   command.fission_m = M;
-  ce->Execute({command});
+  std::vector<Command> com = {command};
+  ce->Execute(com);
   const auto s_aft_energy = ce->GetSystemStatus().energy;
   const size_t aft_active_bots = ce->GetActiveBotsNum();
   EXPECT_EQ(aft_active_bots, 2);
