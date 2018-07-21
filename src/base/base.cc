@@ -77,6 +77,9 @@ void WriteMDL(absl::string_view filename, const vvv &M) {
       }
     }
   }
+  if (i > 0) {
+    os.write((char *)&b, 1);
+  }
 }
 
 // Ouptut MDL file to stdout from bottom to top

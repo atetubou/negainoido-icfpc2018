@@ -46,6 +46,7 @@ class CommandExecuter {
   ~CommandExecuter();
 
   void Execute(const std::vector<Command>& commands);
+  void PrintTraceAsJson();
 
   const SystemStatus& GetSystemStatus() {
     return system_status;
