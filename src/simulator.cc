@@ -27,19 +27,23 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
+  LOG(INFO) << "start execution";
+
   vvv M = ReadMDL(FLAGS_mdl_filename);
   int R = M.size();
 
-  std::ifstream is(std::string(FLAGS_nbt_json), std::ifstream::binary);
-  Json::Value root;
-  is >> root;
-
-  LOG(INFO) << "done read json";
   auto ce = std::make_unique<CommandExecuter>(R, false);
 
-  LOG(INFO) << "done command executor";
+  Json::Value turns;
+  {
+    std::ifstream is(std::string(FLAGS_nbt_json), std::ifstream::binary);
+    Json::Value root;
+    is >> root;
+    turns = std::move(root["turn"]);
+  }
 
-  Json::Value turns = root["turn"];
+  LOG(INFO) << "done read json";
+
   int n = turns.size();
   for (int i = 0; i < n; ++i) {
     std::vector<Command> commands;
@@ -56,6 +60,8 @@ int main(int argc, char* argv[]) {
       LOG(INFO) << "Energy: " << ce->GetSystemStatus().energy;
     }
   }
+
+  LOG(INFO) << "done command execute";
 
   std::cout << ce->GetSystemStatus().energy << std::endl;
 
