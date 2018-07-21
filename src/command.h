@@ -18,8 +18,11 @@ struct Command {
     LMOVE,
     FISSION,
     FILL,
+    VOID,
     FUSION_P,
     FUSION_S,
+    GFILL,
+    GVOID,
   };
 
   Type type;
@@ -52,8 +55,12 @@ struct Command {
   static Command make_lmove(int id, Point sld1, Point sld2);
   static Command make_fission(int id, Point nd, uint32_t m);
   static Command make_fill(int id, Point nd);
+  static Command make_void(int id, Point nd);
   static Command make_fusion_p(int id, Point nd);
   static Command make_fusion_s(int id, Point nd);
+
+  static Command make_gfill(int id, Point nd, Point fd);
+  static Command make_gvoid(int id, Point nd, Point fd);
 };
 
 std::vector<Command> MergeSMove(absl::Span<const Command> commands);

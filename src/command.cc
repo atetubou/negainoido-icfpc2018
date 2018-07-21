@@ -173,6 +173,10 @@ Command Command::make_fill(int id, Point nd) {
   return ret;
 }
 
+Command Command::make_void(int id, Point nd) {
+  return Command();
+}
+
 Command Command::make_fusion_p(int id, Point nd) {
   Command ret;
   ret.id = id;
@@ -187,6 +191,14 @@ Command Command::make_fusion_s(int id, Point nd) {
   ret.type = FUSION_S;
   ret.fusion_s_nd = nd;
   return ret;
+}
+
+Command Command::make_gfill(int id, Point nd, Point fd) {
+  return Command();
+}
+
+Command Command::make_gvoid(int id, Point nd, Point fd) {
+  return Command();
 }
 
 static bool is_same_direction(Point l, Point r) {
