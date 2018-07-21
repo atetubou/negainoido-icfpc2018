@@ -5,6 +5,7 @@ import os.path
 import os
 from result import Ok, Ng, Result
 from typing import TypeVar,Generic,List,Any,Callable,cast
+import math
 
 app = Flask(__name__)
 dbconfig = {
@@ -38,6 +39,9 @@ def api(rule, template, **options):
         return func
     return _api
 
+
+def score(r, default, team):
+    return math.floor(math.floor(math.log(r, 2)) * 1000 * (default - team) / default)
 
 def get_connection():
     return mysql.connector.connect(**dbconfig)
@@ -130,7 +134,13 @@ def list_problems() -> Result[List[Any]]:
             " on solutions.problem_id = best.problem_id and solutions.score = best.score"
             " order by best.problem_id asc, solutions.score asc"
         )
-        return Ok(list(curr))
+
+        ret = list(curr)
+        for i in range(len(ret)):
+            r = 100
+            ret[i]['estimated_score'] = score(r, ret[i]['max_score'], ret[i]['score'])
+
+        return Ok(ret)
     finally:
         curr.close()
         conn.close()

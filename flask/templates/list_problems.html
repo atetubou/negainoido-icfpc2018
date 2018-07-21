@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+
 <h1>Problems</h1>
   <table class="table table-striped">
     <thead>
@@ -10,7 +11,7 @@
         <th> solver </th>
         <th> score </th>
         <th> default score </th>
-        <th> rough estimate score (TODO) </th>
+        <th> score lower bound (assume R=100) </th>
         <th> created_at </th>
       </tr>
     </thead>
@@ -27,7 +28,7 @@
         <td> {{ r['solver_id'] }} </td>
         <td> {{ r['score'] }} </td>
         <td> {{ r['max_score'] }} </td>
-        <td> ?? </td>
+        <td> {{ r['estimated_score'] }} </td>
         <td> {{ r['created_at'] }} </td>
       </tr>
       {% endfor %}
