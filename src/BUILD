@@ -34,3 +34,15 @@ cc_binary(
         "//src/base",
     ],
 )
+
+
+cc_binary(
+    name = "mdl2txt_test",
+    srcs = ["mdl2txt_test.cc"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+    ],
+)
