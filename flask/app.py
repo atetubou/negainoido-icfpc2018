@@ -85,10 +85,14 @@ def submit_solution() -> Result[None]:
 
     conn = get_connection()
     curr = conn.cursor()
-    curr.execute('insert into solutions(problem_id,solver_id,comment) values(%s,%s,%s)',(problem_id, solver_id, comment))
-    id = curr.lastrowid
-    nbt.save('static/solutions/%d.nbt' % id)
-    conn.commit()
+    try:
+        curr.execute('insert into solutions(problem_id,solver_id,comment) values(%s,%s,%s)',(problem_id, solver_id, comment))
+        id = curr.lastrowid
+        nbt.save('static/solutions/%d.nbt' % id)
+        conn.commit()
+    finally:
+        curr.close()
+        conn.close()
     return Ok(None)
        
 
