@@ -49,6 +49,8 @@ class CommandExecuter {
   Json::Value GetJson();
   void PrintTraceAsJson();
 
+  bool IsGrounded(const Point&);
+
   const SystemStatus& GetSystemStatus() {
     return system_status;
   }
@@ -72,11 +74,17 @@ class CommandExecuter {
   SystemStatus system_status;
   bool output_json;
 
+  // Used for IsGrounded
+  bool grounded_memo[kMaxResolution][kMaxResolution][kMaxResolution];
+  bool always_low; // harmonics is always low until now
+
   // utility
   bool IsActiveBotId(const uint32_t id);
   bool IsValidCoordinate(const Point& p);
   bool IsVoidCoordinate(const Point& p);
   bool IsVoidPath(const Point& p1, const Point& p2);
+
+  bool IsGroundedSlow(const Point&);
 
   void Halt(const uint32_t bot_id);
   void Wait(const uint32_t bot_id);

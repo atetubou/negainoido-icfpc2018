@@ -53,6 +53,16 @@ vvv InitVVV(int R) {
   return vvv(R, vv(R, v(R, 0)));
 }
 
+void PrintTurns(const std::vector<std::vector<Command>>& turns) {
+    Json::Value result;
+    result["turn"];
+    for (auto&commands : turns) {
+        Json::Value item = Command::CommandsToJson(commands);
+        result["turn"].append(item);
+    }
+    cout << Json2Binary(result);
+}
+
 const Point fill_here(-1, -1, -1);
 
 class Skeleton {
@@ -346,7 +356,7 @@ public:
 
 
   void ExecMovePointList(const vector<Point> &cmds) {
-    vector<Command> commands;
+    std::vector<Command> commands;
     Point pos;
     for(int i=0; i<(int)cmds.size(); i++) {
       if (cmds[i] == fill_here) {
@@ -364,12 +374,25 @@ public:
         pos = cmds[i];
       }
     }
-    // Last move
-    commands.emplace_back(Command::make_halt(1));
+    { // Last move
+      commands.emplace_back(Command::make_halt(1));
+    }
+    // ce.Execute(commands);
+    //    cout << ce.json << endl;
+    // cout << Json2Binary(ce.json);
 
-    ce.Execute(commands);
-//    cout << ce.json << endl;
-    cout << Json2Binary(ce.json);
+    commands = MergeSMove(commands);
+
+    // [a] -> [[a]]
+    std::vector<std::vector<Command>> turns;
+    {
+        for (auto&c : commands) {
+            std::vector<Command> item;
+            item.push_back(c);
+            turns.push_back(item);
+        }
+    }
+    PrintTurns(turns);
   }
 
 };

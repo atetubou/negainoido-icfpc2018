@@ -27,6 +27,13 @@ CommandExecuter::CommandExecuter(int R, bool output_json)
   for (int i = 2; i <= 20; i++) {
     bot_status[1].seeds.insert(i);
   }
+
+  // Initialize for IsGrounded
+  always_low = true;
+  for (int i = 0; i < R; ++i)
+    for (int j = 0; j < R; ++j)
+      for (int k = 0; k < R; ++k)
+        grounded_memo[i][j][k] = false;
 }
 
 CommandExecuter::~CommandExecuter() {}
@@ -155,6 +162,57 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
   return true;
 }
 
+bool CommandExecuter::IsGrounded(const Point& p) {
+  if (always_low) {
+    return grounded_memo[p.x][p.y][p.z];
+  } else {
+    return IsGroundedSlow(p);
+  }
+}
+
+bool CommandExecuter::IsGroundedSlow(const Point& p) {
+
+  const int adj_dx[] = {-1, 1, 0, 0, 0, 0};
+  const int adj_dy[] = { 0, 0,-1, 1, 0, 0};
+  const int adj_dz[] = { 0, 0, 0, 0,-1, 1};
+
+  static int memo[kMaxResolution][kMaxResolution][kMaxResolution];
+
+  const int R = system_status.R;
+  for (int x=0; x<R; ++x)
+    for (int y=0; y<R; ++y)
+        for (int z=0; z<R; ++z)
+          memo[x][y][z] = 0;
+
+  SystemStatus& status = system_status;
+
+  std::stack<Point> s;
+  for (int x=0; x<R; ++x) {
+    for (int z=0; z<R; ++z) {
+      if (status.matrix[x][0][z] == VOID) continue;
+      s.push(Point(x, 0, z));
+      memo[x][0][z] = 1;
+    }
+  }
+
+  while (not s.empty()) {
+      Point p = s.top(); s.pop();
+      for (int k = 0; k < 6; k++) {
+        int x = p.x + adj_dx[k];
+        int y = p.y + adj_dy[k];
+        int z = p.z + adj_dz[k];
+        if (x < 0 || y < 0 || z < 0) continue;
+        if (x >= R || y >= R || z >= R) continue;
+        if (memo[x][y][z]) continue;
+        if (status.matrix[x][y][z] == VOID) continue;
+        memo[x][y][z] = 1;
+        s.push(Point(x, y, z));
+      }
+  }
+
+  return (memo[p.x][p.y][p.z] == 1);
+}
+
 void CommandExecuter::Execute(const std::vector<Command>& commands) {
 // Update energy
   const long long R = system_status.R;
@@ -227,13 +285,11 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
         continue;
       }
 
-      LOG_ASSERT(IsLCD(vcord1.from - vcord1.to)) << vcord1.from << " " << vcord1.to;
-      LOG_ASSERT(IsLCD(vcord2.from - vcord2.to)) << vcord2.from << " " << vcord2.to;
-
       bool cold_x = ColidX(vcord1.from.x, vcord1.to.x, vcord2.from.x, vcord2.to.x);
       bool cold_y = ColidX(vcord1.from.y, vcord1.to.y, vcord2.from.y, vcord2.to.y);
       bool cold_z = ColidX(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
-      LOG_ASSERT(cold_x && cold_y && cold_z)
+      bool colid = cold_x && cold_y && cold_z;
+      LOG_ASSERT(!colid)
         << "Invalid Move (Colid)\n"
         << "vc1: id=" << vcord1.id << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
         << "vc2: id=" << vcord2.id << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
@@ -297,6 +353,9 @@ void CommandExecuter::Flip(const uint32_t bot_id) {
   } else {
     system_status.harmonics = HIGH;
   }
+
+  // For IsGrounded
+  always_low = false;
 }
 
 void CommandExecuter::SMove(const uint32_t bot_id, const Point& lld) {
@@ -392,6 +451,11 @@ void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
 
   v_cords.emplace_back(bot_id, c0, c0);
   v_cords.emplace_back(bot_id, c1, c1);
+
+  // For IsGrounded
+  if (c1.y == 0 || grounded_memo[c1.x][c1.y - 1][c1.z]) {
+    grounded_memo[c1.x][c1.y][c1.z] = true;
+  }
 }
 
 void CommandExecuter::Fusion(const uint32_t bot_id1, const Point& nd1,

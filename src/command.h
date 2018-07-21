@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include "absl/types/span.h"
+
 #include "command_util.h"
 
 #include "json/json.h"
@@ -53,5 +55,7 @@ struct Command {
   static Command make_fusion_p(int id, Point nd);
   static Command make_fusion_s(int id, Point nd);
 };
+
+std::vector<Command> MergeSMove(absl::Span<const Command> commands);
 
 #endif
