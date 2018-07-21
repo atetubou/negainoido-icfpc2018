@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <memory>
 
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -243,7 +244,9 @@ int main(int argc, char** argv) {
 
 
   if (FLAGS_json) {
-    std::cout << json << std::endl;
+    Json::StreamWriterBuilder builder;
+    std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
+    writer->write(json, &std::cout);
   } else {
     std::cout << ss.str() << std::endl;
   }
