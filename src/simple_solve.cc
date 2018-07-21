@@ -121,7 +121,7 @@ int main(int argc, char** argv) {
       int nz = tar.z + dz[i];
       if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
         if (tar_voxels[nx][ny][nz] == 1) {
-          pque.push(make_pair(cost+1, Point(nx,ny,nz)));
+          pque.push(make_pair(nx + ny + nz, Point(nx,ny,nz)));
         }
       }
     }
