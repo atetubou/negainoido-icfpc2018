@@ -60,3 +60,26 @@ Json::Value Command::CommandsToJson(const std::vector<Command>& commands) {
   }
   return turn;
 }
+
+Command Command::make_smove(int id,Point lld) {
+  Command ret;
+  ret.id = id;
+  ret.type = SMOVE;
+  ret.smove_lld = lld;
+  return ret;
+}
+
+Command Command::make_halt(int id) {
+  Command ret;
+  ret.id = id;
+  ret.type = HALT;
+  return ret;
+}
+
+Command Command::make_fill(int id, Point nd) {
+  Command ret;
+  ret.id = id;
+  ret.type = FILL;
+  ret.fill_nd = nd;
+  return ret;
+}
