@@ -246,6 +246,11 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   }
 }
 
+Json::Value CommandExecuter::GetJson() {
+  CHECK(output_json);
+  return json;
+}
+
 void CommandExecuter::PrintTraceAsJson() {
   if (output_json) {
     std::cout << json << std::endl;

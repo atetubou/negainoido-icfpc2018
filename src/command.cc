@@ -61,29 +61,6 @@ Json::Value Command::CommandsToJson(const std::vector<Command>& commands) {
   return turn;
 }
 
-Command Command::make_smove(int id,Point lld) {
-  Command ret;
-  ret.id = id;
-  ret.type = SMOVE;
-  ret.smove_lld = lld;
-  return ret;
-}
-
-Command Command::make_halt(int id) {
-  Command ret;
-  ret.id = id;
-  ret.type = HALT;
-  return ret;
-}
-
-Command Command::make_fill(int id, Point nd) {
-  Command ret;
-  ret.id = id;
-  ret.type = FILL;
-  ret.fill_nd = nd;
-  return ret;
-}
-
 Command Command::JsonToCommand(const Json::Value command) {
 
     Command c = Command();
@@ -133,4 +110,76 @@ Command Command::JsonToCommand(const Json::Value command) {
         c.fusion_s_nd.z = command["dz"].asInt();
     }
     return c;
+}
+
+
+Command Command::make_halt(int id) {
+  Command ret;
+  ret.id = id;
+  ret.type = HALT;
+  return ret;
+}
+
+Command Command::make_wait(int id) {
+  Command ret;
+  ret.id = id;
+  ret.type = WAIT;
+  return ret;
+}
+
+Command Command::make_flip(int id) {
+  Command ret;
+  ret.id = id;
+  ret.type = FLIP;
+  return ret;
+}
+
+Command Command::make_smove(int id, Point lld) {
+  Command ret;
+  ret.id = id;
+  ret.type = SMOVE;
+  ret.smove_lld = lld;
+  return ret;
+}
+
+Command Command::make_lmove(int id, Point sld1, Point sld2) {
+  Command ret;
+  ret.id = id;
+  ret.type = LMOVE;
+  ret.lmove_sld1 = sld1;
+  ret.lmove_sld2 = sld2;
+  return ret;
+}
+
+Command Command::make_fission(int id, Point nd, uint32_t m) {
+  Command ret;
+  ret.id = id;
+  ret.type = FISSION;
+  ret.fission_nd = nd;
+  ret.fission_m = m;
+  return ret;
+}
+
+Command Command::make_fill(int id, Point nd) {
+  Command ret;
+  ret.id = id;
+  ret.type = FILL;
+  ret.fill_nd = nd;
+  return ret;
+}
+
+Command Command::make_fusion_p(int id, Point nd) {
+  Command ret;
+  ret.id = id;
+  ret.type = FUSION_P;
+  ret.fusion_p_nd = nd;
+  return ret;
+}
+
+Command Command::make_fusion_s(int id, Point nd) {
+  Command ret;
+  ret.id = id;
+  ret.type = FUSION_S;
+  ret.fusion_s_nd = nd;
+  return ret;
 }
