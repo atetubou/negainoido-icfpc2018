@@ -384,7 +384,6 @@ int main(int argc, char* argv[]) {
 
   vvv M = ReadMDL(FLAGS_mdl_filename);
   WriteMDL(FLAGS_mdl_filename + "_dbl", M); // should be the same file
-  int R = (int)M.size();
 //  OutputMDL(M);
 
   auto skeleton = std::make_unique<Skeleton>(M);
