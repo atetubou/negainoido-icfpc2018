@@ -97,6 +97,7 @@ cc_binary(
             "command_util.h",
             "command_util.cc",
     ],
+    copts = ["-std=c++14"],
     deps = [
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",

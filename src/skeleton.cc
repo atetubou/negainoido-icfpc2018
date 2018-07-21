@@ -4,6 +4,7 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <memory>
 using namespace std;
 
 #include "gflags/gflags.h"
@@ -158,8 +159,8 @@ int main(int argc, char* argv[]) {
   int R = (int)M.size();
 //  OutputMDL(M);
 
-  Skeleton skeleton(M);
-  Path path = skeleton.extract_a_skeleton(find_one_basepoint(M));
-  skeleton.Enbody(path);
+  auto skeleton = std::make_unique<Skeleton>(M);
+  Path path = skeleton->extract_a_skeleton(find_one_basepoint(M));
+  skeleton->Enbody(path);
 //  OutputMDL(PointsToVVV(path, R));
 }
