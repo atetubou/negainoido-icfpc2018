@@ -118,14 +118,15 @@ def list_solution() -> Result[List[Any]]:
         curr.close()
         conn.close()
 
-@api('/list_problem', 'list_problem.html')
-def list_problem() -> Result[List[Any]]:
+@api('/list_problems', 'list_problems.html')
+def list_problems() -> Result[List[Any]]:
     conn = get_connection()
     curr = conn.cursor(dictionary=True)
     try:
-        curr.execute("select name, MAX(solutions.score), solutions.score from problems"
-                     "inner join solutions on solutions.problem_id = problems.name"
-                     "order by id asc")
+        curr.execute("select name, solutions.id, solutions.solver_id, solutions.score, solutions.created_at from problems"
+                     " inner join solutions on solutions.problem_id = problems.name"
+                     " order by name asc, solutions.score asc"
+        )
         return Ok(list(curr))
     finally:
         curr.close()

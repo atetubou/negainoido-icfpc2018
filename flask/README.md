@@ -1,6 +1,19 @@
 
 
 # init
+
+ファイルとってくる
+```
+mkdir shared
+gsutil -m cp -r gs://negainoido-icfpc2018-shared-bucket/problemsL shared
+gsutil -m cp -r gs://negainoido-icfpc2018-shared-bucket/dfltTracesL shared
+
+```
+
+```
+pip3 install virtualenv
+```
+
 最初にmysqlでデータベースとユーザを作成しておく
 
 ```
@@ -12,6 +25,7 @@ export FLASK_ENV=production
 EOF
 ./deploy.sh
 ```
+
 
 # local server 起動
 ```
