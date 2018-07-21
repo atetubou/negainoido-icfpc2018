@@ -33,7 +33,7 @@ for path in paths:
             src_path = os.path.join(destpath, fname)
             shutil.copy(os.path.join(path, fname), src_path)
             curr.execute("update problems set src_filepath = %s where name = %s", (src_path, name))
-        if not row['filepath'] is None and base[-3:] == 'tgt':
+        if row['filepath'] is None and base[-3:] == 'tgt':
             dest_path = os.path.join(destpath, fname)
             shutil.copy(os.path.join(path, fname), dest_path)
             curr.execute("update problems set filepath = %s where name = %s", (dest_path, name))
