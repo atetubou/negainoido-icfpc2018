@@ -88,12 +88,13 @@ public:
     q.push(s);
     dist[s] = 0;
     Path path;
-    int maxdist = 0;
+    int maxy = 0, miny = R;
     while(!q.empty()) {
       Point v = q.front();
       q.pop();
       int d = dist[v];
-      maxdist = max(maxdist, d);
+      maxy = max(maxy, v.y);
+      miny = min(miny, v.y);
       for(int dx=-1; dx<=1; dx++) {
         for(int dy=-1; dy<=1; dy++) {
           for(int dz=-1; dz<=1; dz++) {
@@ -110,11 +111,20 @@ public:
       }
     }
 
+    bool usemax = abs(s.y - miny) < abs(s.y - maxy);
     for(int y=0; y<R; y++) {
       for(int x=0; x<R; x++) {
         for(int z=0; z<R; z++) {
           Point v(x, y, z);
-          if (dist[v] == maxdist) {
+          if (!dist.count(v)) continue;
+          bool ok = false;
+          if (v.y == miny && !usemax) {
+            ok = true;
+          }
+          if (v.y == maxy && usemax) {
+            ok = true;
+          }
+          if (ok) {
             while(s != v) {
               path.push_back(v);
               v = prev[v];
@@ -145,10 +155,21 @@ public:
     vector<Point> movepointlist;
     while(!IsMEmpty()) {
       Path path = extract_a_skeleton();
+      cerr << "OK" << endl;
       vvv rank = RankingAccordingToPath(path);
       vector<Point> cmds = FillAccordingToRank(rank, pos);
       pos = cmds.back();
       movepointlist.insert(movepointlist.end(), cmds.begin(), cmds.end());
+
+      int mcount = 0;
+      for(int y=0; y<R; y++) {
+        for(int x=0; x<R; x++) {
+          for(int z=0; z<R; z++) {
+            mcount += M[x][y][z];
+          }
+        }
+      }
+      cerr << mcount << " " << grand.size() << endl; 
     }
 
     // move to the origin
@@ -319,8 +340,7 @@ public:
       if (cmds[i] == fill_here) {
         while((cmds[i] == fill_here || cmds[i] == pos) && i < (int)cmds.size()) i++;
         if (i >= (int)cmds.size() - 1) {
-          // Last move
-          commands.emplace_back(Command::make_halt(1));
+          break;
         } else {
           commands.emplace_back(Command::make_smove(1, cmds[i] - pos));
           commands.emplace_back(Command::make_fill(1, pos - cmds[i]));
@@ -332,6 +352,8 @@ public:
         pos = cmds[i];
       }
     }
+    // Last move
+    commands.emplace_back(Command::make_halt(1));
 
     ce.Execute(commands);
 //    cout << ce.json << endl;
