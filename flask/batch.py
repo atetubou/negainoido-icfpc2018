@@ -31,7 +31,11 @@ def eval_solution(cnx, solution_id):
     dest = os.path.join(destpath, '%d.nbt' % solution_id)
     dest_json = os.path.join(destpath, '%d.nbt.json' % solution_id)
 
-    s = subprocess.check_output('../bazel-bin/src/simulator --mdl_filename %s --nbt_filename %s' % (prob_path,dest), shell=True, universal_newlines =True)
+    dest = os.path.abspath(dest)
+    prob_path = os.path.abspath(prob_path)
+    prob_src_path = "-"
+
+    s = subprocess.check_output('python ../soren/main.py %s %s %s' % (prob_src_path,prob_path,dest), shell=True, universal_newlines =True)
     print(s)
     score = int(s)
     curr.execute("update solutions set score = %s where id = %s", (score,solution_id))
