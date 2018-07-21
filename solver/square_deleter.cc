@@ -204,8 +204,8 @@ int main(int argc, char** argv) {
   // TODO(tikuta): replace commands
   Json::Value json;
   
-  for (int y = 0; y < maxy - 1; ) {
-    int ny = std::min(y + 15, maxy - 1);
+  for (int y = 0; y < maxy; ) {
+    int ny = std::min(y + 15, maxy);
     Json::Value smove = SMove(1, 0, ny - y, 0);
 
     json["turn"].append(ToArray({smove}));
@@ -249,8 +249,6 @@ int main(int argc, char** argv) {
   // TODO: 30x30
 
   auto dxzs = Getdxzs(R, n);  
-
-  LOG(INFO) << GVoids(n + 1);
 
   int lx = 0;
   int hx = n + 1;
