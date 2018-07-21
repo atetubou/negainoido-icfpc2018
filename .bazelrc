@@ -1,2 +1,3 @@
-build --verbose_failures
-test --test_output=errors --action_env="GTEST_COLOR=1"
+build --verbose_failures -c opt
+test --test_output=errors --action_env="GTEST_COLOR=1" -c opt
+run -c opt
