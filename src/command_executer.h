@@ -46,6 +46,7 @@ class CommandExecuter {
   ~CommandExecuter();
 
   void Execute(const std::vector<Command>& commands);
+  Json::Value GetJson();
   void PrintTraceAsJson();
 
   const SystemStatus& GetSystemStatus() {
@@ -54,20 +55,8 @@ class CommandExecuter {
   const std::array<BotStatus, kMaxNumBots+1>& GetBotStatus() {
     return bot_status;
   }
+
   uint32_t GetActiveBotsNum();
-
-  // Commands
-  // Singleton Commands
-  void Halt(const uint32_t bot_id);
-  void Wait(const uint32_t bot_id);
-  void Flip(const uint32_t bot_id);
-  void SMove(const uint32_t bot_id, const Point& lld);
-  void LMove(const uint32_t bot_id, const Point& sld1, const Point& sld2);
-  void Fill(const uint32_t bot_id, const Point& nd);
-  void Fission(const uint32_t bot_id, const Point& nd, const uint32_t m);
-  void Fusion(const uint32_t bot_id1, const Point& nd1,
-              const uint32_t bot_id2, const Point& nd2);
-
   Json::Value json;
 
  private:
@@ -88,6 +77,16 @@ class CommandExecuter {
   bool IsValidCoordinate(const Point& p);
   bool IsVoidCoordinate(const Point& p);
   bool IsVoidPath(const Point& p1, const Point& p2);
+
+  void Halt(const uint32_t bot_id);
+  void Wait(const uint32_t bot_id);
+  void Flip(const uint32_t bot_id);
+  void SMove(const uint32_t bot_id, const Point& lld);
+  void LMove(const uint32_t bot_id, const Point& sld1, const Point& sld2);
+  void Fill(const uint32_t bot_id, const Point& nd);
+  void Fission(const uint32_t bot_id, const Point& nd, const uint32_t m);
+  void Fusion(const uint32_t bot_id1, const Point& nd1,
+              const uint32_t bot_id2, const Point& nd2);
 };
 
 #endif
