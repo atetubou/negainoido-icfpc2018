@@ -1,22 +1,20 @@
 #include "command_executer.h"
 
 #include <algorithm>
-#include <iostream>
 
 #define UNREACHABLE() CHECK(false)
+#define CE_DEBUG
 
 // CommandExecuter
 // Constructors
 CommandExecuter::SystemStatus::SystemStatus(int r)
   : R(r), energy(0), harmonics(LOW) {
   // TODO(hiroh): can this be replaced by matrix{}?
-  memset(matrix, 0, sizeof(uint8_t) * kMaxResolution * kMaxResolution * kMaxResolution);
+  memset(matrix, 0, sizeof(matrix));
 }
 
 CommandExecuter::BotStatus::BotStatus()
   : active(false), pos(0, 0, 0) {}
-
-//CommandExecuter::BotStatus::BotStatus(bool active, const Point& pos, const std::pair<int, int>& seeds) : active(active), pos(pos), seeds(seeds) {}
 
 CommandExecuter::CommandExecuter(int R, bool output_json)
   : num_active_bots(1), system_status(R), output_json(output_json) {
@@ -28,6 +26,8 @@ CommandExecuter::CommandExecuter(int R, bool output_json)
     bot_status[1].seeds.insert(i);
   }
 }
+
+CommandExecuter::~CommandExecuter() {}
 
 // Utilities
 bool IsLCD(const Point& p) {
@@ -44,7 +44,7 @@ uint32_t MLen(const Point& p) {
 }
 
 uint32_t CLen(const Point& p) {
-  return std::max(std::max(abs(p.x), abs(p.y)), abs(p.z));
+  return std::max({abs(p.x), abs(p.y), abs(p.z)});
 }
 
 bool IsSLD(const Point& p) {
@@ -66,12 +66,30 @@ bool IsPath(const Point& p1, const Point& p2) {
   return IsLCD(p);
 }
 
-uint32_t CommandExecuter::GetBotsNum() {
+bool Colid(int from_x1, int to_x1, int from_x2, int to_x2) {
+  if (to_x1 < from_x2) {
+    return false;
+  } else if (from_x2 > to_x1) {
+    return from_x1 <= to_x2;
+  } else {//to_x1 == from_x2
+    return true;
+  }
+}
+
+uint32_t CommandExecuter::GetActiveBotsNum() {
+#ifdef CE_DEBUG
+  size_t cnt_num_active_bots = 0;
+  for (int i = 1; i <= kMaxNumBots; i++) {
+    cnt_num_active_bots += bot_status[i].active;
+  }
+  LOG_ASSERT(cnt_num_active_bots == num_active_bots) << cnt_num_active_bots << " " << num_active_bots;
+#endif
+
   return num_active_bots;
 }
 
 bool CommandExecuter::IsActiveBotId(const uint32_t id) {
-  return 1 <= id && id <= GetBotsNum() && bot_status[id].active;
+  return 1 <= id && id <= kMaxNumBots && bot_status[id].active;
 }
 
 bool CommandExecuter::IsValidCoordinate(const Point& p) {
@@ -92,6 +110,9 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
   if (!IsPath(p1, p2))
     return false;
 
+  // No need to check and in that case must not be called in this func.
+  LOG_ASSERT(p1 != p2) << "p1=" << p1 << ", p2=" << p2;
+
   Point delta(0,0,0);
 
   if (p1.x != p2.x) {
@@ -107,8 +128,12 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
     UNREACHABLE();
   }
 
+  // Point p1 can be already FULL.
   Point p = p1;
+  p += delta;
+
   while (true) {
+
     if (!IsVoidCoordinate(p))
       return false;
 
@@ -122,9 +147,6 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
 }
 
 void CommandExecuter::Execute(const std::vector<Command>& commands) {
-
-  // TODO(hiroh): Check volatile coordinates
-
   int fusion_count = 0;
 
   for (auto com1 : commands) {
@@ -176,7 +198,21 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     }
   }
 
-  CHECK(fusion_count == 0);
+  LOG_ASSERT(fusion_count == 0) << fusion_count;
+  // Check volatile cordinates
+  for (const auto& vcord1 : v_cords) {
+    for (const auto& vcord2 : v_cords) {
+      if (vcord1.id == vcord2.id) {
+        continue;
+      }
+      bool cold_x = Colid(vcord1.from.x, vcord1.to.x, vcord2.from.x, vcord2.to.x);
+      bool cold_y = Colid(vcord1.from.y, vcord1.to.y, vcord2.from.y, vcord2.to.y);
+      bool cold_z = Colid(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
+      LOG_ASSERT(cold_x && cold_y && cold_z) << "Invalid Move (Colid)\n"
+                                                << "vc1: id=" << vcord1.id << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
+                                                << "vc2: id=" << vcord2.id << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
+    }
+  }
 
   if (output_json) {
     auto turn_json = Command::CommandsToJson(commands);
@@ -186,27 +222,29 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
 
 // Commands
 void CommandExecuter::Halt(const uint32_t bot_id) {
-  CHECK(IsActiveBotId(bot_id));
+  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
   Point& p = bot_status[bot_id].pos;
-  CHECK(p.x == 0 && p.y == 0 && p.z == 0);
-  CHECK(GetBotsNum() == 1);
-  CHECK(bot_status[bot_id].active);
-  CHECK(system_status.harmonics == LOW);
+  LOG_ASSERT(p == Point(0,0,0)) << p;
+  LOG_ASSERT(GetActiveBotsNum() == 1) << GetActiveBotsNum();
+  LOG_ASSERT(system_status.harmonics == LOW);
   bot_status[bot_id].active = false;
+  num_active_bots--;
+  v_cords.emplace_back(bot_id, p, p);
+  LOG_ASSERT(num_active_bots == 0) << num_active_bots;
 }
 
 void CommandExecuter::Wait(const uint32_t bot_id) {
-  CHECK(IsActiveBotId(bot_id));
+  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
 
   Point c = bot_status[bot_id].pos;
-  v_cords.push_back(std::make_pair(c, c));
+  v_cords.emplace_back(bot_id, c, c);
 }
 
 void CommandExecuter::Flip(const uint32_t bot_id) {
-  CHECK(IsActiveBotId(bot_id));
+  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
 
   Point c = bot_status[bot_id].pos;
-  v_cords.push_back(std::make_pair(c, c));
+  v_cords.emplace_back(bot_id, c, c);
 
   if (system_status.harmonics == HIGH) {
     system_status.harmonics = LOW;
@@ -216,58 +254,55 @@ void CommandExecuter::Flip(const uint32_t bot_id) {
 }
 
 void CommandExecuter::SMove(const uint32_t bot_id, const Point& lld) {
-  CHECK(IsActiveBotId(bot_id));
-  CHECK(IsLLD(lld));
+  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  LOG_ASSERT(IsLLD(lld)) << lld;
 
   Point c0 = bot_status[bot_id].pos;
   Point c1 = c0 + lld;
 
+  LOG_ASSERT(IsValidCoordinate(c1)) << c1;
+  LOG_ASSERT(IsVoidPath(c0, c1)) << c0 << " " << c1;
+
   bot_status[bot_id].pos = c1;
-
-  CHECK(IsValidCoordinate(c1));
-  CHECK(IsVoidPath(c0, c1));
-
-  v_cords.push_back(std::make_pair(c0, c1));
+  v_cords.emplace_back(bot_id, c0, c1);
   system_status.energy += 2 * MLen(lld);
 }
 
 void CommandExecuter::LMove(const uint32_t bot_id, const Point& sld1, const Point& sld2) {
-  CHECK(IsActiveBotId(bot_id));
-  CHECK(IsSLD(sld1));
-  CHECK(IsSLD(sld2));
+  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  LOG_ASSERT(IsSLD(sld1)) << sld1;
+  LOG_ASSERT(IsSLD(sld2)) << sld2;
   Point c0 = bot_status[bot_id].pos;
   Point c1 = c0 + sld1;
   Point c2 = c1 + sld2;
-
-  CHECK(IsValidCoordinate(c1));
-  CHECK(IsValidCoordinate(c2));
-  CHECK(IsVoidPath(c0, c1));
-  CHECK(IsVoidPath(c1, c2));
+  LOG_ASSERT(IsValidCoordinate(c1)) << c1;
+  LOG_ASSERT(IsValidCoordinate(c2)) << c2;
+  LOG_ASSERT(IsVoidPath(c0, c1)) << c0 << " " << c1;
+  LOG_ASSERT(IsVoidPath(c1, c2)) << c1 << " " << c2;
 
   bot_status[bot_id].pos = c2;
-  v_cords.push_back(std::make_pair(c0, c1));
-  v_cords.push_back(std::make_pair(c1, c2));
+  v_cords.emplace_back(bot_id, c0, c1);
+  v_cords.emplace_back(bot_id, c1, c2);
   system_status.energy += 2 * (MLen(sld1) + 2 + MLen(sld2));
 }
 
 void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint32_t m) {
-
-  CHECK(IsActiveBotId(bot_id));
-  CHECK(IsNCD(nd));
-  CHECK(!bot_status[bot_id].seeds.empty());
+  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  LOG_ASSERT(IsNCD(nd)) << nd;
+  LOG_ASSERT(!bot_status[bot_id].seeds.empty()) << bot_status[bot_id].seeds.size();
   BotStatus& bot = bot_status[bot_id];
   Point c0 = bot.pos;
   Point c1 = c1 + nd;
-  CHECK(IsValidCoordinate(c1));
-  CHECK(IsVoidCoordinate(c1));
+  LOG_ASSERT(IsValidCoordinate(c1)) << c1;
+  LOG_ASSERT(IsVoidCoordinate(c1)) << c1;
 
-  uint32_t n = bot.seeds.size();
-  CHECK(m+1 <= n);
+  const uint32_t n = bot.seeds.size();
+  LOG_ASSERT(m + 1 <= n) << m + 1 << " " << n;
 
   auto seeds_iter = bot.seeds.begin();
 
   uint32_t newbot_id = *seeds_iter++;
-  CHECK(bot_status[newbot_id].active == false);
+  LOG_ASSERT(bot_status[newbot_id].active == false);
   BotStatus& newbot = bot_status[newbot_id];
   newbot.active = true;
   newbot.pos = c1;
@@ -284,20 +319,23 @@ void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint
 
   bot.seeds = bot_seeds;
 
+  LOG_ASSERT(newbot.seeds.size() == m) << newbot.seeds.size() << " " << m;
+  LOG_ASSERT(bot.seeds.size() == n - 1 - m) << newbot.seeds.size() << " " << n << " " << m;
+
   system_status.energy += 24;
 
-  v_cords.push_back(std::make_pair(c0, c0));
-  v_cords.push_back(std::make_pair(c1, c1));
+  v_cords.emplace_back(bot_id, c0, c0);
+  v_cords.emplace_back(bot_id, c1, c1);
 }
 
 void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
-  CHECK(IsActiveBotId(bot_id));
-  CHECK(IsNCD(nd));
+  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  LOG_ASSERT(IsNCD(nd)) << nd;
 
   BotStatus& bot = bot_status[bot_id];
   Point c0 = bot.pos;
-  Point c1 = c1 + nd;
-  CHECK(IsValidCoordinate(c1));
+  Point c1 = c0 + nd;
+  LOG_ASSERT(IsValidCoordinate(c1)) << c1;
 
   if (system_status.matrix[c1.x][c1.y][c1.z] == VOID) {
     system_status.matrix[c1.x][c1.y][c1.z] = FULL;
@@ -306,35 +344,34 @@ void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
     system_status.energy += 6;
   }
 
-  v_cords.push_back(std::make_pair(c0, c0));
-  v_cords.push_back(std::make_pair(c1, c1));
+  v_cords.emplace_back(bot_id, c0, c0);
+  v_cords.emplace_back(bot_id, c1, c1);
 }
 
 void CommandExecuter::Fusion(const uint32_t bot_id1, const Point& nd1,
                              const uint32_t bot_id2, const Point& nd2) {
-    CHECK(IsActiveBotId(bot_id1));
-    CHECK(IsActiveBotId(bot_id2));
-    CHECK(IsNCD(nd1));
-    CHECK(IsNCD(nd2));
+  LOG_ASSERT(IsActiveBotId(bot_id1)) << bot_id1;
+  LOG_ASSERT(IsActiveBotId(bot_id2)) << bot_id2;
+  LOG_ASSERT(IsNCD(nd1)) << nd1;
+  LOG_ASSERT(IsNCD(nd2)) << nd2;
 
-    BotStatus& bot1 = bot_status[bot_id1];
-    BotStatus& bot2 = bot_status[bot_id2];
-    CHECK(bot1.pos + nd1 == bot2.pos);
-    CHECK(bot2.pos + nd2 == bot1.pos);
+  BotStatus& bot1 = bot_status[bot_id1];
+  BotStatus& bot2 = bot_status[bot_id2];
+  LOG_ASSERT(IsValidCoordinate(bot1.pos)) << bot1.pos;
+  LOG_ASSERT(IsValidCoordinate(bot2.pos)) << bot2.pos;
+  LOG_ASSERT(bot1.pos + nd1 == bot2.pos) << bot1.pos << " " << nd1 << " " << bot2.pos;
+  LOG_ASSERT(bot2.pos + nd2 == bot1.pos) << bot2.pos << " " << nd2 << " " << bot1.pos;
 
-    CHECK(IsValidCoordinate(bot1.pos));
-    CHECK(IsValidCoordinate(bot2.pos));
+  bot2.active = false;
+  num_active_bots -= 1;
 
-    bot2.active = false;
-    num_active_bots -= 1;
+  for (uint32_t seed : bot2.seeds) {
+    bot1.seeds.insert(seed);
+  }
+  bot1.seeds.insert(bot_id2);
 
-    for (uint32_t seed : bot2.seeds) {
-      bot1.seeds.insert(seed);
-    }
-    bot1.seeds.insert(bot_id2);
+  system_status.energy -= 24;
 
-    system_status.energy -= 24;
-
-    v_cords.push_back(std::make_pair(bot1.pos, bot1.pos));
-    v_cords.push_back(std::make_pair(bot2.pos, bot2.pos));
+  v_cords.emplace_back(bot_id1, bot1.pos, bot1.pos);
+  v_cords.emplace_back(bot_id2, bot2.pos, bot2.pos);
 }

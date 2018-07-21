@@ -3,3 +3,4 @@
 /bazel-negainoido-icfpc2018
 /bazel-out
 /bazel-testlogs
+*.swap
