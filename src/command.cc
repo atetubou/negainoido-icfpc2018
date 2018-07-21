@@ -83,3 +83,54 @@ Command Command::make_fill(int id, Point nd) {
   ret.fill_nd = nd;
   return ret;
 }
+
+Command Command::JsonToCommand(const Json::Value command) {
+
+    Command c = Command();
+    std::string type = command["command"].asString();
+
+    c.id = command["bot_id"].asInt();
+
+    c.type = Command::HALT;
+    if (type == "Halt") {
+        c.type = Command::HALT;
+    } else if (type == "Wait") {
+        c.type = Command::WAIT;
+    } else if (type == "Flip") {
+        c.type = Command::FLIP;
+    } else if (type == "SMove") {
+        c.type = SMOVE;
+        c.smove_lld.x = command["dx"].asInt();
+        c.smove_lld.y = command["dy"].asInt();
+        c.smove_lld.z = command["dz"].asInt();
+    } else if (type == "LMove") {
+        c.type = LMOVE;
+        c.lmove_sld1.x = command["dx1"].asInt();
+        c.lmove_sld1.y = command["dy1"].asInt();
+        c.lmove_sld1.z = command["dz1"].asInt();
+        c.lmove_sld2.x = command["dx2"].asInt();
+        c.lmove_sld2.y = command["dy2"].asInt();
+        c.lmove_sld2.z = command["dz2"].asInt();
+    } else if (type == "Fission") {
+        c.type = FISSION;
+        c.fission_nd.x = command["dx"].asInt();
+        c.fission_nd.y = command["dy"].asInt();
+        c.fission_nd.z = command["dz"].asInt();
+    } else if (type == "Fill") {
+        c.type = FILL;
+        c.fill_nd.x = command["dx"].asInt();
+        c.fill_nd.y = command["dy"].asInt();
+        c.fill_nd.z = command["dz"].asInt();
+    } else if (type == "FusionP") {
+        c.type = FUSION_P;
+        c.fusion_p_nd.x = command["dx"].asInt();
+        c.fusion_p_nd.y = command["dy"].asInt();
+        c.fusion_p_nd.z = command["dz"].asInt();
+    } else if (type == "FusionS") {
+        c.type = FUSION_S;
+        c.fusion_s_nd.x = command["dx"].asInt();
+        c.fusion_s_nd.y = command["dy"].asInt();
+        c.fusion_s_nd.z = command["dz"].asInt();
+    }
+    return c;
+}
