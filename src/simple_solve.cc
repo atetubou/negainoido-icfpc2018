@@ -22,10 +22,7 @@ vector<Command> get_commands_for_next(Point &current, Point &dest, vvv &voxels) 
     queue<Point> que;
     int count = 1;
     vvv tmp_map(R,vv(R,v(R,0)));
-    cout << "R: " << R << endl;
     que.push(Point(current.x, current.y, current.z));
-    cout << "bfs current: (" << current.x << "," << current.y << "," << current.z << ")" << endl;
-    cout << "bfs dest: (" << dest.x << "," << dest.y << "," << dest.z << ")" << endl;
     while(!que.empty()) {
       Point tar = que.front();
       que.pop();
@@ -35,7 +32,6 @@ vector<Command> get_commands_for_next(Point &current, Point &dest, vvv &voxels) 
       count++;
 
       if (dest == tar) {
-        cout << "Reach dest" << endl;
         break;
       }
 
@@ -54,17 +50,14 @@ vector<Command> get_commands_for_next(Point &current, Point &dest, vvv &voxels) 
     vector<Command> rev_commands;
     Point rc = dest;
     while(rc != current) {
-      cout << "Find prev for (" << rc.x << ","  << rc.y << "," << rc.z <<  ")" << endl;
       int mind = -1;
       int minc = tmp_map[rc.x][rc.y][rc.z];
-      cout << "count for (" << rc.x << ","  << rc.y << "," << rc.z <<  "): "  << minc << endl;
       for(int i=0;i<6;i++) {
         int nx = rc.x + dx[i];
         int ny = rc.y + dy[i];
         int nz = rc.z + dz[i];
         if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
           int tmpv = tmp_map[nx][ny][nz];
-          cout << "count for (" << nx << ","  << ny << "," << nz <<  "): "  << tmpv << endl;
           if (minc > tmpv && tmpv > 0) {
             minc = tmpv;
             mind = i;
@@ -78,7 +71,7 @@ vector<Command> get_commands_for_next(Point &current, Point &dest, vvv &voxels) 
       rc.x = rc.x + dx[mind];
       rc.y = rc.y + dy[mind];
       rc.z = rc.z + dz[mind];
-      rev_commands.push_back(Command::make_smove(Point(-dx[mind], -dy[mind], -dz[mind])));
+      rev_commands.push_back(Command::make_smove(1, Point(-dx[mind], -dy[mind], -dz[mind])));
     }
 
     reverse(rev_commands.begin(), rev_commands.end());
@@ -86,7 +79,8 @@ vector<Command> get_commands_for_next(Point &current, Point &dest, vvv &voxels) 
     return rev_commands;
 }
 
-DEFINE_string(mdl_filename, "", "filepath of nbt");
+DEFINE_string(mdl_filename, "", "filepath of mdl");
+DEFINE_bool(json, false, "output command in json if --json is set");
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   
@@ -111,7 +105,6 @@ int main(int argc, char** argv) {
     pque.pop();
     if (tar_voxels[tar.x][tar.y][tar.z] != 1) continue;
 
-    cout << "try to fill (" << tar.x << "," << tar.y << "," << tar.z << ")" << endl;
 
     for(int i=0;i<6;i++) {
       int nx = tar.x + dx[i];
@@ -161,8 +154,21 @@ int main(int argc, char** argv) {
     results.push_back(ncs[0]);
     Point nd = ncs[0].smove_lld;
 
-    results.push_back(Command::make_fill(Point(-nd.x, -nd.y, -nd.z)));
+    results.push_back(Command::make_fill(1, Point(-nd.x, -nd.y, -nd.z)));
     current = tar + nd;
+  }
+  auto start = Point(0,0,0);
+  for (auto command : get_commands_for_next(current, start, tar_voxels)) {
+    results.push_back(command);
+  }
+  results.push_back(Command::make_halt(1));
+
+  Json::Value json;  
+  json["turn"].append(Command::CommandsToJson(results));
+  if (FLAGS_json) {
+    cout << json << endl;
+  } else {
+    cout << Json2Binary(json);
   }
 
   return 0;

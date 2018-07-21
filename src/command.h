@@ -41,9 +41,9 @@ struct Command {
 
   static Json::Value CommandsToJson(const std::vector<Command>& commands);
 
-  static Command make_fill(Point nd);
-  static Command make_halt();
-  static Command make_smove(Point lld);
+  static Command make_fill(int id, Point nd);
+  static Command make_halt(int id);
+  static Command make_smove(int id, Point lld);
 };
 
 #endif
