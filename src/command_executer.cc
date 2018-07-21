@@ -66,14 +66,21 @@ bool IsPath(const Point& p1, const Point& p2) {
   return IsLCD(p);
 }
 
-bool Colid(int from_x1, int to_x1, int from_x2, int to_x2) {
-  if (to_x1 < from_x2) {
-    return false;
-  } else if (from_x2 > to_x1) {
-    return from_x1 <= to_x2;
-  } else {//to_x1 == from_x2
+bool ColidX(int from_x1, int to_x1, int from_x2, int to_x2) {
+
+  if (from_x1 > to_x1)
+    std::swap(from_x1, to_x1);
+
+  if (from_x2 > to_x2)
+    std::swap(from_x2, to_x2);
+
+  if (from_x1 <= from_x2 && from_x2 <= to_x1)
     return true;
-  }
+
+  if (from_x2 <= from_x1 && from_x1 <= to_x2)
+    return true;
+
+  return false;
 }
 
 uint32_t CommandExecuter::GetActiveBotsNum() {
@@ -205,9 +212,13 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
       if (vcord1.id == vcord2.id) {
         continue;
       }
-      bool cold_x = Colid(vcord1.from.x, vcord1.to.x, vcord2.from.x, vcord2.to.x);
-      bool cold_y = Colid(vcord1.from.y, vcord1.to.y, vcord2.from.y, vcord2.to.y);
-      bool cold_z = Colid(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
+
+      LOG_ASSERT(IsLCD(vcord1.from - vcord1.to)) << vcord1.from << " " << vcord1.to;
+      LOG_ASSERT(IsLCD(vcord2.from - vcord2.to)) << vcord2.from << " " << vcord2.to;
+
+      bool cold_x = ColidX(vcord1.from.x, vcord1.to.x, vcord2.from.x, vcord2.to.x);
+      bool cold_y = ColidX(vcord1.from.y, vcord1.to.y, vcord2.from.y, vcord2.to.y);
+      bool cold_z = ColidX(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
       LOG_ASSERT(cold_x && cold_y && cold_z) << "Invalid Move (Colid)\n"
                                                 << "vc1: id=" << vcord1.id << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
                                                 << "vc2: id=" << vcord2.id << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
