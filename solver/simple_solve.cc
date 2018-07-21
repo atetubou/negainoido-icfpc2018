@@ -3,8 +3,8 @@
 #include "glog/logging.h"
 
 #include "src/base/base.h"
-#include "command_util.h"
-#include "command.h"
+#include "src/command_util.h"
+#include "src/command.h"
 #include <queue>
 #include <cmath>
 #include <vector>

@@ -12,3 +12,27 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "simple_solve",
+    srcs = ["simple_solve.cc"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        "//src:command_executer",
+    ],
+)
+
+cc_binary(
+    name = "skeleton",
+    srcs = ["skeleton.cc"],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        "//src:command_executer",
+    ],
+)
