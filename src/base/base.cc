@@ -152,7 +152,7 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(command.isMember("dy2") && command["dy2"].isInt()) << command;
     CHECK(command.isMember("dz2") && command["dz2"].isInt()) << command;
 
-    auto sid1 = getshort(command["dx1"].asInt(), command["dy1"].asInt(), command["dz2"].asInt());
+    auto sid1 = getshort(command["dx1"].asInt(), command["dy1"].asInt(), command["dz1"].asInt());
     auto sid2 = getshort(command["dx2"].asInt(), command["dy2"].asInt(), command["dz2"].asInt());
 
     return {
