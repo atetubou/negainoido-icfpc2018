@@ -34,17 +34,18 @@ func main() {
 	srcMDL := fmt.Sprintf("$(pwd)/shared/%s_src.mdl", *problem)
 	tgtMDL := fmt.Sprintf("$(pwd)/shared/%s_tgt.mdl", *problem)
 
-	if strings.HasPrefix("LA", *problem) || strings.HasPrefix("FA", *problem) {
+	if strings.HasPrefix(*problem, "LA") || strings.HasPrefix(*problem, "FA") {
 		srcMDL = "-"
 	}
 
-	if strings.HasPrefix("FD", *problem) {
+	if strings.HasPrefix(*problem, "FD") {
 		tgtMDL = "-"
 	}
 
-	solveCommand := fmt.Sprintf("bazel run %s -- --mdl_filename=%s > /tmp/nbt.nbt", *solver, tgtMDL)
-	runCommands()
-	simulatorResult := runCommandsOutput(fmt.Sprintf("bazel run //src:simulator -- --mdl_filename=%s --nbt_filename=/tmp/nbt.nbt", tgtMDL))
+	// TODO: use tmpdir
+	runCommands(fmt.Sprintf("bazel run %s -- --src_filename %s --tgt_filename %s > /tmp/nbt.nbt", *solver, srcMDL, tgtMDL))
+	simulatorResult := runCommandsOutput(fmt.Sprintf("bazel run //src:simulator -- --src_filename=%s --tgt_filename=%s --nbt_filename=/tmp/nbt.nbt",
+		srcMDL, tgtMDL))
 
 	log.Printf("Simulator Result %s", simulatorResult)
 
