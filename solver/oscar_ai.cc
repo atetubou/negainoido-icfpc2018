@@ -126,15 +126,6 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
   return rev_commands;
 }
 
-static Point dP[] = {
-    Point(-1, 0, 0),
-    Point(1, 0, 0),
-    Point(0, -1, 0),
-    Point(0, 1, 0),
-    Point(0, 0, -1),
-    Point(0, 0, 1),
-};
-
 #define DOWN_X 0
 #define UP_X 1
 #define DOWN_Y 2
@@ -404,7 +395,7 @@ int main(int argc, char *argv[])
     }
 
 
-    int R;
+    int R = 1;
     vvv src_model;
     if (!FLAGS_src_filename.empty()) {
         src_model = ReadMDL(FLAGS_src_filename);
