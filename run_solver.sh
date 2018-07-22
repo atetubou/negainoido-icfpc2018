@@ -9,6 +9,7 @@ OUT_DIR=
 SOLVER=
 SOLVER_OPTS=
 SUBMIT=0
+RANGE=1-1000
 J=1
 
 usage() {
@@ -19,10 +20,15 @@ $0
     --solver             --- "//src:{solver}" (e.g. oscar_ai)
     --solver-opts        --- (e.g. --flip=false)
     -o out/
+    --range              --- (default: 1-1000; inclusive)
     [-j 1]               --- parallel
     [--submit]           --- submit the result
 EOM
     exit 1
+}
+
+range() {
+    echo $1 | sed 's/\([0-9]*\)-\([0-9]*\)/seq \1 \2/g' | sh
 }
 
 while [ $# -gt 0 ]; do
@@ -51,6 +57,10 @@ while [ $# -gt 0 ]; do
             J=$2
             shift 2
             ;;
+        --range )
+            RANGE=$2
+            shift 2
+            ;;
         --submit )
             SUBMIT=1
             shift
@@ -70,6 +80,7 @@ fi
 REPORT_DIR=$OUT_DIR-report
 
 echo ---
+echo RANGE $RANGE
 echo TYPE $TYPE
 echo SOLVER $SOLVER
 echo MDL_DIR $MDL_DIR
@@ -90,12 +101,12 @@ shuffle() {
     fi
 }
 
-for i in $(seq 1 1000); do
+for i in $(range "$RANGE"); do
 
     SRC=$(printf "$MDL_DIR/$TYPE%03d_src.mdl" $i)
     TGT=$(printf "$MDL_DIR/$TYPE%03d_tgt.mdl" $i)
-    OUT=$(printf "$OUT_DIR/%03d.nbt" $i)
-    OUT_REPORT=$(printf "$REPORT_DIR/%03d.log" $i)
+    OUT=$(printf "$OUT_DIR/$TYPE%03d.nbt" $i)
+    OUT_REPORT=$(printf "$REPORT_DIR/$TYPE%03d.log" $i)
 
     if [ -f "$SRC" ]; then
         SRC=$(readlink -f $SRC)
@@ -117,3 +128,27 @@ for i in $(seq 1 1000); do
 done |
 shuffle |
 parallel -v -j ${J}
+
+
+if [ $SUBMIT -eq 0 ]; then
+    exit
+fi
+
+# submitting
+for i in $(range "$RANGE"); do
+    PROBLEM_ID=$(printf "$TYPE%03d" $i)
+    NBT_FILE=$(printf "$OUT_DIR/$TYPE%03d.nbt" $i)
+    LOG_FILE=$(printf "$REPORT_DIR/$TYPE%03d.log" $i)
+    if [ -f "$NBT_FILE" -a ! -f "$LOGFILE" ]; then
+        echo "Submitting $NBT_FILE"
+
+    curl http://negainoido:icfpc_ojima@35.196.88.166/submit_solution \
+         -F problem_id=${PROBLEM_ID} \
+         -F solver_id=${SOLVER} \
+         -F comment=from-run_solver \
+         -F nbt=@${NBT_FILE} > /dev/null
+
+        sleep 1
+    fi
+
+done
