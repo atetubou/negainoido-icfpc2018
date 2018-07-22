@@ -67,6 +67,24 @@ Json::Value Command::CommandsToJson(const std::vector<Command>& commands) {
       command["dy"] = c.fusion_s_nd.y;
       command["dz"] = c.fusion_s_nd.z;
       break;
+    case GFILL:
+      command["command"] = "GFill";
+      command["dx1"] = c.gfill_nd.x;
+      command["dy1"] = c.gfill_nd.y;
+      command["dz1"] = c.gfill_nd.z;
+      command["dx2"] = c.gfill_fd.x;
+      command["dy2"] = c.gfill_fd.y;
+      command["dz2"] = c.gfill_fd.z;
+      break;
+    case GVOID:
+      command["command"] = "GVoid";
+      command["dx1"] = c.gvoid_nd.x;
+      command["dy1"] = c.gvoid_nd.y;
+      command["dz1"] = c.gvoid_nd.z;
+      command["dx2"] = c.gvoid_fd.x;
+      command["dy2"] = c.gvoid_fd.y;
+      command["dz2"] = c.gvoid_fd.z;
+      break;
     }
     turn.append(std::move(command));
   }
@@ -123,7 +141,6 @@ Command Command::JsonToCommand(const Json::Value command) {
     }
     return c;
 }
-
 
 Command Command::make_halt(int id) {
   Command ret;
@@ -205,7 +222,12 @@ Command Command::make_fusion_s(int id, Point nd) {
 }
 
 Command Command::make_gfill(int id, Point nd, Point fd) {
-  return Command();
+  Command ret;
+  ret.id = id;
+  ret.type = GFILL;
+  ret.gfill_nd = nd;
+  ret.gfill_fd = fd;
+  return ret;
 }
 
 Command Command::make_gvoid(int id, Point nd, Point fd) {

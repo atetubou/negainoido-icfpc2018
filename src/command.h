@@ -45,6 +45,9 @@ struct Command {
   Point fusion_p_nd;
   // FUSION_S
   Point fusion_s_nd;
+  // GFILL
+  Point gfill_nd;
+  Point gfill_fd;
   // GVOID
   Point gvoid_nd;
   Point gvoid_fd;
