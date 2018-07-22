@@ -124,7 +124,7 @@ for i in $(range "$RANGE"); do
         fi
     fi
 
-    echo "bazel run //solver:$SOLVER -- --src_filename=$SRC --tgt_filename=$TGT $SOLVER_OPTS > $OUT 2>$OUT_REPORT && rm $OUT_REPORT"
+    echo "bazel run //solver:$SOLVER -- --src_filename=$SRC --tgt_filename=$TGT $SOLVER_OPTS > $OUT 2>$OUT_REPORT && rm $OUT_REPORT || cat $OUT_REPORT"
 done |
 shuffle |
 parallel -v -j ${J}
