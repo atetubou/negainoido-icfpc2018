@@ -2,6 +2,8 @@
 
 set -eux
 
+cd $(dirname $0)
+
 echo -e "\e[31mdownloading to shared directory\e[m"
 echo -e "\e[31msee shared directory after execution\e[m"
 
