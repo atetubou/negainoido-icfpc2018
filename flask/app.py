@@ -43,8 +43,8 @@ def api(rule, template, **options):
     return _api
 
 
-def score(r, default, team):
-    return math.floor(math.floor(math.log(r, 2)) * 1000 * (default - team) / default)
+def score(r, default, team, best = 0):
+    return math.floor(math.floor(math.log(r, 2)) * 1000 * (default - team) / (default - best))
 
 def get_connection():
     return mysql.connector.connect(**dbconfig)
@@ -211,8 +211,12 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
 """)
         total_score = 0
         def estimated_score(row):
+            best = 0
+            if row['name'] in standing_tbl:
+                best = standing_tbl[row['name']]['score']
+
             if row['score'] and row['max_score']:
-                return score(row['r'], row['max_score'], row['score'])
+                return score(row['r'], row['max_score'], row['score'], best)
             else:
                 return 0
 
@@ -224,7 +228,7 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
             else:
                 opt = 0
             if row['max_score']:
-                return score(row['r'], row['max_score'], opt)
+                return score(row['r'], row['max_score'], opt, opt)
             else:
                 return 0
 
