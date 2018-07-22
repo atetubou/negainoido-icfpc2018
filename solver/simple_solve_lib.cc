@@ -103,14 +103,15 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
 }
 
 std::vector<Command> SimpleSolve(const vvv& voxels) {
-  priority_queue<pair<int, Point>, vector< pair<int, Point> >, greater< pair<int, Point> > > pque;
+  using state = pair<pair<int, int>, Point>;
+  priority_queue<state, vector<state>, greater<state> > pque;
 
   const int R = voxels.size();
 
   for (size_t x = 0; x < voxels.size(); x++) {
     for(size_t z = 0; z < voxels[x][0].size(); z++) {
       if (voxels[x][0][z] == 1) {
-        pque.push(make_pair(x + z, Point(x, 0, z)));
+        pque.push(make_pair(make_pair(0, x + z), Point(x, 0, z)));
       }
     }
   }
@@ -137,7 +138,7 @@ std::vector<Command> SimpleSolve(const vvv& voxels) {
       int nz = cur.z + dz[i];
       if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
         if (voxels[nx][ny][nz] == 1 && !visited[nx][ny][nz]) {
-          pque.push(make_pair(nx + ny + nz, Point(nx,ny,nz)));
+          pque.push(make_pair(make_pair(ny, nx + ny + nz), Point(nx,ny,nz)));
         }
       }
     }
