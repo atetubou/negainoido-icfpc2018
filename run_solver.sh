@@ -105,8 +105,8 @@ for i in $(range "$RANGE"); do
 
     SRC=$(printf "$MDL_DIR/$TYPE%03d_src.mdl" $i)
     TGT=$(printf "$MDL_DIR/$TYPE%03d_tgt.mdl" $i)
-    OUT=$(printf "$OUT_DIR/%03d.nbt" $i)
-    OUT_REPORT=$(printf "$REPORT_DIR/%03d.log" $i)
+    OUT=$(printf "$OUT_DIR/$TYPE%03d.nbt" $i)
+    OUT_REPORT=$(printf "$REPORT_DIR/$TYPE%03d.log" $i)
 
     if [ -f "$SRC" ]; then
         SRC=$(readlink -f $SRC)
@@ -128,3 +128,27 @@ for i in $(range "$RANGE"); do
 done |
 shuffle |
 parallel -v -j ${J}
+
+
+if [ $SUBMIT -eq 0 ]; then
+    exit
+fi
+
+# submitting
+for i in $(range "$RANGE"); do
+    PROBLEM_ID=$(printf "$TYPE%03d" $i)
+    NBT_FILE=$(printf "$OUT_DIR/$TYPE%03d.nbt" $i)
+    LOG_FILE=$(printf "$REPORT_DIR/$TYPE%03d.log" $i)
+    if [ -f "$NBT_FILE" -a ! -f "$LOGFILE" ]; then
+        echo "Submitting $NBT_FILE"
+
+    curl http://negainoido:icfpc_ojima@35.196.88.166/submit_solution \
+         -F problem_id=${PROBLEM_ID} \
+         -F solver_id=${SOLVER} \
+         -F comment=from-run_solver \
+         -F nbt=@${NBT_FILE} > /dev/null
+
+        sleep 1
+    fi
+
+done
