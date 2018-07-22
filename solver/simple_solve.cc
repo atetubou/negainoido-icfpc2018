@@ -30,18 +30,18 @@ using evvv = std::vector<evv>;
 
 int total_visit = 0;
 
-vector<Command> get_commands_for_next(const Point& current, const Point& dest, 
+vector<Command> get_commands_for_next(const Point& current, const Point& dest,
                                       const evvv& voxel_states) {
   const int R = voxel_states.size();
 
   struct State {
     State(int estimated, int current_cost, const Point& p) :
       estimated(estimated), current_cost(current_cost), p(p) {};
-    
+
     int estimated;
     int current_cost;
     Point p;
-    
+
     bool operator<(const State& o) const {
       return estimated > o.estimated;
     }
@@ -51,7 +51,7 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
   int count = 1;
 
   static vvv tmp_map(R, vv(R, v(R, -1)));
-  
+
   vector<Point> visited;
 
   que.push(State((dest - current).Manhattan(), 0, current));
@@ -105,7 +105,7 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
         }
       }
     }
-    
+
     LOG_IF(FATAL, mind < 0) << "Error in BFS to find path";
 
     rc.x = rc.x + dx[mind];
@@ -140,7 +140,7 @@ void flush_commands(vector<Command> &results) {
 
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  
+
   const vvv voxels = ReadMDL(FLAGS_mdl_filename);
 
   priority_queue<pair<int, Point>, vector< pair<int, Point> >, greater< pair<int, Point> > > pque;
@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
       }
     }
   }
-  
+
   LOG(INFO) << "start path construction";
 
   int total_move = 0;
@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
 
     result_buff.push_back(commands[0]);
     if (i > 0) {
-      const Point& nd = commands[0].smove_lld;
+      const Point& nd = commands[0].smove_.lld;
       result_buff.push_back(Command::make_fill(1, Point(-nd.x, -nd.y, -nd.z)));
       result_buff = MergeSMove(result_buff);
       flush_commands(result_buff);
@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
   flush_commands(result_buff);
 
   LOG(INFO) << "done path construction R=" << R
-            << " total_visit=" << total_visit 
+            << " total_visit=" << total_visit
             << " total_move=" << total_move
             << " move_per_voxel=" << static_cast<double>(total_move) / (visit_order.size() - 2)
             << " visit_per_voxel=" << static_cast<double>(total_visit) / (visit_order.size() - 2);
