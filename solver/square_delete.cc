@@ -125,6 +125,10 @@ Json::Value SMoves(int dx, int dy, int dz) {
           });
 }
 
+std::vector<Json::Value> Move(int sx, int sy, int gx, int gy) {
+  
+}
+
 }
 
 std::vector<std::pair<int, int>> Getdxzs(int R, int n) {
