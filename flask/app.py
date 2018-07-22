@@ -9,6 +9,7 @@ import math
 from table import problem_size
 import shutil
 import subprocess
+import json
 
 app = Flask(__name__)
 dbconfig = {
@@ -189,6 +190,7 @@ def list_problems() -> Result[List[Any]]:
     try:
         curr.execute('select * from standing_scores')
         standing_tbl = { row['name']: row   for row in curr }
+        standing_tbl = json.load(open('live.json'))
         
         curr.execute("""
 select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t.score, t.max_score, t.id 
@@ -209,11 +211,15 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
   where name not like "LA%"
   order by name asc
 """)
+        def get_best_score(row):
+            if row['name'] in standing_tbl:
+                return standing_tbl[row['name']]['energy']
+            else:
+                return 0
+
         total_score = 0
         def estimated_score(row):
-            best = 0
-            if row['name'] in standing_tbl:
-                best = standing_tbl[row['name']]['score']
+            best = get_best_score(row)
 
             if row['score'] and row['max_score']:
                 return score(row['r'], row['max_score'], row['score'], best)
@@ -221,12 +227,8 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
                 return 0
 
         def opt_score(row):
-            if row['name'] in standing_tbl:
-                opt = standing_tbl[row['name']]['score']
-            elif row['score']:
-                opt = row['score'] // 100
-            else:
-                opt = 0
+            opt = get_best_score(row)
+            
             if row['max_score']:
                 return score(row['r'], row['max_score'], opt, opt)
             else:
@@ -239,7 +241,7 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
             row['suboptimal_score'] = opt_score(row)
             if row['name'] in standing_tbl:
                 total_score += row['estimated_score']
-                row['opt'] = standing_tbl[row['name']]['score']
+                row['opt'] = standing_tbl[row['name']]['energy']
             row['live'] = row['name'] in standing_tbl
         
         if 'name' not in request.args:
