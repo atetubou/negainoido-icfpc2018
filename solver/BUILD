@@ -241,3 +241,20 @@ cc_binary(
         ":ai",
     ],
 )
+
+cc_binary(
+    name = "udon_ai",
+    srcs = ["udon_ai.cc",
+            "AI.h"
+           ],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
+        "//src/base",
+        "//src:command_executer",
+        "//src/base:flags",
+    ],
+)

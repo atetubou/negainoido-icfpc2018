@@ -154,7 +154,9 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
   return true;
 }
 
-
+bool CommandExecuter::IsFull(const Point& p) {
+  return system_status.matrix[p.x][p.y][p.z] == FULL;
+}
 
 bool CommandExecuter::IsGrounded(const Point& p) {
   if (!valid_grounded_memo) {
@@ -270,7 +272,7 @@ void VerifyCommandSeq(const std::vector<Command>& commands) {
     bot_id_set.insert(c.id);
   }
 
-  CE_ASSERT(commands.size() == bot_id_set.size());
+  CE_ASSERT(commands.size() == bot_id_set.size()) << commands.size() << " " << bot_id_set.size();
 }
 
 std::pair<Point, Point> CommandExecuter::VerifyGFillCommand(const Command& com, Point *neighbor) {
@@ -444,7 +446,9 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
         bool cold_z = ColidX(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
         colid = cold_x && cold_y && cold_z;
       }
+
       CE_ASSERT(!colid)
+        << Command::CommandsToJson(commands)
         << "Invalid Move (Colid)\n"
         << "vc1: id=" << vcord1.id << ", n=" << vcord1.n << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
         << "vc2: id=" << vcord2.id << ", n=" << vcord2.n << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
@@ -517,7 +521,7 @@ void CommandExecuter::SMove(const uint32_t bot_id, const Point& lld) {
   Point c0 = bot_status[bot_id].pos;
   Point c1 = c0 + lld;
 
-  CE_ASSERT(IsValidCoordinate(c1)) << c1;
+  CE_ASSERT(IsValidCoordinate(c1)) << c1 << "=" << c0 << "+" << lld;
   CE_ASSERT(IsVoidPath(c0, c1)) << c0 << " " << c1;
 
   bot_status[bot_id].pos = c1;

@@ -56,6 +56,8 @@ class CommandExecuter {
   Json::Value GetJson();
   void PrintTraceAsJson();
 
+  bool IsFull(const Point&);
+
   bool IsGrounded(const Point&);
 
   const SystemStatus& GetSystemStatus() {
