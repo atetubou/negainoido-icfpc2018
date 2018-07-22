@@ -66,7 +66,7 @@ def gen_zip() -> Result[Any]:
     conn = get_connection()
     curr = conn.cursor()
     try:
-        curr.execute('insert into test(message) values (%s)', (message,))
+        curr.execute('insert into test(message) values (%s)', (result,))
         conn.commit()
     finally:
         curr.close()
