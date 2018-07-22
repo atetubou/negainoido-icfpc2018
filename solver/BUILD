@@ -53,6 +53,21 @@ cc_binary(
     ],
 )
 
+cc_library(
+    name = "square_delete",
+    srcs = [
+        "square_delete.cc",
+        "square_delete.h",
+    ],
+    deps = [
+        "//external:glog",
+        "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
+        "//src/base",
+        "//src:command_executer",
+    ],
+)
+
 cc_binary(
     name = "square_deleter",
     srcs = [ "square_deleter.cc"],
@@ -61,8 +76,8 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",  
         "@jsoncpp_git//:jsoncpp",
         "@com_google_absl//absl/types:span",
-        "//src:command_executer",
         "//src/base",
+        "square_delete",
     ],
 )
 
