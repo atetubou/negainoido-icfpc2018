@@ -137,6 +137,24 @@ cc_binary(
 cc_binary(
     name = "duskin_ai",
     srcs = ["duskin_ai.cc",
+            "duskin_lib.h",
+            "duskin_lib.cc",
+            "AI.h",
+           ],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "//src/base",
+        "//src:command_executer",
+        "//src/base:flags",
+    ],
+)
+
+cc_binary(
+    name = "smarter_duskin_ai",
+    srcs = ["smarter_duskin_ai.cc",
+            "duskin_lib.h",
+            "duskin_lib.cc",
             "AI.h",
            ],
     copts = ["-std=c++14"],
