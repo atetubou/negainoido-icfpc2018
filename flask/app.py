@@ -195,6 +195,7 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
   where name not like "LA%"
   order by name asc
 """)
+        total_score = 0
 
         ret = list(curr)
         for row in ret:
@@ -205,10 +206,13 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
                 opt = standing_tbl[row['name']]['score']
             elif row['score']:
                 opt = row['score'] // 100
+            row['opt'] = opt
             row['suboptimal_score'] = row['score'] and row['max_score'] and score(r, row['max_score'], opt) 
+            if row['live']:
+                total_score += (row['estimated_score'] or 0)
             row['r'] = r
 
-        return Ok(ret)
+        return Ok({ "problems" : ret, "total_score" : total_score })
     finally:
         curr.close()
         conn.close()
