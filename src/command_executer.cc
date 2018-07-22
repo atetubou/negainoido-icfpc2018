@@ -675,7 +675,7 @@ void CommandExecuter::GVoid(const std::vector<uint32_t>& bot_ids,
     CE_ASSERT(r1.x != r2.x && r1.y != r2.y && r1.z != r2.z) << r1 << " " << r2;;
   }
   for (int x = r1.x; x <= r2.x; x++) {
-    for (int y = r1.y; x <= r2.y; y++) {
+    for (int y = r1.y; y <= r2.y; y++) {
       for (int z = r1.z; z <= r2.z; z++) {
         if (system_status.matrix[x][y][z] == FULL) {
           system_status.matrix[x][y][z] = VOID;
