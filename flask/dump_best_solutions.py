@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import json
 import datetime
+import sys
 dbconfig = {
     "database" : os.environ['DBNAME'],
     "user" : os.environ['DBUSER'],
@@ -38,11 +39,25 @@ for problem_id,row in best.items():
 
 subprocess.call('cd /tmp/solution; zip result.zip *', shell=True)
 sha1 = subprocess.check_output('shasum -a 256 /tmp/solution/result.zip',shell=True, universal_newlines=True).split()[0]
-dest = 'static/zip/' + datetime.datetime.now().strftime('%Y-%m-%d-%H%M%S-') + sha1 +'.zip'
+dest = datetime.datetime.now().strftime('%Y-%m-%d-%H%M%S-') + sha1 +'.zip'
 
-shutil.copy('/tmp/solution/result.zip', dest)
+subprocess.call('gsutil cp /tmp/solution/result.zip gs://negainoido-icfpc2018-shared-bucket/zip/'+dest, shell=True)
+subprocess.call('gsutil acl ch -u AllUsers:R gs://negainoido-icfpc2018-shared-bucket/zip/'+dest, shell=True)
 
-curr.execute('insert into test(message) values (%s)', (dest,))
+team_id = os.environ['TEAM_ID']
+url = 'https://storage.googleapis.com/negainoido-icfpc2018-shared-bucket/zip/' + dest
+
+cmd = """
+echo -L --data-urlencode action=submit 
+        --data-urlencode privateID=%s 
+        --data-urlencode submissionURL="%s" 
+        --data-urlencode submissionSHA=%s https://script.google.com/macros/s/AKfycbzQ7Etsj7NXCN5thGthCvApancl5vni5SFsb1UoKgZQwTzXlrH7/exec
+""" % (team_id, url, sha1)
+cmd = ''.join(cmd.split('\n'))
+
+message = subprocess.check_output(cmd,shell=True,universal_newlines=True)
+print(message)
+curr.execute('insert into test(message) values (%s)', (message,))
 cnx.commit()
 
 
