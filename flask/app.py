@@ -140,10 +140,10 @@ def list_problems() -> Result[List[Any]]:
     curr = conn.cursor(dictionary=True)
     try:
         curr.execute("""
-select name, ifnull(t.created_at,problems.created_at) updated_at, t.score, t.max_score, t.id 
+select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t.score, t.max_score, t.id 
   from problems 
   left join   
-    (select solutions.problem_id, solutions.id, best.score, best.max_score, created_at 
+    (select solutions.problem_id, solutions.solver_id, solutions.id, best.score, best.max_score, created_at 
       from 
         (select problem_id, MIN(score) as score, MAX(score) as max_score 
           from solutions where score > 0 group by problem_id) as best 
