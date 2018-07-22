@@ -10,11 +10,11 @@ class AI {
  protected:
   std::unique_ptr<CommandExecuter> ce;
  public:
- AI(vvv model) : ce(std::make_unique<CommandExecuter>((int) model.size(), true)) {}
+ AI(vvv model) : ce(std::make_unique<CommandExecuter>(model, true)) {}
   virtual ~AI() = default;
   virtual void Run() = 0;
   void Finalize() {
-    std::cout << ce->GetJson();
+    std::cout << Json2Binary(ce->GetJson());
   }
 };
 
