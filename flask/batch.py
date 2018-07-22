@@ -20,7 +20,7 @@ dbconfig = {
 destpath="static/solutions"
 
 task_queue = Queue(30)
-NUM_WORKERS = 8
+NUM_WORKERS = 4
 
 
 def worker(worker_id):
