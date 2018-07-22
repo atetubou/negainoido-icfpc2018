@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "gtest/gtest.h"
+#include "command.h"
 
 void CheckDefaultBotHasAlltheSeeds(const std::array<CommandExecuter::BotStatus, CommandExecuter::kMaxNumBots+1>& b) {
   EXPECT_TRUE(b[1].seeds.find(0) == b[1].seeds.end());
@@ -39,9 +40,7 @@ TEST(CommandExecuter, Halt) {
   const int R = 10;
   auto ce = std::make_unique<CommandExecuter>(R, false);
   EXPECT_EQ(ce->GetActiveBotsNum(), 1u);
-  Command command;
-  command.id = 1;
-  command.type = Command::Type::HALT;
+  Command command = Command::make_halt(1);
   std::vector<Command> com = {command};
   ce->Execute(com);
   EXPECT_EQ(ce->GetActiveBotsNum(), 0u);
@@ -53,9 +52,7 @@ TEST(CommandExecuter, Wait) {
   const auto s_bef_energy = ce->GetSystemStatus().energy;
   const size_t bef_active_bots = ce->GetActiveBotsNum();
   // const auto& b_bef = ce->GetBotStatus();
-  Command command;
-  command.id = 1;
-  command.type = Command::Type::WAIT;
+  Command command = Command::make_wait(1);
   std::vector<Command> com = {command};
   ce->Execute(com);
   const auto& s_aft = ce->GetSystemStatus();
@@ -75,9 +72,7 @@ TEST(CommandExecuter, TwoFlip) {
   EXPECT_EQ(s_bef_harmonics, LOW);
 
   const size_t bef_active_bots = ce->GetActiveBotsNum();
-  Command command1;
-  command1.id = 1;
-  command1.type = Command::Type::FLIP;
+  Command command1 = Command::make_flip(1);
   std::vector<Command> com1 = {command1};
   ce->Execute(com1);
   const auto s_flp1_energy = ce->GetSystemStatus().energy;
@@ -86,9 +81,7 @@ TEST(CommandExecuter, TwoFlip) {
   EXPECT_EQ(s_flp1_energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots);
 
   const size_t flp1_active_bots = ce->GetActiveBotsNum();
-  Command command2;
-  command2.id = 1;
-  command2.type = Command::Type::FLIP;
+  Command command2 = Command::make_flip(1);
   std::vector<Command> com2 = {command2};
   ce->Execute(com2);
   const auto s_flp2_energy = ce->GetSystemStatus().energy;
@@ -108,10 +101,7 @@ TEST(CommandExecuter, OneSMove) {
   const auto s_bef_energy = ce->GetSystemStatus().energy;
   const size_t bef_active_bots = ce->GetActiveBotsNum();
   const int length = 15;
-  Command command;
-  command.id = 1;
-  command.type = Command::Type::SMOVE;
-  command.smove_lld = Point(length,0,0);
+  Command command = Command::make_smove(1, Point(length,0,0));
   std::vector<Command> com = {command};
   ce->Execute(com);
   const auto& s_aft = ce->GetSystemStatus();
@@ -129,11 +119,7 @@ TEST(CommandExecuter, OneLMove) {
   const auto s_bef_energy = ce->GetSystemStatus().energy;
   const size_t bef_active_bots = ce->GetActiveBotsNum();
   const int length = 5;
-  Command command;
-  command.id = 1;
-  command.type = Command::Type::LMOVE;
-  command.lmove_sld1 = Point(0, length, 0);
-  command.lmove_sld2 = Point(length, 0, 0);
+  Command command = Command::make_lmove(1, Point(0, length, 0), Point(length, 0, 0));
   std::vector<Command> com = {command};
   ce->Execute(com);
   const auto& s_aft = ce->GetSystemStatus();
@@ -150,20 +136,14 @@ TEST(CommandExecuter, TwoFill) {
   auto ce = std::make_unique<CommandExecuter>(R, false);
   const auto s_bef_energy = ce->GetSystemStatus().energy;
   const size_t bef_active_bots = ce->GetActiveBotsNum();
-  Command command1;
-  command1.id = 1;
-  command1.type = Command::Type::FILL;
-  command1.fill_nd = Point(1, 0, 1);
+  Command command1 = Command::make_fill(1, Point(1, 0, 1));
   std::vector<Command> com1 = {command1};
   ce->Execute(com1);
   const auto s_flp1_energy = ce->GetSystemStatus().energy;
   EXPECT_EQ(s_flp1_energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots + 12);
   EXPECT_EQ(ce->GetSystemStatus().matrix[1][0][1], FULL);
   const size_t flp1_active_bots = ce->GetActiveBotsNum();
-  Command command2;
-  command2.id = 1;
-  command2.type = Command::Type::FILL;
-  command2.fill_nd = Point(1, 0, 1);
+  Command command2 = Command::make_fill(1, Point(1, 0, 1));
   std::vector<Command> com2 = {command2};
   ce->Execute(com2);
   const auto s_flp2_energy = ce->GetSystemStatus().energy;
@@ -180,20 +160,14 @@ TEST(CommandExecuter, FillAndRemove) {
   auto ce = std::make_unique<CommandExecuter>(R, false);
   const auto s_bef_energy = ce->GetSystemStatus().energy;
   const size_t bef_active_bots = ce->GetActiveBotsNum();
-  Command command1;
-  command1.id = 1;
-  command1.type = Command::Type::FILL;
-  command1.fill_nd = Point(1, 0, 1);
+  Command command1 = Command::make_fill(1, Point(1, 0, 1));
   std::vector<Command> com1 = {command1};
   ce->Execute(com1);
   const auto s_flp1_energy = ce->GetSystemStatus().energy;
   EXPECT_EQ(s_flp1_energy - s_bef_energy, 3 * R * R * R + 20 * bef_active_bots + 12);
   EXPECT_EQ(ce->GetSystemStatus().matrix[1][0][1], FULL);
   const size_t flp1_active_bots = ce->GetActiveBotsNum();
-  Command command2;
-  command2.id = 1;
-  command2.type = Command::Type::VOID;
-  command2.void_nd = Point(1, 0, 1);
+  Command command2 = Command::make_void(1, Point(1, 0, 1));
   std::vector<Command> com2 = {command2};
   ce->Execute(com2);
   const auto s_flp2_energy = ce->GetSystemStatus().energy;
@@ -212,12 +186,8 @@ TEST(CommandExecuter, OneFission) {
   const auto s_bef_energy = ce->GetSystemStatus().energy;
   const size_t bef_active_bots = ce->GetActiveBotsNum();
   // const auto& b_bef = ce->GetBotStatus();
-  Command command;
   const int M = 15;
-  command.id = 1;
-  command.type = Command::Type::FISSION;
-  command.fission_nd = Point(0, 1, 1);
-  command.fission_m = M;
+  Command command = Command::make_fission(1, Point(0, 1, 1), M);
   std::vector<Command> com = {command};
   ce->Execute(com);
   const auto s_aft_energy = ce->GetSystemStatus().energy;
@@ -240,4 +210,5 @@ TEST(CommandExecuter, OneFission) {
 }
 
 // TODO(hiroh): test Fusion
+// TODO(hiroh): test GFill
 // TODO(hiroh): test Gvoid

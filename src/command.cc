@@ -23,49 +23,67 @@ Json::Value Command::CommandsToJson(const std::vector<Command>& commands) {
       break;
     case SMOVE:
       command["command"] = "SMove";
-      command["dx"] = c.smove_lld.x;
-      command["dy"] = c.smove_lld.y;
-      command["dz"] = c.smove_lld.z;
+      command["dx"] = c.smove_.lld.x;
+      command["dy"] = c.smove_.lld.y;
+      command["dz"] = c.smove_.lld.z;
       break;
     case LMOVE:
       command["command"] = "LMove";
-      command["dx1"] = c.lmove_sld1.x;
-      command["dy1"] = c.lmove_sld1.y;
-      command["dz1"] = c.lmove_sld1.z;
-      command["dx2"] = c.lmove_sld2.x;
-      command["dy2"] = c.lmove_sld2.y;
-      command["dz2"] = c.lmove_sld2.z;
+      command["dx1"] = c.lmove_.sld1.x;
+      command["dy1"] = c.lmove_.sld1.y;
+      command["dz1"] = c.lmove_.sld1.z;
+      command["dx2"] = c.lmove_.sld2.x;
+      command["dy2"] = c.lmove_.sld2.y;
+      command["dz2"] = c.lmove_.sld2.z;
       break;
     case VOID:
       command["command"] = "Void";
-      command["dx"] = c.void_nd.x;
-      command["dy"] = c.void_nd.y;
-      command["dz"] = c.void_nd.z;
+      command["dx"] = c.void_.nd.x;
+      command["dy"] = c.void_.nd.y;
+      command["dz"] = c.void_.nd.z;
       break;
     case FISSION:
       command["command"] = "Fission";
-      command["dx"] = c.fission_nd.x;
-      command["dy"] = c.fission_nd.y;
-      command["dz"] = c.fission_nd.z;
-      command["m"] = c.fission_m;
+      command["dx"] = c.fission_.nd.x;
+      command["dy"] = c.fission_.nd.y;
+      command["dz"] = c.fission_.nd.z;
+      command["m"] = c.fission_.m;
       break;
     case FILL:
       command["command"] = "Fill";
-      command["dx"] = c.fill_nd.x;
-      command["dy"] = c.fill_nd.y;
-      command["dz"] = c.fill_nd.z;
+      command["dx"] = c.fill_.nd.x;
+      command["dy"] = c.fill_.nd.y;
+      command["dz"] = c.fill_.nd.z;
       break;
     case FUSION_P:
       command["command"] = "FusionP";
-      command["dx"] = c.fusion_p_nd.x;
-      command["dy"] = c.fusion_p_nd.y;
-      command["dz"] = c.fusion_p_nd.z;
+      command["dx"] = c.fusion_p_.nd.x;
+      command["dy"] = c.fusion_p_.nd.y;
+      command["dz"] = c.fusion_p_.nd.z;
       break;
     case FUSION_S:
       command["command"] = "FusionS";
-      command["dx"] = c.fusion_s_nd.x;
-      command["dy"] = c.fusion_s_nd.y;
-      command["dz"] = c.fusion_s_nd.z;
+      command["dx"] = c.fusion_s_.nd.x;
+      command["dy"] = c.fusion_s_.nd.y;
+      command["dz"] = c.fusion_s_.nd.z;
+      break;
+    case GFILL:
+      command["command"] = "GFill";
+      command["dx1"] = c.gfill_.nd.x;
+      command["dy1"] = c.gfill_.nd.y;
+      command["dz1"] = c.gfill_.nd.z;
+      command["dx2"] = c.gfill_.fd.x;
+      command["dy2"] = c.gfill_.fd.y;
+      command["dz2"] = c.gfill_.fd.z;
+      break;
+    case GVOID:
+      command["command"] = "GVoid";
+      command["dx1"] = c.gvoid_.nd.x;
+      command["dy1"] = c.gvoid_.nd.y;
+      command["dz1"] = c.gvoid_.nd.z;
+      command["dx2"] = c.gvoid_.fd.x;
+      command["dy2"] = c.gvoid_.fd.y;
+      command["dz2"] = c.gvoid_.fd.z;
       break;
     }
     turn.append(std::move(command));
@@ -89,41 +107,59 @@ Command Command::JsonToCommand(const Json::Value command) {
         c.type = Command::FLIP;
     } else if (type == "SMove") {
         c.type = SMOVE;
-        c.smove_lld.x = command["dx"].asInt();
-        c.smove_lld.y = command["dy"].asInt();
-        c.smove_lld.z = command["dz"].asInt();
+        c.smove_.lld.x = command["dx"].asInt();
+        c.smove_.lld.y = command["dy"].asInt();
+        c.smove_.lld.z = command["dz"].asInt();
     } else if (type == "LMove") {
         c.type = LMOVE;
-        c.lmove_sld1.x = command["dx1"].asInt();
-        c.lmove_sld1.y = command["dy1"].asInt();
-        c.lmove_sld1.z = command["dz1"].asInt();
-        c.lmove_sld2.x = command["dx2"].asInt();
-        c.lmove_sld2.y = command["dy2"].asInt();
-        c.lmove_sld2.z = command["dz2"].asInt();
+        c.lmove_.sld1.x = command["dx1"].asInt();
+        c.lmove_.sld1.y = command["dy1"].asInt();
+        c.lmove_.sld1.z = command["dz1"].asInt();
+        c.lmove_.sld2.x = command["dx2"].asInt();
+        c.lmove_.sld2.y = command["dy2"].asInt();
+        c.lmove_.sld2.z = command["dz2"].asInt();
     } else if (type == "Fission") {
         c.type = FISSION;
-        c.fission_nd.x = command["dx"].asInt();
-        c.fission_nd.y = command["dy"].asInt();
-        c.fission_nd.z = command["dz"].asInt();
+        c.fission_.nd.x = command["dx"].asInt();
+        c.fission_.nd.y = command["dy"].asInt();
+        c.fission_.nd.z = command["dz"].asInt();
+        c.fission_.m = command["m"].asInt();
     } else if (type == "Fill") {
         c.type = FILL;
-        c.fill_nd.x = command["dx"].asInt();
-        c.fill_nd.y = command["dy"].asInt();
-        c.fill_nd.z = command["dz"].asInt();
+        c.fill_.nd.x = command["dx"].asInt();
+        c.fill_.nd.y = command["dy"].asInt();
+        c.fill_.nd.z = command["dz"].asInt();
     } else if (type == "FusionP") {
         c.type = FUSION_P;
-        c.fusion_p_nd.x = command["dx"].asInt();
-        c.fusion_p_nd.y = command["dy"].asInt();
-        c.fusion_p_nd.z = command["dz"].asInt();
+        c.fusion_p_.nd.x = command["dx"].asInt();
+        c.fusion_p_.nd.y = command["dy"].asInt();
+        c.fusion_p_.nd.z = command["dz"].asInt();
     } else if (type == "FusionS") {
         c.type = FUSION_S;
-        c.fusion_s_nd.x = command["dx"].asInt();
-        c.fusion_s_nd.y = command["dy"].asInt();
-        c.fusion_s_nd.z = command["dz"].asInt();
+        c.fusion_s_.nd.x = command["dx"].asInt();
+        c.fusion_s_.nd.y = command["dy"].asInt();
+        c.fusion_s_.nd.z = command["dz"].asInt();
+    } else if (type == "GVoid") {
+        c.type = GVOID;
+        c.gvoid_.nd.x = command["dx1"].asInt();
+        c.gvoid_.nd.y = command["dy1"].asInt();
+        c.gvoid_.nd.z = command["dz1"].asInt();
+        c.gvoid_.fd.x = command["dx2"].asInt();
+        c.gvoid_.fd.y = command["dy2"].asInt();
+        c.gvoid_.fd.z = command["dz2"].asInt();
+    } else if (type == "GFill") {
+        c.type = GFILL;
+        c.gvoid_.nd.x = command["dx1"].asInt();
+        c.gvoid_.nd.y = command["dy1"].asInt();
+        c.gvoid_.nd.z = command["dz1"].asInt();
+        c.gvoid_.fd.x = command["dx2"].asInt();
+        c.gvoid_.fd.y = command["dy2"].asInt();
+        c.gvoid_.fd.z = command["dz2"].asInt();
+    } else {
+        CHECK(false) << "Unknown type: " << type;
     }
     return c;
 }
-
 
 Command Command::make_halt(int id) {
   Command ret;
@@ -150,7 +186,7 @@ Command Command::make_smove(int id, Point lld) {
   Command ret;
   ret.id = id;
   ret.type = SMOVE;
-  ret.smove_lld = lld;
+  ret.smove_.lld = lld;
   return ret;
 }
 
@@ -158,8 +194,8 @@ Command Command::make_lmove(int id, Point sld1, Point sld2) {
   Command ret;
   ret.id = id;
   ret.type = LMOVE;
-  ret.lmove_sld1 = sld1;
-  ret.lmove_sld2 = sld2;
+  ret.lmove_.sld1 = sld1;
+  ret.lmove_.sld2 = sld2;
   return ret;
 }
 
@@ -167,8 +203,8 @@ Command Command::make_fission(int id, Point nd, uint32_t m) {
   Command ret;
   ret.id = id;
   ret.type = FISSION;
-  ret.fission_nd = nd;
-  ret.fission_m = m;
+  ret.fission_.nd = nd;
+  ret.fission_.m = m;
   return ret;
 }
 
@@ -176,7 +212,7 @@ Command Command::make_fill(int id, Point nd) {
   Command ret;
   ret.id = id;
   ret.type = FILL;
-  ret.fill_nd = nd;
+  ret.fill_.nd = nd;
   return ret;
 }
 
@@ -184,7 +220,7 @@ Command Command::make_void(int id, Point nd) {
   Command ret;
   ret.id = id;
   ret.type = VOID;
-  ret.void_nd = nd;
+  ret.void_.nd = nd;
   return ret;
 }
 
@@ -192,7 +228,7 @@ Command Command::make_fusion_p(int id, Point nd) {
   Command ret;
   ret.id = id;
   ret.type = FUSION_P;
-  ret.fusion_p_nd = nd;
+  ret.fusion_p_.nd = nd;
   return ret;
 }
 
@@ -200,20 +236,25 @@ Command Command::make_fusion_s(int id, Point nd) {
   Command ret;
   ret.id = id;
   ret.type = FUSION_S;
-  ret.fusion_s_nd = nd;
+  ret.fusion_s_.nd = nd;
   return ret;
 }
 
 Command Command::make_gfill(int id, Point nd, Point fd) {
-  return Command();
+  Command ret;
+  ret.id = id;
+  ret.type = GFILL;
+  ret.gfill_.nd = nd;
+  ret.gfill_.fd = fd;
+  return ret;
 }
 
 Command Command::make_gvoid(int id, Point nd, Point fd) {
   Command ret;
   ret.id = id;
   ret.type = GVOID;
-  ret.gvoid_nd = nd;
-  ret.gvoid_fd = fd;
+  ret.gvoid_.nd = nd;
+  ret.gvoid_.fd = fd;
   return ret;
 }
 
@@ -234,7 +275,6 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
       continue;
     }
 
-    size_t len = 0;
     size_t j = 0;
     for (; i + j < commands.size(); ++j) {
       if (commands[i + j].type != Command::SMOVE) {
@@ -244,21 +284,21 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
     Command tmp = commands[i];
     for (size_t k = i+1; k < i+j; k++) {
       if (tmp.type == Command::SMOVE) {
-        if (tmp.smove_lld.Manhattan() == 0 || is_same_direction(tmp.smove_lld, commands[k].smove_lld)) {
-          tmp.smove_lld += commands[k].smove_lld;
-          if (tmp.smove_lld.Manhattan() >= 15) {
+        if (tmp.smove_.lld.Manhattan() == 0 || is_same_direction(tmp.smove_.lld, commands[k].smove_.lld)) {
+          tmp.smove_.lld += commands[k].smove_.lld;
+          if (tmp.smove_.lld.Manhattan() >= 15) {
             Point lld  = Point(
-              sgn(tmp.smove_lld.x) * 15,
-              sgn(tmp.smove_lld.y) * 15,
-              sgn(tmp.smove_lld.z) * 15
+              sgn(tmp.smove_.lld.x) * 15,
+              sgn(tmp.smove_.lld.y) * 15,
+              sgn(tmp.smove_.lld.z) * 15
             );
 
-            tmp.smove_lld -= lld;
+            tmp.smove_.lld -= lld;
             ret.push_back(Command::make_smove(tmp.id, lld));
           }
         } else {
-          if (tmp.smove_lld.Manhattan() <= 5 && commands[k].smove_lld.Manhattan() <= 5) {
-            tmp = Command::make_lmove(tmp.id, tmp.smove_lld, commands[k].smove_lld);
+          if (tmp.smove_.lld.Manhattan() <= 5 && commands[k].smove_.lld.Manhattan() <= 5) {
+            tmp = Command::make_lmove(tmp.id, tmp.smove_.lld, commands[k].smove_.lld);
           } else {
             ret.push_back(tmp);
             tmp = commands[k];
@@ -266,19 +306,19 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
         }
       // tmp.type == Command::LMOVE
       } else {
-        if (is_same_direction(tmp.lmove_sld2, commands[k].smove_lld)) {
-          tmp.lmove_sld2 += commands[k].smove_lld;
-          if (tmp.lmove_sld2.Manhattan() >= 5) {
+        if (is_same_direction(tmp.lmove_.sld2, commands[k].smove_.lld)) {
+          tmp.lmove_.sld2 += commands[k].smove_.lld;
+          if (tmp.lmove_.sld2.Manhattan() >= 5) {
             Point sld2 = Point(
-              sgn(tmp.lmove_sld2.x) * 5,
-              sgn(tmp.lmove_sld2.y) * 5,
-              sgn(tmp.lmove_sld2.z) * 5
+              sgn(tmp.lmove_.sld2.x) * 5,
+              sgn(tmp.lmove_.sld2.y) * 5,
+              sgn(tmp.lmove_.sld2.z) * 5
             );
-            ret.push_back(Command::make_lmove(tmp.id, tmp.lmove_sld1, sld2));
+            ret.push_back(Command::make_lmove(tmp.id, tmp.lmove_.sld1, sld2));
             tmp.type = Command::SMOVE;
-            tmp.smove_lld = tmp.lmove_sld2 - sld2;
-            tmp.lmove_sld1 = Point(0,0,0);
-            tmp.lmove_sld2 = Point(0,0,0);
+            tmp.smove_.lld = tmp.lmove_.sld2 - sld2;
+            tmp.lmove_.sld1 = Point(0,0,0);
+            tmp.lmove_.sld2 = Point(0,0,0);
           }
         } else {
           ret.push_back(tmp);
@@ -286,9 +326,9 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
         }
       }
     }
-    if (tmp.type != Command::SMOVE || tmp.smove_lld.Manhattan() > 0) {
-      if (tmp.type == Command::LMOVE && tmp.lmove_sld2.Manhattan() == 0) {
-        ret.push_back(Command::make_smove(tmp.id, tmp.lmove_sld1));
+    if (tmp.type != Command::SMOVE || tmp.smove_.lld.Manhattan() > 0) {
+      if (tmp.type == Command::LMOVE && tmp.lmove_.sld2.Manhattan() == 0) {
+        ret.push_back(Command::make_smove(tmp.id, tmp.lmove_.sld1));
       } else {
         ret.push_back(tmp);
       }
@@ -299,7 +339,7 @@ std::vector<Command> MergeSMove(absl::Span<const Command> commands) {
 
   for (auto com : ret) {
     if (com.type == Command::LMOVE) {
-      CHECK(com.lmove_sld1.Manhattan() != 0 && com.lmove_sld2.Manhattan() != 0) << com.lmove_sld1 << " " << com.lmove_sld2;
+      CHECK(com.lmove_.sld1.Manhattan() != 0 && com.lmove_.sld2.Manhattan() != 0) << com.lmove_.sld1 << " " << com.lmove_.sld2;
     }
   }
 

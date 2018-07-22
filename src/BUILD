@@ -2,10 +2,21 @@ package(default_visibility = ["//visibility:public"])
 
 cc_binary(
     name = "nbt_viewer",
-    srcs = ["nbt_viewer.cc", "nbt_loader.h"],
+    srcs = ["nbt_viewer.cc"],
     deps = [
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        ":nbt_loader",
+    ],
+)
+
+cc_library(
+    name = "nbt_loader",
+    srcs = ["nbt_loader.cc", "nbt_loader.h"],
+    deps = [
+        "//external:glog",
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
     ],
@@ -70,8 +81,7 @@ cc_binary(
 
 cc_binary(
     name = "simulator",
-    srcs = ["simulator.cc",
-            "nbt_loader.h"],
+    srcs = ["simulator.cc"],
     copts = ["-std=c++14"],
     deps = [
         "//external:glog",
@@ -79,6 +89,8 @@ cc_binary(
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
         ":command_executer",
+        ":nbt_loader",
+        "//src/base:flags",
     ],
 )
 

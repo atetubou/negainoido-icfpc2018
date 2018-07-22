@@ -25,29 +25,65 @@ struct Command {
     GVOID,
   };
 
+  struct Smove {
+    Point lld;
+  };
+
+  struct Lmove {
+    Point sld1;
+    Point sld2;
+  };
+
+  struct Void {
+    Point nd;
+  };
+
+  struct Fission {
+    Point nd;
+    uint32_t m;
+  };
+
+  struct Fill {
+    Point nd;
+  };
+
+  struct FusionP {
+    Point nd;
+  };
+
+  struct FusionS {
+    Point nd;
+  };
+
+  struct Gfill {
+    Point nd;
+    Point fd;
+  };
+
+  struct Gvoid {
+    Point nd;
+    Point fd;
+  };
+
+
+  // Members
   Type type;
 
   uint32_t id;
 
-  // Smove
-  Point smove_lld;
-  // Lmove
-  Point lmove_sld1;
-  Point lmove_sld2;
-  // Void
-  Point void_nd;
-  // FISSION
-  Point fission_nd;
-  uint32_t fission_m;
-  // FILL
-  Point fill_nd;
-  // FUSION_P
-  Point fusion_p_nd;
-  // FUSION_S
-  Point fusion_s_nd;
-  // GVOID
-  Point gvoid_nd;
-  Point gvoid_fd;
+  union {
+    Smove smove_;
+    Lmove lmove_;
+    Void void_;
+    Fission fission_;
+    Fill fill_;
+    FusionP fusion_p_;
+    FusionS fusion_s_;
+    Gfill gfill_;
+    Gvoid gvoid_;
+  };
+
+  Command() : type(HALT), id(0) {};
 
   static Json::Value CommandsToJson(const std::vector<Command>& commands);
   static Command JsonToCommand(const Json::Value);

@@ -12,35 +12,59 @@
 #include "json/json.h"
 
 #include "src/base/base.h"
+#include "src/base/flags.h"
 #include "src/command.h"
 #include "src/command_executer.h"
 #include "src/nbt_loader.h"
 
-DEFINE_string(mdl_filename, "", "filepath of mdl (.mdl)");
-DEFINE_string(nbt_filename, "", "file path of nbt (.nbt)");
+DEFINE_string(nbt_filename, "", "filepath.nbt");
 DEFINE_bool(from_json, false, ".nbt => .json");
 DEFINE_bool(verbose, false, "verbose mode; can use when --from_json");
 
-class NullBuffer : public std::streambuf
-{
-    public:
-        int overflow(int c) { return c; }
-};
+
+vvv empty(int R) {
+    return vvv(R, vv(R, v(R, 0)));
+}
+
 
 int main(int argc, char* argv[]) {
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  if (FLAGS_mdl_filename.empty() or FLAGS_nbt_filename.empty()) {
-    std::cerr << "Specify --mdl_filename and --nbt_filename";
+  if (FLAGS_nbt_filename.empty()) {
+    std::cerr << "Specify --nbt_filename\n";
+    exit(1);
+  }
+  if (FLAGS_src_filename == "-" and FLAGS_tgt_filename == "-") {
+    std::cerr << "ERROR: - and -\n";
     exit(1);
   }
 
+  LOG(INFO) << "load models";
+  std::unique_ptr<CommandExecuter> ce;
+  vvv M_tgt;
+  int R;
+
+  if (FLAGS_src_filename != "-" and FLAGS_tgt_filename == "-") {
+      LOG(INFO) << "Disassembly";
+      vvv M_src = ReadMDL(FLAGS_src_filename);
+      R = M_src.size();
+      M_tgt = empty(R);
+      ce = std::make_unique<CommandExecuter>(M_src, false);
+  } else if (FLAGS_src_filename == "-" and FLAGS_tgt_filename != "-") {
+      LOG(INFO) << "Assembly";
+      M_tgt = ReadMDL(FLAGS_tgt_filename);
+      R = M_tgt.size();
+      ce = std::make_unique<CommandExecuter>(R, false);
+  } else {
+      LOG(INFO) << "Reassemble";
+      vvv M_src = ReadMDL(FLAGS_src_filename);
+      M_tgt = ReadMDL(FLAGS_tgt_filename);
+      R = M_tgt.size();
+      ce = std::make_unique<CommandExecuter>(M_src, false);
+      CHECK((int)M_src.size() == R);
+  }
+
   LOG(INFO) << "start execution";
-
-  vvv M = ReadMDL(FLAGS_mdl_filename);
-  int R = M.size();
-
-  auto ce = std::make_unique<CommandExecuter>(R, false);
 
   Json::Value turns;
   std::string nbt_content;
@@ -121,12 +145,12 @@ int main(int argc, char* argv[]) {
       exit(1);
   }
 
-  // Full?
+  // N == M_tgt?
   auto&N = ce->GetSystemStatus().matrix;
   for (int x = 0; x < R; ++x) {
     for (int y = 0; y < R; ++y) {
       for (int z = 0; z < R; ++z) {
-        if (M[x][y][z] != N[x][y][z]) {
+        if (M_tgt[x][y][z] != N[x][y][z]) {
           std::cout << -3 << std::endl;
           exit(1);
         }

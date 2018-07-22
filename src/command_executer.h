@@ -12,6 +12,10 @@
 #include "glog/logging.h"
 #include "json/json.h"
 
+using v = std::vector<int>;
+using vv = std::vector<v>;
+using vvv = std::vector<vv>;
+
 enum Harmonics {
   LOW = 0,
   HIGH = 1,
@@ -25,7 +29,7 @@ enum VoxelState : uint8_t {
 class CommandExecuter {
  public:
   enum {
-    kMaxNumBots = 20,
+    kMaxNumBots = 40,
     kMaxResolution = 250,
   };
   struct SystemStatus {
@@ -43,6 +47,7 @@ class CommandExecuter {
   };
 
   CommandExecuter(int R, bool output_json);
+  CommandExecuter(vvv src_model, bool output_json);
   ~CommandExecuter();
 
   void Execute(const std::vector<Command>& commands);
@@ -70,7 +75,8 @@ class CommandExecuter {
     uint32_t id;
     Point from;
     Point to; // enclosed region [From, To].
-    VolCord(uint32_t id, const Point& from, const Point& to) : id(id), from(std::move(from)), to(std::move(to)) {}
+    int n;
+  VolCord(uint32_t id, const Point& from, const Point& to, int n = 2) : id(id), from(std::move(from)), to(std::move(to)), n(n) {}
   };
   std::vector<VolCord> v_cords;
   size_t num_active_bots;
@@ -80,7 +86,10 @@ class CommandExecuter {
 
   // Used for IsGrounded
   bool grounded_memo[kMaxResolution][kMaxResolution][kMaxResolution];
-  bool always_low; // harmonics is always low until now
+  bool all_voxels_are_grounded = true;
+  // false if VOID/GVOID was called after the last calculation
+  // or harmonics == HIGH
+  bool valid_grounded_memo = false;
 
   // utility
   bool IsActiveBotId(const uint32_t id);
@@ -88,9 +97,13 @@ class CommandExecuter {
   bool IsVoidCoordinate(const Point& p);
   bool IsVoidPath(const Point& p1, const Point& p2);
 
+  void UpdateGroundedMemo();
+  void UpdateGroundedPoint(const Point& pos);
   bool IsGroundedSlow(const Point&, bool);
+  bool AllVoxelsAreGrounded();
   void VerifyWellFormedSystem();
-
+  std::pair<Point, Point> VerifyGFillCommand(const Command& com, Point *neighbor);
+  std::pair<Point, Point> VerifyGVoidCommand(const Command& com, Point *neighbor);
   void Halt(const uint32_t bot_id);
   void Wait(const uint32_t bot_id);
   void Flip(const uint32_t bot_id);
@@ -102,6 +115,8 @@ class CommandExecuter {
   void Fission(const uint32_t bot_id, const Point& nd, const uint32_t m);
   void Fusion(const uint32_t bot_id1, const Point& nd1,
               const uint32_t bot_id2, const Point& nd2);
+  void GFill(const std::vector<uint32_t>& bot_ids,
+             const Point& r1, const Point& r2);
   void GVoid(const std::vector<uint32_t>& bot_ids,
              const Point& r1, const Point& r2);
 };

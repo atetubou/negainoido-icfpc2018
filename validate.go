@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"strings"
 )
 
 var (
-	problem = flag.String("problem", "LA001", `problem name e.g. "LA001"`)
+	problem = flag.String("problem", "FA001", `problem name e.g. "FA001"`)
 	solver  = flag.String("solver", "//solver:simple_solve", "ai target")
+
+	tgtFilename = flag.String("tgt_filename", "", "tgt filanem")
+	srcFilename = flag.String("src_filename", "", "src filanem")
 )
 
 func runCommands(command string) {
@@ -27,23 +31,36 @@ func runCommandsOutput(command string) string {
 	return string(output)
 }
 
-func setupFiles() {
-	log.Print("Setup files")
-	runCommands("gsutil -m rsync -r gs://negainoido-icfpc2018-shared-bucket/problemsL shared")
-	runCommands("gsutil -m rsync -r gs://negainoido-icfpc2018-shared-bucket/dfltTracesL shared")
-}
-
 func main() {
 	flag.Parse()
 
-	setupFiles()
+	srcMDL := fmt.Sprintf("$(pwd)/shared/%s_src.mdl", *problem)
+	tgtMDL := fmt.Sprintf("$(pwd)/shared/%s_tgt.mdl", *problem)
 
-	runCommands(fmt.Sprintf("bazel run %s -- --mdl_filename=$(pwd)/shared/%s_tgt.mdl > /tmp/nbt.nbt", *solver, *problem))
-	simulatorResult := runCommandsOutput(fmt.Sprintf("bazel run //src:simulator -- --mdl_filename=$(pwd)/shared/%s_tgt.mdl --nbt_filename=/tmp/nbt.nbt", *problem))
+	if strings.HasPrefix(*problem, "LA") || strings.HasPrefix(*problem, "FA") {
+		srcMDL = "-"
+	}
+
+	if strings.HasPrefix(*problem, "FD") {
+		tgtMDL = "-"
+	}
+
+	if *srcFilename != "" {
+		srcMDL = *srcFilename
+	}
+
+	if *tgtFilename != "" {
+		tgtMDL = *tgtFilename
+	}
+
+	// TODO: use tmpdir
+	runCommands(fmt.Sprintf("bazel run %s -- --src_filename %s --tgt_filename %s > /tmp/nbt.nbt", *solver, srcMDL, tgtMDL))
+	simulatorResult := runCommandsOutput(fmt.Sprintf("bazel run //src:simulator -- --src_filename=%s --tgt_filename=%s --nbt_filename=/tmp/nbt.nbt",
+		srcMDL, tgtMDL))
 
 	log.Printf("Simulator Result %s", simulatorResult)
 
-	officialResult := runCommandsOutput(fmt.Sprintf("python3 soren/main.py $(pwd)/shared/%s_tgt.mdl /tmp/nbt.nbt", *problem))
+	officialResult := runCommandsOutput(fmt.Sprintf("python3 soren/main.py %s %s /tmp/nbt.nbt", srcMDL, tgtMDL))
 
 	log.Printf("Official Result %s", officialResult)
 
