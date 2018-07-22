@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -8,7 +9,7 @@
 
 DEFINE_string(src_filename, "", "filepath of mdl");
 DEFINE_bool(flip, true, "do flip?");
-
+DEFINE_bool(json, false, "output json");
 
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -17,6 +18,13 @@ int main(int argc, char** argv) {
   const vvv voxels = ReadMDL(FLAGS_src_filename);
   const Json::Value json = SquareDelete(voxels, FLAGS_flip);
 
-  std::string nbt_content = Json2Binary(json);
-  std::cout << nbt_content;
+  if (FLAGS_json) {
+    Json::StreamWriterBuilder builder;
+    std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
+    writer->write(json, &std::cout);
+    std::cout << std::endl;
+  } else {
+    std::string nbt_content = Json2Binary(json);
+    std::cout << nbt_content;
+  }
 }
