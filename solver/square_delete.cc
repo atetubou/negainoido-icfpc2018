@@ -125,8 +125,32 @@ Json::Value SMoves(int dx, int dy, int dz) {
           });
 }
 
-std::vector<Json::Value> Move(int sx, int sy, int gx, int gy) {
+std::vector<Json::Value> HorizontalMove(int dx, int dz, int maxd) {
+  std::vector<Json::Value> ret;
+
+  while (dx != 0) {
+    int d = std::min(std::abs(dx), maxd);
+    if (dx < 0) d *= -1;
+
+    LOG_IF(FATAL, std::abs(dx - d) >= std::abs(dx)) 
+      << " dx=" << dx
+      << " d=" << d;
+
+    ret.push_back(SMoves(d, 0, 0));
+    dx -= d;
+  }
+
+  while (dz != 0) {
+    int d = std::min(std::abs(dz), maxd);
+    if (dz < 0) d *= -1;
+    
+    LOG_IF(FATAL, std::abs(dz - d) >= std::abs(dz));
+
+    ret.push_back(SMoves(0, 0, d));
+    dz -= d;
+  }
   
+  return ret;
 }
 
 }
@@ -287,7 +311,9 @@ Json::Value SquareDelete(const vvv& voxels, bool use_flip) {
           json["turn"].append(GVoids(n + 1));
         }
 
-        json["turn"].append(SMoves(xz.first, 0, xz.second));
+        for (const auto& v : HorizontalMove(xz.first, xz.second, n)) {
+          json["turn"].append(v);
+        }
         lx += xz.first;
         hx += xz.first;
         lz += xz.second;
