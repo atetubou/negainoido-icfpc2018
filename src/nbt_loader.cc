@@ -187,6 +187,22 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
     return 1;
   }
 
+  if ((nbt_content[i] & 0b111) == 0b010) {
+    // Void
+    int nd = (nbt_content[i] >> 3) & 0b11111;
+    int dx, dy, dz;
+    LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))
+      << "encoding error" << std::endl;
+
+    (*ss) << "Void <" << dx << ", " << dy << ", " << dz << ">"  << std::endl;
+
+    (*command)["command"] = "Void";
+    (*command)["dx"] = dx;
+    (*command)["dy"] = dy;
+    (*command)["dz"] = dz;
+    return 1;
+  }
+
   if ((nbt_content[i] & 0b111) == 0b000) {
     // GVoid
     int nd = (nbt_content[i] >> 3) & 0b11111;
