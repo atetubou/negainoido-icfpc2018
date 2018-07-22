@@ -49,9 +49,6 @@ std::pair<Command, Command> GenFusionFromFission(CommandExecuter& ce, const auto
 }
 
 void RequestOneClean(CommandExecuter& ce, int leng_x, int leng_y, int leng_z) {
-  LOG_ASSERT(leng_x >= 2);
-  LOG_ASSERT(leng_y >= 2);
-  LOG_ASSERT(leng_z >= 2);
   // leng >= 2
   // Gvoid (o, o, o) --- (o+leng, o+leng, o+leng)
   static const Point dirs[9] = {
