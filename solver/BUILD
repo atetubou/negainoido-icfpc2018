@@ -12,6 +12,21 @@ cc_binary(
     ],
 )
 
+cc_library(
+    name = "simple_solve_lib",
+    copts = ["-std=c++14"],
+    srcs = ["simple_solve_lib.cc", "simple_solve.h"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",  
+        "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
+        "//src:command_executer",
+        "//src/base",
+    ],
+)
+
+
 cc_binary(
     name = "simple_solve",
     srcs = ["simple_solve.cc"],
@@ -21,6 +36,7 @@ cc_binary(
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
         "//src:command_executer",
+        "simple_solve_lib",
     ],
 )
 
@@ -66,10 +82,10 @@ cc_binary(
     ],
 )
 
-cc_binary(
+cc_library(
     name = "oscar",
     copts = ["-std=c++14"],
-    srcs = ["oscar.cc"],
+    srcs = ["oscar.cc", "oscar.h"],
     deps = [
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",  
@@ -87,10 +103,12 @@ cc_binary(
            ],
     copts = ["-std=c++14"],
     deps = [
+        "simple_solve_lib",
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
         "//src:command_executer",
+        "oscar"
     ],
 )
