@@ -5,6 +5,7 @@
 #include "src/base/base.h"
 #include "src/command_util.h"
 #include "src/command.h"
+#include "simple_solve.h"
 #include <queue>
 #include <cmath>
 #include <vector>
@@ -14,114 +15,9 @@
 
 using namespace std;
 
-int dx[] = {-1,0,0,1,0,0};
-int dy[] = {0,-1,0,0,1,0};
-int dz[] = {0,0,-1,0,0,1};
-
-enum class VoxelState {
-  kALWAYSEMPTY,
-  kSHOULDBEFILLED,
-  kALREADYFILLED,
-};
-
-using ev = std::vector<VoxelState>;
-using evv = std::vector<ev>;
-using evvv = std::vector<evv>;
-
-int total_visit = 0;
-
-vector<Command> get_commands_for_next(const Point& current, const Point& dest,
-                                      const evvv& voxel_states) {
-  const int R = voxel_states.size();
-
-  struct State {
-    State(int estimated, int current_cost, const Point& p) :
-      estimated(estimated), current_cost(current_cost), p(p) {};
-
-    int estimated;
-    int current_cost;
-    Point p;
-
-    bool operator<(const State& o) const {
-      return estimated > o.estimated;
-    }
-  };
-
-  std::priority_queue<State> que;
-  int count = 1;
-
-  static vvv tmp_map(R, vv(R, v(R, -1)));
-
-  vector<Point> visited;
-
-  que.push(State((dest - current).Manhattan(), 0, current));
-
-  while(!que.empty()) {
-    const State st = que.top();
-    const Point cur = st.p;
-    que.pop();
-
-    if (tmp_map[cur.x][cur.y][cur.z] >= 0) continue;
-    tmp_map[cur.x][cur.y][cur.z]  = st.current_cost;
-    visited.push_back(cur);
-    ++total_visit;
-    count++;
-
-    if (dest == cur) {
-      break;
-    }
-
-    for(int i=0;i<6;i++) {
-      int nx = cur.x + dx[i];
-      int ny = cur.y + dy[i];
-      int nz = cur.z + dz[i];
-      if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
-        if (tmp_map[nx][ny][nz] >= 0) continue;
-
-        if (voxel_states[nx][ny][nz] != VoxelState::kALREADYFILLED) {
-          Point np = Point(nx,ny,nz);
-          que.push(State(st.current_cost + 1 + (np - dest).Manhattan(), st.current_cost + 1, np));
-        }
-      }
-    }
-  }
-
-  LOG_IF(FATAL, tmp_map[dest.x][dest.y][dest.z] == 0) << "can not reach to dest";
-
-  vector<Command> rev_commands;
-  Point rc = dest;
-  while(rc != current) {
-    int mind = -1;
-    int minc = tmp_map[rc.x][rc.y][rc.z];
-    for(int i=0;i<6;i++) {
-      int nx = rc.x + dx[i];
-      int ny = rc.y + dy[i];
-      int nz = rc.z + dz[i];
-      if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
-        const int tmpv = tmp_map[nx][ny][nz];
-        if (minc > tmpv && tmpv >= 0) {
-          mind = i;
-          break;
-        }
-      }
-    }
-
-    LOG_IF(FATAL, mind < 0) << "Error in BFS to find path";
-
-    rc.x = rc.x + dx[mind];
-    rc.y = rc.y + dy[mind];
-    rc.z = rc.z + dz[mind];
-    rev_commands.push_back(Command::make_smove(1, Point(-dx[mind], -dy[mind], -dz[mind])));
-  }
-
-  reverse(rev_commands.begin(), rev_commands.end());
-
-  for (const auto& v : visited) {
-    tmp_map[v.x][v.y][v.z] = -1;
-  }
-
-  return rev_commands;
-}
+static int dx[] = {-1,0,0,1,0,0};
+static int dy[] = {0,-1,0,0,1,0};
+static int dz[] = {0,0,-1,0,0,1};
 
 DEFINE_string(mdl_filename, "", "filepath of mdl");
 
@@ -186,12 +82,12 @@ int main(int argc, char** argv) {
 
   visit_order.emplace_back(0, 0, 0);
 
-  evvv voxel_states(R, evv(R, ev(R, VoxelState::kALWAYSEMPTY)));
+  evvv voxel_states(R, evv(R, ev(R, MyVoxelState::kALWAYSEMPTY)));
   for (int x = 0; x < R; ++x) {
     for (int y = 0; y < R; ++y) {
       for (int z = 0; z < R; ++z) {
         if (voxels[x][y][z]) {
-          voxel_states[x][y][z] = VoxelState::kSHOULDBEFILLED;
+          voxel_states[x][y][z] = MyVoxelState::kSHOULDBEFILLED;
         }
       }
     }
@@ -216,7 +112,7 @@ int main(int argc, char** argv) {
       result_buff.push_back(Command::make_fill(1, Point(-nd.x, -nd.y, -nd.z)));
       result_buff = MergeSMove(result_buff);
       flush_commands(result_buff);
-      voxel_states[cur.x][cur.y][cur.z] = VoxelState::kALREADYFILLED;
+      voxel_states[cur.x][cur.y][cur.z] = MyVoxelState::kALREADYFILLED;
     }
 
     for (size_t i = 1; i < commands.size(); ++i) {
@@ -229,10 +125,7 @@ int main(int argc, char** argv) {
   flush_commands(result_buff);
 
   LOG(INFO) << "done path construction R=" << R
-            << " total_visit=" << total_visit
-            << " total_move=" << total_move
-            << " move_per_voxel=" << static_cast<double>(total_move) / (visit_order.size() - 2)
-            << " visit_per_voxel=" << static_cast<double>(total_visit) / (visit_order.size() - 2);
+            << " total_move=" << total_move;
 
 
   return 0;
