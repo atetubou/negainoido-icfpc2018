@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Solutions</h1>
+    
+{% if 'problem_id' in data %}
+    <h1>Solutions for {{ data['problem_id'] }}</h1>
+{% else %}
+    <h1>Solutions</h1>
+{% endif %}
   <table class="table table-striped">
     <thead>
       <tr>
@@ -13,7 +18,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for r in data %}
+      {% for r in data.solutions %}
       <tr>
         <td> 
           <a href="{{ url_for('solution_id_as_html', id = r['id']) }}">

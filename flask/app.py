@@ -123,12 +123,17 @@ def test_select() -> Result[List[Any]]:
         conn.close()
 
 @api('/list_solution', 'list_solution.html')
-def list_solution() -> Result[List[Any]]:
+def list_solution() -> Result[Any]:
     conn = get_connection()
     curr = conn.cursor(dictionary=True)
+    pid = request.args.get("problem", None)
     try:
-        curr.execute("select id,problem_id,solver_id, score, comment, created_at from solutions order by id desc")
-        return Ok(list(curr))
+        if pid:
+            curr.execute("select id,problem_id,solver_id, score, comment, created_at from solutions where problem_id = %s order by id desc", (pid,))
+            return Ok({ "solutions" : list(curr), "problem_id" : pid })
+        else:
+            curr.execute("select id,problem_id,solver_id, score, comment, created_at from solutions order by id desc")
+            return Ok({ "solutions" : list(curr) })
     finally:
         curr.close()
         conn.close()

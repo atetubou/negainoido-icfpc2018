@@ -43,11 +43,21 @@ def eval_solution(cnx, solution_id):
     else:
         prob_srcpath = '-'
 
-    s = subprocess.check_output('python ../soren/main.py %s %s %s' % (prob_srcpath,prob_path,dest), shell=True, universal_newlines =True)
-    print(s)
-    score = int(s)
-    curr.execute("update solutions set score = %s where id = %s", (score,solution_id))
-    cnx.commit()
+    try:
+        s = subprocess.check_output('python ../soren/main.py %s %s %s' % (prob_srcpath,prob_path,dest), 
+                                    shell=True, 
+                                    universal_newlines =True)
+        comment = "output: " + s
+        curr.execute("update solutions set comment = %s where id = %s", (comment,solution_id))
+        score = int(s)
+        curr.execute("update solutions set score = %s where id = %s", (score,solution_id))
+        cnx.commit()
+    
+    except subprocess.CalledProcessError as exc:
+        print("Status : FAIL", exc.returncode, exc.output)
+        comment = "Failed:" + exc.output
+        curr.execute("update solutions set comment = %s, score = -1 where id = %s", (comment, solution_id))
+        cnx.commit()
 
 def main():
     while True:

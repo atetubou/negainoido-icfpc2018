@@ -20,7 +20,7 @@
       {% for r in data %}
       <tr>
         <td> 
-          {{ r['name'] }}
+            <a href="{{ url_for('list_solution_as_html')}}?problem={{r['name']}}"> {{ r['name'] }} </a>
         {#  <!-- <a href="{{ url_for('problem_id_as_html', id = r['name']) }}"> --> #}
 {#            <!-- {{ r['name'] }} --> #}
 {#          <!-- </a> --> #}
