@@ -10,3 +10,11 @@ cc_library(
         "@jsoncpp_git//:jsoncpp",
     ]
 )
+
+cc_library(
+    name = "flags",
+    hdrs = ["flags.h"],
+    deps = [
+        "@com_github_gflags_gflags//:gflags",
+    ]
+)

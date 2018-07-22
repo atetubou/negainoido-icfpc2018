@@ -90,6 +90,7 @@ cc_binary(
         "//src/base",
         ":command_executer",
         ":nbt_loader",
+        "//src/base:flags",
     ],
 )
 

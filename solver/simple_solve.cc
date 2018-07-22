@@ -6,13 +6,12 @@
 #include "gflags/gflags.h"
 
 #include "src/base/base.h"
+#include "src/base/flags.h"
 #include "src/command_util.h"
 #include "src/command.h"
 #include "simple_solve.h"
 
 using namespace std;
-
-DEFINE_string(mdl_filename, "", "filepath of mdl");
 
 void flush_commands(vector<Command> &results) {
   Json::Value json;
@@ -30,7 +29,7 @@ void flush_commands(vector<Command> &results) {
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  const vvv voxels = ReadMDL(FLAGS_mdl_filename);
+  const vvv voxels = ReadMDL(FLAGS_tgt_filename);
 
   vector<Command> result_buff = SimpleSolve(voxels);
   flush_commands(result_buff);

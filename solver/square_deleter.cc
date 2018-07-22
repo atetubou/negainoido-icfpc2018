@@ -6,8 +6,8 @@
 #include "json/json.h"
 
 #include "solver/square_delete.h"
+#include "src/base/flags.h"
 
-DEFINE_string(src_filename, "", "filepath of mdl");
 DEFINE_bool(flip, true, "do flip?");
 DEFINE_bool(json, false, "output json");
 

@@ -12,12 +12,11 @@
 #include "json/json.h"
 
 #include "src/base/base.h"
+#include "src/base/flags.h"
 #include "src/command.h"
 #include "src/command_executer.h"
 #include "src/nbt_loader.h"
 
-DEFINE_string(mdl_src, "-", "source filepath.mdl or `-` (empty)");
-DEFINE_string(mdl_tgt, "-", "target filepath.mdl or `-` (empty)");
 DEFINE_string(nbt_filename, "", "filepath.nbt");
 DEFINE_bool(from_json, false, ".nbt => .json");
 DEFINE_bool(verbose, false, "verbose mode; can use when --from_json");
@@ -35,7 +34,7 @@ int main(int argc, char* argv[]) {
     std::cerr << "Specify --nbt_filename\n";
     exit(1);
   }
-  if (FLAGS_mdl_src == "-" and FLAGS_mdl_tgt == "-") {
+  if (FLAGS_src_filename == "-" and FLAGS_tgt_filename == "-") {
     std::cerr << "ERROR: - and -\n";
     exit(1);
   }
@@ -45,21 +44,21 @@ int main(int argc, char* argv[]) {
   vvv M_tgt;
   int R;
 
-  if (FLAGS_mdl_src != "-" and FLAGS_mdl_tgt == "-") {
+  if (FLAGS_src_filename != "-" and FLAGS_tgt_filename == "-") {
       LOG(INFO) << "Disassembly";
-      vvv M_src = ReadMDL(FLAGS_mdl_src);
+      vvv M_src = ReadMDL(FLAGS_src_filename);
       R = M_src.size();
       M_tgt = empty(R);
       ce = std::make_unique<CommandExecuter>(M_src, false);
-  } else if (FLAGS_mdl_src == "-" and FLAGS_mdl_tgt != "-") {
+  } else if (FLAGS_src_filename == "-" and FLAGS_tgt_filename != "-") {
       LOG(INFO) << "Assembly";
-      M_tgt = ReadMDL(FLAGS_mdl_tgt);
+      M_tgt = ReadMDL(FLAGS_tgt_filename);
       R = M_tgt.size();
       ce = std::make_unique<CommandExecuter>(R, false);
   } else {
       LOG(INFO) << "Reassemble";
-      vvv M_src = ReadMDL(FLAGS_mdl_src);
-      M_tgt = ReadMDL(FLAGS_mdl_tgt);
+      vvv M_src = ReadMDL(FLAGS_src_filename);
+      M_tgt = ReadMDL(FLAGS_tgt_filename);
       R = M_tgt.size();
       ce = std::make_unique<CommandExecuter>(M_src, false);
       CHECK((int)M_src.size() == R);
