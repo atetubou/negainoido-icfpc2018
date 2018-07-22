@@ -165,8 +165,8 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(-1 <= dx && dx <= 1);
     CHECK(-1 <= dy && dy <= 1);
     CHECK(-1 <= dz && dz <= 1);
-
-    CHECK(std::abs(dx) + std::abs(dy) + std::abs(dz) == 1);
+    auto mlen = std::abs(dx) + std::abs(dy) + std::abs(dz);
+    CHECK(0 < mlen && mlen <= 2);
 
     return (dx + 1) * 9 + (dy + 1) * 3 + (dz + 1);
   };
@@ -242,7 +242,6 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(command.isMember("dx2") && command["dx2"].isInt()) << command;
     CHECK(command.isMember("dy2") && command["dy2"].isInt()) << command;
     CHECK(command.isMember("dz2") && command["dz2"].isInt()) << command;
-
     int nd = getnd(command["dx1"].asInt(), command["dy1"].asInt(), command["dz1"].asInt());
     return {static_cast<char>((nd << 3) | 0b000),
         static_cast<char>(command["dx2"].asInt() + 30),

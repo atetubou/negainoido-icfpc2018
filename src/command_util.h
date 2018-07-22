@@ -15,6 +15,8 @@ struct Point {
   Point& operator+= (const Point& p);
   Point operator- (const Point& p) const;
   Point& operator-= (const Point& p);
+  Point operator* (int a) const;
+  Point& operator*= (int a);
 
   int Manhattan() const {
     return std::abs(x) + std::abs(y) + std::abs(z);
@@ -24,7 +26,6 @@ struct Point {
 bool operator==(const Point& p1, const Point& p2);
 bool operator!=(const Point& p1, const Point& p2);
 bool operator<(const Point& p1, const Point& p2);
-
 bool operator>(const Point& p1, const Point& p2);
 std::ostream& operator << (std::ostream &out, const Point &p);
 

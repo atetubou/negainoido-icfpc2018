@@ -19,7 +19,7 @@ cc_library(
     srcs = ["simple_solve_lib.cc", "simple_solve.h"],
     deps = [
         "//external:glog",
-        "@com_github_gflags_gflags//:gflags",  
+        "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
         "@com_google_absl//absl/types:span",
         "//src:command_executer",
@@ -93,7 +93,7 @@ cc_binary(
     srcs = [ "square_deleter.cc"],
     deps = [
         "//external:glog",
-        "@com_github_gflags_gflags//:gflags",  
+        "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
         "@com_google_absl//absl/types:span",
         "//src/base",
@@ -108,7 +108,7 @@ cc_library(
     srcs = ["oscar.cc", "oscar.h"],
     deps = [
         "//external:glog",
-        "@com_github_gflags_gflags//:gflags",  
+        "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
         "@com_google_absl//absl/types:span",
         "//src:command_executer",
@@ -130,6 +130,20 @@ cc_binary(
         "//src/base",
         "//src:command_executer",
         "oscar",
+        "//src/base:flags",
+    ],
+)
+
+cc_binary(
+    name = "duskin_ai",
+    srcs = ["duskin_ai.cc",
+            "AI.h",
+           ],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "//src/base",
+        "//src:command_executer",
         "//src/base:flags",
     ],
 )

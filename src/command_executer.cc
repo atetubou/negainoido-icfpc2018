@@ -398,7 +398,6 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   }
 
   CE_ASSERT(fusion_count == 0) << fusion_count;
-
   // Check volatile cordinates
   for (size_t i = 0; i < v_cords.size(); i++) {
     for (size_t j = 0; j < v_cords.size(); j++) {
@@ -432,8 +431,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
               [](const auto& c1, const auto& c2) {
                 return c1.id < c2.id;
               });
-
-    auto turn_json = Command::CommandsToJson(commands);
+    auto turn_json = Command::CommandsToJson(commands_);
     json["turn"].append(std::move(turn_json));
   }
 
