@@ -5,6 +5,8 @@
 #include <map>
 #include <memory>
 #include <deque>
+#include <queue>
+#include <algorithm>
 
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -12,6 +14,7 @@
 #include "src/base/base.h"
 #include "src/base/flags.h"
 #include "src/command_util.h"
+#include "src/command.h"
 #include "src/command_executer.h"
 
 #include "solver/AI.h"
@@ -24,6 +27,19 @@ static int dx[] = {-1, 1, 0, 0, 0, 0};
 static int dy[] = {0, 0, -1, 1, 0, 0};
 static int dz[] = {0, 0, 0, 0, -1, 1};
 
+static Point dP[] = {
+    Point(-1,0,0),
+    Point(1,0,0),
+    Point(0,-1,0),
+    Point(0,1,0),
+    Point(0,0,-1),
+    Point(0,0,1)
+};
+
+using bv = std::vector<bool>;
+using bvv = std::vector<bv>;
+using bvvv = std::vector<bvv>;
+
 #define DOWN_X 0
 #define UP_X 1
 #define DOWN_Y 2
@@ -33,15 +49,148 @@ static int dz[] = {0, 0, 0, 0, -1, 1};
 
 class OscarAI : public AI
 {
+    int R;
     vvv tgt_model;
     Vox vox;
 
+    vector<Command> getPath(Point &pos, const Point &dest) {
+        LOG(INFO) << "finding " << pos << " " << dest;
+        queue<Point> que;
+        que.push(pos);
+        vvv hist = vvv(R,vv(R, v(R,-1)));
+        int count = 0;
+        while(!que.empty()) {
+            Point cur = que.front();
+            que.pop();
+
+            if (hist[cur.x][cur.y][cur.z]!= -1) continue;
+            hist[cur.x][cur.y][cur.z] = count++;
+
+            if (cur==dest) break;
+
+            for (int d=0;d<6;d++) {
+                int nx = cur.x + dx[d];
+                int ny = cur.y + dy[d];
+                int nz = cur.z + dz[d];
+                
+                if(nx>=0 && nx < R && ny >= 0 && ny < R && nz>= 0 && nz < R) {
+                    if(ce->GetSystemStatus().matrix[nx][ny][nz]==VoxelState::VOID) {
+                        que.push(Point(nx,ny,nz));
+                    }
+                }
+            }
+        }
+        CHECK(hist[dest.x][dest.y][dest.z] != -1) << "Failed to find path";
+        vector<Command> rev_ret;
+        rev_ret.reserve(hist[dest.x][dest.y][dest.z]);
+        Point cur = dest;
+        while(cur!=pos) {
+            int mind = -1;
+            int minh = R*R*R;
+            for(int d=0;d<6;d++) {
+                int nx = cur.x + dx[d];
+                int ny = cur.y + dy[d];
+                int nz = cur.z + dz[d];
+                
+                if(nx>=0 && nx < R && ny >= 0 && ny < R && nz>= 0 && nz < R) {
+                    if(hist[nx][ny][nz]!=-1 && minh > hist[nx][ny][nz]) {
+                        minh = hist[nx][ny][nz];
+                        mind = d;
+                    }
+                }
+            }
+            CHECK(mind!=-1) << "not found";
+            rev_ret.push_back(Command::make_smove(1, Point(-dx[mind], -dy[mind], -dz[mind])));
+            cur += Point(dx[mind],dy[mind],dz[mind]);
+        }
+
+        reverse(rev_ret.begin(), rev_ret.end());
+        return MergeSMove(rev_ret);
+    }
+
+    void remove_dest_color(Point &pos, int tar_color, int mh) {
+        priority_queue< pair<int, Point>, vector< pair<int,Point> >, greater< pair<int,Point> > > pque;
+        int dir = vox.g2d[tar_color];
+        if (dir/2==0) {
+            for (int j=0;j<R;j++) for (int k=0;k<R;k++) {
+                if (vox.get_color(mh,j,k)==tar_color) {
+                    Point tmp =Point(mh,j,k);
+                    pque.push(make_pair((tmp-pos).Manhattan(), tmp));
+                }
+            }
+        }
+        else if (dir/2==1) {
+            for (int i=0;i<R;i++) for (int k=0;k<R;k++) {
+                if (vox.get_color(i,mh,k)==tar_color) {
+                    Point tmp =Point(i,mh,k);
+                    pque.push(make_pair((tmp-pos).Manhattan(), tmp));
+                }
+            }
+        }
+        else {
+            for (int i=0;i<R;i++) for (int j=0;j<R;j++) {
+                if (vox.get_color(i,j,mh)==tar_color) {
+                    Point tmp =Point(i,j,mh);
+                    pque.push(make_pair((tmp-pos).Manhattan(), tmp));
+                }
+            }
+        }
+        while(!pque.empty()) {
+            Point tar = pque.top().second;
+            pque.pop();
+            LOG(INFO) << "try to remove " << tar << " color " << vox.get_color(tar);
+            vector<Command> commands = getPath(pos, tar + dP[dir]);
+            commands.push_back(Command::make_void(1, Point(-dx[dir], -dy[dir], -dz[dir])));
+            for (auto c : commands) {
+                ce->Execute({c});
+            }
+            pos = tar + dP[dir];
+            CHECK(ce->GetBotStatus()[1].pos == tar + dP[dir]) << "diff ce pos=" << ce->GetBotStatus()[1].pos << " tar=" << tar ;
+        }
+        return;
+    }
+
   public:
-    OscarAI(const vvv &src_model, const vvv &tgt_model) : AI(src_model), tgt_model(tgt_model), vox(src_model) { }
+    OscarAI(const vvv &src_model, const vvv &tgt_model) : AI(src_model), tgt_model(tgt_model), vox(src_model) {
+        R = src_model.size();
+     }
     ~OscarAI() override = default;
 
     void Run() override {
         vox.set_colors();
+
+        Point pos = Point(0,0,0);
+
+        // remove all 
+        int tar_color = vox.get_color_count() - 1;
+
+        while (tar_color >=0) {
+            int mh = vox.max_pos[tar_color];
+            int dir = vox.g2d[tar_color];
+            LOG(INFO) << "target color :" << tar_color <<  " dir " << dir;
+            while(mh>=0 && mh < R) {
+                remove_dest_color(pos, tar_color, mh);
+                mh -= dx[dir];
+                mh -= dy[dir];
+                mh -= dz[dir];
+                pos = ce->GetBotStatus()[1].pos;
+            }
+            for (int i=0;i<R;i++) for(int j=0;j<R;j++) for(int k=0;k<R;k++) {
+                CHECK(vox.get_color(i,j,k) !=tar_color || ce->GetSystemStatus().matrix[i][j][k] == VoxelState::VOID) << "Failed to delete color" << tar_color << " " << Point(i,j,k);
+            }
+            tar_color--;
+        }
+
+        for (auto c : getPath(pos, Point(0,0,0))) {
+            ce->Execute({c});
+        }
+
+        CHECK(ce->GetBotStatus()[1].pos == Point(0,0,0));
+        for (int i=0;i<R;i++) for(int j=0;j<R;j++) for(int k=0;k<R;k++) {
+            CHECK(ce->GetSystemStatus().matrix[i][j][k] == 0) << "Failed to delete" << Point(i,j,k);
+        }
+
+        // build all by simple_solve
 
         priority_queue<pair<int, Point>, vector<pair<int, Point>>, greater<pair<int, Point>>> pque;
 
@@ -53,6 +202,11 @@ class OscarAI : public AI
                     pque.push(make_pair(x + z, Point(x, 0, z)));
                 }
             }
+        }
+        if (pque.empty()) {
+            LOG(INFO) << "empty target.";
+            ce->Execute({Command::make_halt(1)});
+            return;
         }
 
         vector<Point> visit_order;
@@ -154,22 +308,22 @@ int main(int argc, char *argv[])
 
     int R = 1;
     vvv src_model;
-    if (!FLAGS_src_filename.empty()) {
+    if (FLAGS_src_filename != "-") {
         src_model = ReadMDL(FLAGS_src_filename);
         R = src_model.size();
     }
 
     vvv tgt_model;
-    if(!FLAGS_tgt_filename.empty()) {
+    if(FLAGS_tgt_filename != "-") {
         tgt_model = ReadMDL(FLAGS_tgt_filename);
         R = tgt_model.size();
     }
 
-    if (FLAGS_src_filename.empty()) {
+    if (FLAGS_src_filename == "-") {
         LOG(INFO) << "Start with empty src";
         src_model = vvv(R, vv(R, v(R, 0)));
     }
-    if (FLAGS_tgt_filename.empty()) {
+    if (FLAGS_tgt_filename == "-") {
         LOG(INFO) << "Start with empty tgt";
         tgt_model = vvv(R, vv(R, v(R, 0)));
     }

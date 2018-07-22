@@ -37,6 +37,12 @@ Vox::Vox(const vvv &voxels)
         this->voxels[(i + 1) * (R + 2) * (R + 2) + (j + 1) * (R + 2) + k + 1] = voxels[i][j][k] == 1;
       }
 }
+
+void Vox::add_color(int dir) {
+  g2d[color_count] = dir;
+  max_pos[color_count] = dir%2==1 ? 0 : R;
+  color_count++;
+}
 bool Vox::get(int x, int y, int z)
 {
   CHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
@@ -85,30 +91,33 @@ vvv Vox::convert()
 
 void Vox::dfs(int color, int x, int y, int z, int dir, int base)
 {
-  if (!get(x, y, z) || get_color(x, y, z) >= 0)
+  if ((!get(x, y, z) || get_color(x, y, z) >= 0) || (y != 0 && get(x-dx[dir], y-dy[dir],z-dz[dir]) && get_color(x - dx[dir], y - dy[dir], z - dz[dir]) < 0))
   {
-    return;
-  }
-  if (y != 0 && get_color(x - dx[dir], y - dy[dir], z - dz[dir]) < 0)
-  {
+    if (dir/2 ==0) {
+      max_pos[color] = dir%2 == 1 ? max(max_pos[color], x-1) : min(max_pos[color], x+1);
+    } else if (dir/2 ==1) {
+      max_pos[color] = dir%2 == 1 ? max(max_pos[color], y-1) : min(max_pos[color], y+1);
+    } else {
+      max_pos[color] = dir%2 == 1 ? max(max_pos[color], z-1) : min(max_pos[color], z+1);
+    }
     return;
   }
   set_color(color, x, y, z);
-  if (dir / 2 == 0 && base == x)
+  if (dir / 2 == 0)
   {
     dfs(color, x, y - 1, z, dir, base);
     dfs(color, x, y + 1, z, dir, base);
     dfs(color, x, y, z - 1, dir, base);
     dfs(color, x, y, z + 1, dir, base);
   }
-  else if (dir / 2 == 1 && base == y)
+  else if (dir / 2 == 1)
   {
     dfs(color, x - 1, y, z, dir, base);
     dfs(color, x + 1, y, z, dir, base);
     dfs(color, x, y, z - 1, dir, base);
     dfs(color, x, y, z + 1, dir, base);
   }
-  else if (dir / 2 == 2 && base == z)
+  else if (dir / 2 == 2)
   {
     dfs(color, x - 1, y, z, dir, base);
     dfs(color, x + 1, y, z, dir, base);
@@ -120,50 +129,45 @@ void Vox::dfs(int color, int x, int y, int z, int dir, int base)
 
 void Vox::set_colors()
 {
-  int gcount = 0;
-  for (int i = 0; i < R; i++)
-    for (int j = 0; j < R; j++)
-    {
-      if (get(i, 0, j) && get_color(i, 0, j) < 0)
-      {
-        dfs(gcount, i, 0, j, UP_Y, 0);
-        g2d[gcount] = UP_Y;
-        gcount++;
-      }
+  for (int i = 0; i < R; i++) for (int j = 0; j < R; j++) {
+    if (get(i, 0, j) && get_color(i, 0, j) < 0) {
+      add_color(UP_Y);
+      dfs(color_count-1, i, 0, j, UP_Y, 0);
     }
+  }
 
   while (1)
   {
-    int prev = gcount;
-    for (int d = 0; d < 6; d++)
-      for (int i = 0; i < R; i++)
-        for (int j = 0; j < R; j++)
-          for (int k = 0; k < R; k++)
-          {
-            if (get(i, j, k) && get_color(i, j, k) < 0 && get_color(i - dx[d], j - dy[d], k - dz[d]) >= 0)
-            {
-              if (d / 2 == 0)
-              {
-                dfs(gcount, i, j, k, d, i);
-                g2d[gcount] = d;
-                gcount++;
-              }
-              else if (d / 2 == 1)
-              {
-                dfs(gcount, i, j, k, d, j);
-                g2d[gcount] = d;
-                gcount++;
-              }
-              else
-              {
-                dfs(gcount, i, j, k, d, k);
-                g2d[gcount] = d;
-                gcount++;
-              }
-            }
-          }
-    if (prev == gcount)
+    int prev = color_count;
+    for (int d = 0; d < 6; d++) for (int i = 0; i < R; i++) for (int j = 0; j < R; j++) for (int k = 0; k < R; k++) {
+      if (get(i, j, k) && get_color(i, j, k) < 0 && get_color(i - dx[d], j - dy[d], k - dz[d]) >= 0) {
+        if (d / 2 == 0)
+        {
+          add_color(d);
+          dfs(color_count-1, i, j, k, d, i);
+        }
+        else if (d / 2 == 1)
+        {
+          add_color(d);
+          dfs(color_count-1, i, j, k, d, j);
+        }
+        else
+        {
+          add_color(d);
+          dfs(color_count-1, i, j, k, d, k);
+        }
+      }
+    }
+    if (prev == color_count)
       break;
   }
-  color_count = gcount;
+  LOG(INFO) << "used color :" << color_count;
+
+  for (int i=0;i<R;i++) for (int j=0;j<R;j++) for (int k=0;k<R;k++) {
+    CHECK(!get(i,j,k) || get_color(i,j,k) >= 0) << "found missing voxel: " << Point(i,j,k);
+  }
+}
+
+int Vox::get_color_count() {
+  return color_count;
 }

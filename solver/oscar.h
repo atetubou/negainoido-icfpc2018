@@ -6,12 +6,15 @@
 #include <map>
 
 class Vox {
+    int color_count;
+    void add_color(int dir);
+    public:
     std::vector<bool> voxels;
     std::vector<int> colors;
+    std::map<int,int> max_pos;
+    std::map<int,int> min_pos;
     int R;
     std::map<int,int> g2d;
-    int color_count;
-    public:
     Vox(const vvv &voxels);
     bool get(int x, int y, int z);
     int get_color(int x, int y, int z);
@@ -21,6 +24,7 @@ class Vox {
     vvv convert();
     void dfs(int color, int x, int y, int z, int dir, int base);
     void set_colors();
+    int get_color_count();
 };
 
 #endif
