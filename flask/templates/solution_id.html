@@ -8,6 +8,9 @@
   <label>score:</label> <a> {{ data['score']}} </a><br />
   <label>created_at:</label> <a> {{ data['created_at']}} </a> <br />
   <label>comment:</label><br />
-      <pre><code>{{data['comment']}}</code></pre> <br /?
+  <pre><code>{{data['comment']}}</code></pre> <br />
   <p><a href="/static/solutions/{{data['id']}}.nbt"> download obt file</a> </p>
+  <form method="post" action="{{ url_for("resubmit_solution_as_html", id = data['id']) }}">
+      <button type="submit" classs="btn btn-default">Resubmit</button>
+  </form>
 {% endblock %}

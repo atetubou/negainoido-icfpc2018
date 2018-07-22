@@ -7,6 +7,7 @@ from result import Ok, Ng, Result
 from typing import TypeVar,Generic,List,Any,Callable,cast
 import math
 from table import problem_size
+import shutil
 import subprocess
 
 app = Flask(__name__)
@@ -109,6 +110,34 @@ def submit_solution() -> Result[None]:
         curr.close()
         conn.close()
     return Ok(None)
+
+@api('/resubmit_solution/<int:id>',  'solution_id.html', methods=['POST'])
+def resubmit_solution(id):
+    conn = get_connection()
+    curr = conn.cursor(dictionary=True)
+    try:
+        curr.execute('select * from solutions where id = %s', (id,))
+        row = curr.fetchone()
+        if not row:
+            return Ng('invalid id')
+        problem_id = row['problem_id']
+        solver_id = row['solver_id']
+        nbt_src_path = 'static/solutions/%d.nbt' % id
+        curr.execute('insert into solutions(problem_id, solver_id) values (%s,%s)', (problem_id, solver_id))
+
+        new_id = curr.lastrowid
+        nbt_dst_path = 'static/solutions/%d.nbt' % new_id
+        shutil.copy( nbt_src_path, nbt_dst_path )
+        curr.execute('delete from solutions where id = %s', (id,))
+        conn.commit()
+        res = curr.execute("select id,problem_id,solver_id, score, comment, created_at from solutions where id = %s", (new_id,))
+        row = curr.fetchone()
+        assert(row)
+
+        return Ok(row)
+    finally:
+        curr.close()
+        conn.close()
        
 
 @api('/test_select', 'test_select.html')
