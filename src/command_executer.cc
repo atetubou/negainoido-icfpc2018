@@ -26,7 +26,8 @@ CommandExecuter::BotStatus::BotStatus()
   : active(false), pos(0, 0, 0) {}
 
 CommandExecuter::CommandExecuter(int R, bool output_json)
-  : num_active_bots(1), system_status(R), output_json(output_json) {
+  : num_active_bots(1), system_status(R), output_json(output_json),
+    all_voxels_are_grounded(true), valid_grounded_memo(false) {
   // Bot[1] is active, exists at (0,0,0) and has all the seeds.
   bot_status[1].active = true;
   bot_status[1].pos = Point(0,0,0);
@@ -34,14 +35,11 @@ CommandExecuter::CommandExecuter(int R, bool output_json)
   for (int i = 2; i <= kMaxNumBots; i++) {
     bot_status[1].seeds.insert(i);
   }
-
-  // Initialize for IsGrounded
-  always_low = true;
-  valid_grounded_memo = false;
 }
 
 CommandExecuter::CommandExecuter(vvv src_model, bool output_json)
-  : num_active_bots(1), system_status(src_model.size()), output_json(output_json) {
+  : num_active_bots(1), system_status(src_model.size()), output_json(output_json),
+    all_voxels_are_grounded(true), valid_grounded_memo(false) {
   // Bot[1] is active, exists at (0,0,0) and has all the seeds.
   bot_status[1].active = true;
   bot_status[1].pos = Point(0,0,0);
@@ -50,17 +48,12 @@ CommandExecuter::CommandExecuter(vvv src_model, bool output_json)
     bot_status[1].seeds.insert(i);
   }
 
-  always_low = true;
   int R = src_model.size();
   for (int i = 0; i < R; ++i)
     for (int j = 0; j < R; ++j)
       for (int k = 0; k < R; ++k)
         if (src_model[i][j][k])
           system_status.matrix[i][j][k] = FULL;
-
-  // Initialize for IsGrounded
-  always_low = true;
-  valid_grounded_memo = false;
 }
 
 CommandExecuter::~CommandExecuter() {}
@@ -134,15 +127,26 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
   return true;
 }
 
+
+
 bool CommandExecuter::IsGrounded(const Point& p) {
-  if (always_low && valid_grounded_memo) {
-    return grounded_memo[p.x][p.y][p.z];
-  } else {
-    return IsGroundedSlow(p, false);
+  if (!valid_grounded_memo) {
+    UpdateGroundedMemo();
   }
+
+  return grounded_memo[p.x][p.y][p.z];
 }
 
-bool CommandExecuter::IsGroundedSlow(const Point& p, bool check_all_mode) {
+bool CommandExecuter::AllVoxelsAreGrounded() {
+  if (!valid_grounded_memo) {
+    UpdateGroundedMemo();
+  }
+
+  return all_voxels_are_grounded;
+}
+
+
+void CommandExecuter::UpdateGroundedMemo() {
   // If check_all_mode is 'true', ignore p and
   // check if every FULL point is grounded
 
@@ -196,17 +200,13 @@ bool CommandExecuter::IsGroundedSlow(const Point& p, bool check_all_mode) {
 
   valid_grounded_memo = true;
 
-  if (check_all_mode) {
-    return full_num == 0;
-  } else {
-    return grounded_memo[p.x][p.y][p.z];
-  }
+  all_voxels_are_grounded = (full_num == 0);
 }
 
 void CommandExecuter::VerifyWellFormedSystem() {
   // Check if the harmonics is Low, then all Full voxels of the matrix are grounded.
-  CHECK(system_status.harmonics == HIGH ||
-        IsGroundedSlow(Point(0,0,0), true));
+  CE_ASSERT(system_status.harmonics == HIGH ||
+            AllVoxelsAreGrounded());
 
   // The position of each active nanobot is distinct and is Void in the matrix.
   std::set<Point> p_set;
@@ -224,15 +224,15 @@ void CommandExecuter::VerifyWellFormedSystem() {
       len += bot_status[i].seeds.size();
     }
   }
-  CHECK(p_set.size() == num_active_bots);
+  CE_ASSERT(p_set.size() == num_active_bots);
 
   // The seeds of each active nanobot are disjoint.
-  CHECK(seed_set.size() == len);
+  CE_ASSERT(seed_set.size() == len);
 
   // The seeds of each active nanobot does not include
   // the identifier of any active nanobot.
   for (auto seed : seed_set) {
-    CHECK(!bot_status[seed].active);
+    CE_ASSERT(!bot_status[seed].active);
   }
 }
 
@@ -243,7 +243,7 @@ void VerifyCommandSeq(const std::vector<Command>& commands) {
     bot_id_set.insert(c.id);
   }
 
-  CHECK(commands.size() == bot_id_set.size());
+  CE_ASSERT(commands.size() == bot_id_set.size());
 }
 
 std::pair<Point, Point> CommandExecuter::VerifyGFillCommand(const Command& com, Point *neighbor) {
@@ -437,7 +437,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
 }
 
 Json::Value CommandExecuter::GetJson() {
-  CHECK(output_json);
+  CE_ASSERT(output_json);
   return json;
 }
 
@@ -477,10 +477,8 @@ void CommandExecuter::Flip(const uint32_t bot_id) {
     system_status.harmonics = LOW;
   } else {
     system_status.harmonics = HIGH;
+    valid_grounded_memo = false;
   }
-
-  // For IsGrounded
-  always_low = false;
 }
 
 void CommandExecuter::SMove(const uint32_t bot_id, const Point& lld) {
@@ -580,6 +578,25 @@ void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint
   v_cords.emplace_back(bot_id, c1, c1);
 }
 
+void CommandExecuter::UpdateGroundedPoint(const Point& pos) {
+  if (pos.y == 0 || grounded_memo[pos.x][pos.y - 1][pos.z]) {
+    grounded_memo[pos.x][pos.y][pos.z] = true;
+  } else if (valid_grounded_memo) {
+    const int R = system_status.R;
+    const int adj_dx[] = {-1, 1, 0, 0, 0, 0};
+    const int adj_dy[] = { 0, 0,-1, 1, 0, 0};
+    const int adj_dz[] = { 0, 0, 0, 0,-1, 1};
+    for (int i = 0; i < 6; ++i) {
+      Point p = pos + Point(adj_dx[i], adj_dy[i], adj_dz[i]);
+      if (p.x < 0  || p.y < 0  || p.z < 0) continue;
+      if (p.x >= R || p.y >= R || p.z >= R) continue;
+
+      grounded_memo[pos.x][pos.y][pos.z] |= grounded_memo[p.x][p.y][p.z];
+    }
+  }
+}
+
+
 void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
   CE_ASSERT(IsActiveBotId(bot_id)) << bot_id;
   CE_ASSERT(IsNCD(nd)) << nd;
@@ -600,9 +617,7 @@ void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
   v_cords.emplace_back(bot_id, c1, c1);
 
   // For IsGrounded
-  if (c1.y == 0 || grounded_memo[c1.x][c1.y - 1][c1.z]) {
-    grounded_memo[c1.x][c1.y][c1.z] = true;
-  }
+  UpdateGroundedPoint(c1);
 }
 
 void CommandExecuter::Fusion(const uint32_t bot_id1, const Point& nd1,
@@ -650,6 +665,7 @@ void CommandExecuter::GFill(const std::vector<uint32_t>& bot_ids,
         if (system_status.matrix[x][y][z] == VOID) {
           system_status.matrix[x][y][z] = FULL;
           system_status.energy += 12;
+          UpdateGroundedPoint(Point(x, y, z));
         } else {
           system_status.energy += 6;
         }
