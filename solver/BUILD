@@ -65,3 +65,17 @@ cc_binary(
         "//src/base",
     ],
 )
+
+cc_binary(
+    name = "oscar",
+    copts = ["-std=c++14"],
+    srcs = ["oscar.cc"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",  
+        "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
+        "//src:command_executer",
+        "//src/base",
+    ],
+)
