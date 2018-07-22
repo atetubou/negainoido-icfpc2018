@@ -10,6 +10,7 @@ import time
 from multiprocessing import Process, Queue, Value
 import sys
 from queue import Full
+import  signal
 
 dbconfig = {
     "database" : os.environ['DBNAME'],
@@ -99,6 +100,11 @@ def main():
         th.start()
     print("%d workers started" % NUM_WORKERS)
     sys.stdout.flush()
+
+    def killchildren(a,b):
+        exit(0)
+
+    signal.signal(signal.SIGTERM, killchildren)
     
     try:
         while True:
@@ -123,6 +129,8 @@ def main():
                 time.sleep(1)
     finally:
         for th in workers:
+            print("kill!")
+            sys.stdout.flush()
             th.terminate()
 
 if __name__ == '__main__':
