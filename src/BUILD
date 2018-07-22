@@ -94,6 +94,18 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "trace_connector",
+    srcs = ["trace_connector.cc"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        ":nbt_loader",
+    ],
+)
+
 cc_test(
     name = "command_executer_test",
     srcs = ["command_executer_test.cc"],
