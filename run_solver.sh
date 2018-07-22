@@ -147,8 +147,6 @@ for i in $(range "$RANGE"); do
          -F solver_id=${SOLVER} \
          -F comment=from-run_solver \
          -F nbt=@${NBT_FILE} > /dev/null
-
-        sleep 1
     fi
 
 done
