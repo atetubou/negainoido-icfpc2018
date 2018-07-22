@@ -34,7 +34,6 @@ jq . /tmp/out.json
 
 # backup
 cp /tmp/out.json /tmp/out.json.bk
-gsutil cp /tmp/out.json gs://negainoido-icfpc2018-shared-bucket/live.json gs://negainoido-icfpc2018-shared-bucket/live.json.bk
 
 # submit
 gsutil cp /tmp/out.json gs://negainoido-icfpc2018-shared-bucket/live.json
