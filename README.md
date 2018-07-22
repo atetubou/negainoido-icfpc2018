@@ -38,3 +38,12 @@ $ gsutil cp gs://negainoido-icfpc2018-shared-bucket/nanika .
 ```
 $ gsutil ls gs://negainoido-icfpc2018-shared-bucket
 ```
+
+### Download Problems
+
+```
+gsutil -m rsync -r gs://negainoido-icfpc2018-shared-bucket/problemsL shared
+gsutil -m rsync -r gs://negainoido-icfpc2018-shared-bucket/dfltTracesL shared
+gsutil -m rsync -r gs://negainoido-icfpc2018-shared-bucket/problemsF shared
+gsutil -m rsync -r gs://negainoido-icfpc2018-shared-bucket/dfltTracesF shared
+```
