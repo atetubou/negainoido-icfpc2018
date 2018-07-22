@@ -11,6 +11,9 @@ import (
 var (
 	problem = flag.String("problem", "FA001", `problem name e.g. "FA001"`)
 	solver  = flag.String("solver", "//solver:simple_solve", "ai target")
+
+	tgtFilename = flag.String("tgt_filename", "", "tgt filanem")
+	srcFilename = flag.String("src_filename", "", "src filanem")
 )
 
 func runCommands(command string) {
@@ -40,6 +43,14 @@ func main() {
 
 	if strings.HasPrefix(*problem, "FD") {
 		tgtMDL = "-"
+	}
+
+	if *srcFilename != "" {
+		srcMDL = *srcFilename
+	}
+
+	if *tgtFilename != "" {
+		tgtMDL = *tgtFilename
 	}
 
 	// TODO: use tmpdir
