@@ -82,7 +82,7 @@ void SmarterDuskinAI::Run() {
     ce->Execute({com});
   }
   int leng_x = maxP.x - origin.x + 1;
-  int leng_y = maxP.y - origin.y;
+  int leng_y = std::max(maxP.y - origin.y, 1);
   int leng_z = maxP.z - origin.z + 1;
   RequestOneClean(*ce, leng_x, leng_y, leng_z);
   // Back to Origin.
