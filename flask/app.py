@@ -196,22 +196,34 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
   order by name asc
 """)
         total_score = 0
+        def estimated_score(row):
+            if row['score'] and row['max_score']:
+                return score(row['r'], row['max_score'], row['score'])
+            else:
+                return 0
 
-        ret = list(curr)
-        for row in ret:
-            r = problem_size(row['name'])
-            row['estimated_score'] = row['score'] and row['max_score'] and score(r, row['max_score'], row['score']) 
-            row['live'] = row['name'] in standing_tbl
+        def opt_score(row):
             if row['name'] in standing_tbl:
                 opt = standing_tbl[row['name']]['score']
             elif row['score']:
                 opt = row['score'] // 100
-            row['opt'] = opt
-            row['suboptimal_score'] = row['score'] and row['max_score'] and score(r, row['max_score'], opt) 
-            if row['live']:
-                total_score += (row['estimated_score'] or 0)
-            row['r'] = r
+            else:
+                opt = 0
+            if row['max_score']:
+                return score(row['r'], row['max_score'], opt)
+            else:
+                return 0
 
+        ret = list(curr)
+        for row in ret:
+            row['r'] = problem_size(row['name'])
+            row['estimated_score'] = estimated_score(row)
+            row['suboptimal_score'] = opt_score(row)
+            if row['name'] in standing_tbl:
+                row['opt'] = standing_tbl[row['name']]['score']
+            row['live'] = row['name'] in standing_tbl
+        
+        ret.sort(key = (lambda row: row['estimated_score'] - row['suboptimal_score']))
         return Ok({ "problems" : ret, "total_score" : total_score })
     finally:
         curr.close()

@@ -27,14 +27,14 @@
 {#            <!-- {{ r['name'] }} --> #}
 {#          <!-- </a> --> #}
 </td>
-        <td> {{ r['id'] }} </td>
-        <td> {{ r['r'] }} </td>
-        <td> {{ r['solver_id'] }} </td>
-        <td class="energy"> {{ r['score'] }} {% if r['live'] %}<br/><div class="topscore">{{r['opt']}}</div>{% endif %} </td>
-        <td class="energy"> {{ r['max_score'] }} </td>
-        <td> {{ r['estimated_score'] }} / {{ r['suboptimal_score'] }} </td>
-        <td> {{ r['updated_at'] }} </td>
-        <td> {{ '✔️' if r['live'] else '' }} </td>
+        <td>{{ r['id'] }}</td>
+        <td>{{ r['r'] }}</td>
+        <td>{{ r['solver_id'] }}</td>
+        <td class="energy">{{ r['score'] }}{% if r['live'] %}<br/><div class="topscore">{{r['opt']}}</div>{% endif %}</td>
+        <td class="energy">{{ r['max_score'] }}</td>
+        <td>{{ r['estimated_score'] }}/{{ r['suboptimal_score'] }}</td>
+        <td>{{ r['updated_at'] }}</td>
+        <td>{{ '✔️' if r['live'] else '' }}</td>
       </tr>
       {% endfor %}
     </tbody>
