@@ -325,7 +325,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     if (com.type == Command::Type::GFILL) {
       Point neighbor;
       auto represent_key = VerifyGFillCommand(com, &neighbor);
-      gvoid_group[std::move(represent_key)].emplace_back(com.id, neighbor);
+      gfill_group[std::move(represent_key)].emplace_back(com.id, neighbor);
     } else if (com.type == Command::Type::GVOID){
       Point neighbor;
       auto represent_key = VerifyGVoidCommand(com, &neighbor);
