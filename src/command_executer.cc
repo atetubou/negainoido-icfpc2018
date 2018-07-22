@@ -325,11 +325,11 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     if (com.type == Command::Type::GFILL) {
       Point neighbor;
       auto represent_key = VerifyGFillCommand(com, &neighbor);
-      gvoid_group[std::move(represent_key)].emplace_back(i, neighbor);
+      gvoid_group[std::move(represent_key)].emplace_back(com.id, neighbor);
     } else if (com.type == Command::Type::GVOID){
       Point neighbor;
       auto represent_key = VerifyGVoidCommand(com, &neighbor);
-      gvoid_group[std::move(represent_key)].emplace_back(i, neighbor);
+      gvoid_group[std::move(represent_key)].emplace_back(com.id, neighbor);
     }
   }
   for (const auto& gg : gfill_group) {
