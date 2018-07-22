@@ -3,14 +3,21 @@
 #include <iostream>
 #include <algorithm>
 
-#define UNREACHABLE() CHECK(false)
 #define CE_DEBUG
+#ifdef CE_DEBUG
+#define UNREACHABLE() CHECK(false)
+#define CE_ASSERT(cond) LOG_ASSERT(cond)
+#else
+#define UNREACHABLE()
+#define CE_ASSERT(cond) DLOG_ASSERT(cond)
+#endif // CE_DEBUG
+
 
 // CommandExecuter
 // Constructors
 CommandExecuter::SystemStatus::SystemStatus(int r)
   : R(r), energy(0), harmonics(LOW) {
-  LOG_ASSERT(r <= kMaxResolution) << r;
+  CE_ASSERT(r <= kMaxResolution) << r;
   // TODO(hiroh): can this be replaced by matrix{}?
   memset(matrix, 0, sizeof(matrix));
 }
@@ -64,7 +71,7 @@ uint32_t CommandExecuter::GetActiveBotsNum() {
   for (int i = 1; i <= kMaxNumBots; i++) {
     cnt_num_active_bots += bot_status[i].active;
   }
-  LOG_ASSERT(cnt_num_active_bots == num_active_bots) << cnt_num_active_bots << " " << num_active_bots;
+  CE_ASSERT(cnt_num_active_bots == num_active_bots) << cnt_num_active_bots << " " << num_active_bots;
 #endif
 
   return num_active_bots;
@@ -93,7 +100,7 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
     return false;
 
   // No need to check and in that case must not be called in this func.
-  LOG_ASSERT(p1 != p2) << "p1=" << p1 << ", p2=" << p2;
+  CE_ASSERT(p1 != p2) << "p1=" << p1 << ", p2=" << p2;
 
   Point delta(0,0,0);
 
@@ -209,7 +216,7 @@ void CommandExecuter::VerifyWellFormedSystem() {
     if (bot_status[i].active) {
       Point &p = bot_status[i].pos;
       p_set.insert(p);
-      LOG_ASSERT(system_status.matrix[p.x][p.y][p.z] == VOID) << p;
+      CE_ASSERT(system_status.matrix[p.x][p.y][p.z] == VOID) << p;
 
       for (auto x : bot_status[i].seeds) {
         seed_set.insert(x);
@@ -241,36 +248,36 @@ void VerifyCommandSeq(const std::vector<Command>& commands) {
 
 std::pair<Point, Point> CommandExecuter::VerifyGFillCommand(const Command& com, Point *neighbor) {
   auto bot_id = com.id;
-  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
-  LOG_ASSERT(IsNCD(com.gfill_.nd)) << com.gfill_.nd;
-  LOG_ASSERT(IsFCD(com.gfill_.fd)) << com.gfill_.fd;
+  CE_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  CE_ASSERT(IsNCD(com.gfill_.nd)) << com.gfill_.nd;
+  CE_ASSERT(IsFCD(com.gfill_.fd)) << com.gfill_.fd;
   auto pos = bot_status[bot_id].pos;
   auto r1 = pos + com.gfill_.nd;
   auto r2 = r1 + com.gfill_.fd;
-  LOG_ASSERT(IsValidCoordinate(r1)) << r1;
-  LOG_ASSERT(IsValidCoordinate(r2)) << r2;
+  CE_ASSERT(IsValidCoordinate(r1)) << r1;
+  CE_ASSERT(IsValidCoordinate(r2)) << r2;
   auto r3 = Point(std::min(r1.x, r2.x), std::min(r1.y, r2.y), std::min(r1.z, r2.z));
   auto r4 = Point(std::max(r1.x, r2.x), std::max(r1.y, r2.y),std::max(r1.z, r2.z));
-  LOG_ASSERT(IsValidCoordinate(r3)) << r3;
-  LOG_ASSERT(IsValidCoordinate(r4)) << r4;
+  CE_ASSERT(IsValidCoordinate(r3)) << r3;
+  CE_ASSERT(IsValidCoordinate(r4)) << r4;
   *neighbor = std::move(r1);
   return std::make_pair(r3, r4);
 }
 
 std::pair<Point, Point> CommandExecuter::VerifyGVoidCommand(const Command& com, Point *neighbor) {
   auto bot_id = com.id;
-  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
-  LOG_ASSERT(IsNCD(com.gvoid_.nd)) << com.gvoid_.nd;
-  LOG_ASSERT(IsFCD(com.gvoid_.fd)) << com.gvoid_.fd;
+  CE_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  CE_ASSERT(IsNCD(com.gvoid_.nd)) << com.gvoid_.nd;
+  CE_ASSERT(IsFCD(com.gvoid_.fd)) << com.gvoid_.fd;
   auto pos = bot_status[bot_id].pos;
   auto r1 = pos + com.gvoid_.nd;
   auto r2 = r1 + com.gvoid_.fd;
-  LOG_ASSERT(IsValidCoordinate(r1)) << r1;
-  LOG_ASSERT(IsValidCoordinate(r2)) << r2;
+  CE_ASSERT(IsValidCoordinate(r1)) << r1;
+  CE_ASSERT(IsValidCoordinate(r2)) << r2;
   auto r3 = Point(std::min(r1.x, r2.x), std::min(r1.y, r2.y), std::min(r1.z, r2.z));
   auto r4 = Point(std::max(r1.x, r2.x), std::max(r1.y, r2.y),std::max(r1.z, r2.z));
-  LOG_ASSERT(IsValidCoordinate(r3)) << r3;
-  LOG_ASSERT(IsValidCoordinate(r4)) << r4;
+  CE_ASSERT(IsValidCoordinate(r3)) << r3;
+  CE_ASSERT(IsValidCoordinate(r4)) << r4;
   *neighbor = std::move(r1);
   return std::make_pair(r3, r4);
 }
@@ -329,7 +336,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     for (size_t i = 0; i < gg.second.size(); i++) {
       bot_ids[i] = gg.second[i].first;
       for (size_t j = i + 1; j < gg.second.size(); j++) {
-        LOG_ASSERT(gg.second[i].second != gg.second[j].second) << i << " " << j << " " << gg.second[i].second;
+        CE_ASSERT(gg.second[i].second != gg.second[j].second) << i << " " << j << " " << gg.second[i].second;
       }
     }
 
@@ -342,7 +349,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     for (size_t i = 0; i < gg.second.size(); i++) {
       bot_ids[i] = gg.second[i].first;
       for (size_t j = i + 1; j < gg.second.size(); j++) {
-        LOG_ASSERT(gg.second[i].second != gg.second[j].second) << i << " " << j << " " << gg.second[i].second;
+        CE_ASSERT(gg.second[i].second != gg.second[j].second) << i << " " << j << " " << gg.second[i].second;
       }
     }
     GVoid(bot_ids, gg.first.first, gg.first.second);
@@ -388,7 +395,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     }
   }
 
-  LOG_ASSERT(fusion_count == 0) << fusion_count;
+  CE_ASSERT(fusion_count == 0) << fusion_count;
 
   // Check volatile cordinates
   for (const auto& vcord1 : v_cords) {
@@ -407,7 +414,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
         bool cold_z = ColidX(vcord1.from.z, vcord1.to.z, vcord2.from.z, vcord2.to.z);
         colid = cold_x && cold_y && cold_z;
       }
-      LOG_ASSERT(!colid)
+      CE_ASSERT(!colid)
         << "Invalid Move (Colid)\n"
         << "vc1: id=" << vcord1.id << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
         << "vc2: id=" << vcord2.id << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
@@ -442,26 +449,26 @@ void CommandExecuter::PrintTraceAsJson() {
 
 // Commands
 void CommandExecuter::Halt(const uint32_t bot_id) {
-  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  CE_ASSERT(IsActiveBotId(bot_id)) << bot_id;
   Point& p = bot_status[bot_id].pos;
-  LOG_ASSERT(p == Point(0,0,0)) << p;
-  LOG_ASSERT(GetActiveBotsNum() == 1) << GetActiveBotsNum();
-  LOG_ASSERT(system_status.harmonics == LOW);
+  CE_ASSERT(p == Point(0,0,0)) << p;
+  CE_ASSERT(GetActiveBotsNum() == 1) << GetActiveBotsNum();
+  CE_ASSERT(system_status.harmonics == LOW);
   bot_status[bot_id].active = false;
   num_active_bots--;
   v_cords.emplace_back(bot_id, p, p);
-  LOG_ASSERT(num_active_bots == 0) << num_active_bots;
+  CE_ASSERT(num_active_bots == 0) << num_active_bots;
 }
 
 void CommandExecuter::Wait(const uint32_t bot_id) {
-  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  CE_ASSERT(IsActiveBotId(bot_id)) << bot_id;
 
   Point c = bot_status[bot_id].pos;
   v_cords.emplace_back(bot_id, c, c);
 }
 
 void CommandExecuter::Flip(const uint32_t bot_id) {
-  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  CE_ASSERT(IsActiveBotId(bot_id)) << bot_id;
 
   Point c = bot_status[bot_id].pos;
   v_cords.emplace_back(bot_id, c, c);
@@ -477,14 +484,14 @@ void CommandExecuter::Flip(const uint32_t bot_id) {
 }
 
 void CommandExecuter::SMove(const uint32_t bot_id, const Point& lld) {
-  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
-  LOG_ASSERT(IsLLD(lld)) << lld;
+  CE_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  CE_ASSERT(IsLLD(lld)) << lld;
 
   Point c0 = bot_status[bot_id].pos;
   Point c1 = c0 + lld;
 
-  LOG_ASSERT(IsValidCoordinate(c1)) << c1;
-  LOG_ASSERT(IsVoidPath(c0, c1)) << c0 << " " << c1;
+  CE_ASSERT(IsValidCoordinate(c1)) << c1;
+  CE_ASSERT(IsVoidPath(c0, c1)) << c0 << " " << c1;
 
   bot_status[bot_id].pos = c1;
   v_cords.emplace_back(bot_id, c0, c1);
@@ -492,16 +499,16 @@ void CommandExecuter::SMove(const uint32_t bot_id, const Point& lld) {
 }
 
 void CommandExecuter::LMove(const uint32_t bot_id, const Point& sld1, const Point& sld2) {
-  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
-  LOG_ASSERT(IsSLD(sld1)) << sld1;
-  LOG_ASSERT(IsSLD(sld2)) << sld2;
+  CE_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  CE_ASSERT(IsSLD(sld1)) << sld1;
+  CE_ASSERT(IsSLD(sld2)) << sld2;
   Point c0 = bot_status[bot_id].pos;
   Point c1 = c0 + sld1;
   Point c2 = c1 + sld2;
-  LOG_ASSERT(IsValidCoordinate(c1)) << c1;
-  LOG_ASSERT(IsValidCoordinate(c2)) << c2;
-  LOG_ASSERT(IsVoidPath(c0, c1)) << c0 << " " << c1;
-  LOG_ASSERT(IsVoidPath(c1, c2)) << c1 << " " << c2;
+  CE_ASSERT(IsValidCoordinate(c1)) << c1;
+  CE_ASSERT(IsValidCoordinate(c2)) << c2;
+  CE_ASSERT(IsVoidPath(c0, c1)) << c0 << " " << c1;
+  CE_ASSERT(IsVoidPath(c1, c2)) << c1 << " " << c2;
 
   bot_status[bot_id].pos = c2;
   v_cords.emplace_back(bot_id, c0, c1);
@@ -510,12 +517,12 @@ void CommandExecuter::LMove(const uint32_t bot_id, const Point& sld1, const Poin
 }
 
 void CommandExecuter::Void(const uint32_t bot_id, const Point& nd) {
-  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
-  LOG_ASSERT(IsNCD(nd)) << nd;
+  CE_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  CE_ASSERT(IsNCD(nd)) << nd;
   BotStatus& bot = bot_status[bot_id];
   Point c0 = bot.pos;
   Point c1 = c0 + nd;
-  LOG_ASSERT(IsValidCoordinate(c1)) << c1;
+  CE_ASSERT(IsValidCoordinate(c1)) << c1;
 
   if (system_status.matrix[c1.x][c1.y][c1.z] == FULL) {
     system_status.matrix[c1.x][c1.y][c1.z] = VOID;
@@ -532,22 +539,22 @@ void CommandExecuter::Void(const uint32_t bot_id, const Point& nd) {
 }
 
 void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint32_t m) {
-  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
-  LOG_ASSERT(IsNCD(nd)) << nd;
-  LOG_ASSERT(!bot_status[bot_id].seeds.empty()) << bot_status[bot_id].seeds.size();
+  CE_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  CE_ASSERT(IsNCD(nd)) << nd;
+  CE_ASSERT(!bot_status[bot_id].seeds.empty()) << bot_status[bot_id].seeds.size();
   BotStatus& bot = bot_status[bot_id];
   Point c0 = bot.pos;
   Point c1 = c0 + nd;
-  LOG_ASSERT(IsValidCoordinate(c1)) << c1;
-  LOG_ASSERT(IsVoidCoordinate(c1)) << c1;
+  CE_ASSERT(IsValidCoordinate(c1)) << c1;
+  CE_ASSERT(IsVoidCoordinate(c1)) << c1;
 
   const uint32_t n = bot.seeds.size();
-  LOG_ASSERT(m + 1 <= n) << m + 1 << " " << n;
+  CE_ASSERT(m + 1 <= n) << m + 1 << " " << n;
 
   auto seeds_iter = bot.seeds.begin();
 
   uint32_t newbot_id = *seeds_iter++;
-  LOG_ASSERT(bot_status[newbot_id].active == false) << newbot_id;
+  CE_ASSERT(bot_status[newbot_id].active == false) << newbot_id;
   BotStatus& newbot = bot_status[newbot_id];
   newbot.active = true;
   newbot.pos = c1;
@@ -564,8 +571,8 @@ void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint
 
   bot.seeds = bot_seeds;
 
-  LOG_ASSERT(newbot.seeds.size() == m) << newbot.seeds.size() << " " << m;
-  LOG_ASSERT(bot.seeds.size() == n - 1 - m) << newbot.seeds.size() << " " << n << " " << m;
+  CE_ASSERT(newbot.seeds.size() == m) << newbot.seeds.size() << " " << m;
+  CE_ASSERT(bot.seeds.size() == n - 1 - m) << newbot.seeds.size() << " " << n << " " << m;
 
   system_status.energy += 24;
 
@@ -574,13 +581,13 @@ void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint
 }
 
 void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
-  LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
-  LOG_ASSERT(IsNCD(nd)) << nd;
+  CE_ASSERT(IsActiveBotId(bot_id)) << bot_id;
+  CE_ASSERT(IsNCD(nd)) << nd;
 
   BotStatus& bot = bot_status[bot_id];
   Point c0 = bot.pos;
   Point c1 = c0 + nd;
-  LOG_ASSERT(IsValidCoordinate(c1)) << c1;
+  CE_ASSERT(IsValidCoordinate(c1)) << c1;
 
   if (system_status.matrix[c1.x][c1.y][c1.z] == VOID) {
     system_status.matrix[c1.x][c1.y][c1.z] = FULL;
@@ -600,17 +607,17 @@ void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
 
 void CommandExecuter::Fusion(const uint32_t bot_id1, const Point& nd1,
                              const uint32_t bot_id2, const Point& nd2) {
-  LOG_ASSERT(IsActiveBotId(bot_id1)) << bot_id1;
-  LOG_ASSERT(IsActiveBotId(bot_id2)) << bot_id2;
-  LOG_ASSERT(IsNCD(nd1)) << nd1;
-  LOG_ASSERT(IsNCD(nd2)) << nd2;
+  CE_ASSERT(IsActiveBotId(bot_id1)) << bot_id1;
+  CE_ASSERT(IsActiveBotId(bot_id2)) << bot_id2;
+  CE_ASSERT(IsNCD(nd1)) << nd1;
+  CE_ASSERT(IsNCD(nd2)) << nd2;
 
   BotStatus& bot1 = bot_status[bot_id1];
   BotStatus& bot2 = bot_status[bot_id2];
-  LOG_ASSERT(IsValidCoordinate(bot1.pos)) << bot1.pos;
-  LOG_ASSERT(IsValidCoordinate(bot2.pos)) << bot2.pos;
-  LOG_ASSERT(bot1.pos + nd1 == bot2.pos) << bot1.pos << " " << nd1 << " " << bot2.pos;
-  LOG_ASSERT(bot2.pos + nd2 == bot1.pos) << bot2.pos << " " << nd2 << " " << bot1.pos;
+  CE_ASSERT(IsValidCoordinate(bot1.pos)) << bot1.pos;
+  CE_ASSERT(IsValidCoordinate(bot2.pos)) << bot2.pos;
+  CE_ASSERT(bot1.pos + nd1 == bot2.pos) << bot1.pos << " " << nd1 << " " << bot2.pos;
+  CE_ASSERT(bot2.pos + nd2 == bot1.pos) << bot2.pos << " " << nd2 << " " << bot1.pos;
 
   bot2.active = false;
   num_active_bots -= 1;
@@ -629,13 +636,13 @@ void CommandExecuter::Fusion(const uint32_t bot_id1, const Point& nd1,
 void CommandExecuter::GFill(const std::vector<uint32_t>& bot_ids,
                             const Point& r1, const Point& r2) {
   const size_t N = bot_ids.size();
-  LOG_ASSERT(N == 2 || N == 4 || N == 8) << N;
+  CE_ASSERT(N == 2 || N == 4 || N == 8) << N;
   if (N == 2) { // Line Case
-    LOG_ASSERT(IsPath(r1, r2)) << r1 << " " << r2;
+    CE_ASSERT(IsPath(r1, r2)) << r1 << " " << r2;
   } else if (N == 4) { // Lectangle Case
-    LOG_ASSERT(r1.x == r2.x || r1.y == r2.y || r1.z == r2.z) << r1 << " " << r2;
+    CE_ASSERT(r1.x == r2.x || r1.y == r2.y || r1.z == r2.z) << r1 << " " << r2;
   } else { // N == 8
-    LOG_ASSERT(r1.x != r2.x && r1.y != r2.y && r1.z != r2.z) << r1 << " " << r2;;
+    CE_ASSERT(r1.x != r2.x && r1.y != r2.y && r1.z != r2.z) << r1 << " " << r2;;
   }
   for (int x = r1.x; x <= r2.x; x++) {
     for (int y = r1.y; x <= r2.y; y++) {
@@ -659,13 +666,13 @@ void CommandExecuter::GFill(const std::vector<uint32_t>& bot_ids,
 void CommandExecuter::GVoid(const std::vector<uint32_t>& bot_ids,
                             const Point& r1, const Point& r2) {
   const size_t N = bot_ids.size();
-  LOG_ASSERT(N == 2 || N == 4 || N == 8) << N;
+  CE_ASSERT(N == 2 || N == 4 || N == 8) << N;
   if (N == 2) { // Line Case
-    LOG_ASSERT(IsPath(r1, r2)) << r1 << " " << r2;
+    CE_ASSERT(IsPath(r1, r2)) << r1 << " " << r2;
   } else if (N == 4) { // Lectangle Case
-    LOG_ASSERT(r1.x == r2.x || r1.y == r2.y || r1.z == r2.z) << r1 << " " << r2;
+    CE_ASSERT(r1.x == r2.x || r1.y == r2.y || r1.z == r2.z) << r1 << " " << r2;
   } else { // N == 8
-    LOG_ASSERT(r1.x != r2.x && r1.y != r2.y && r1.z != r2.z) << r1 << " " << r2;;
+    CE_ASSERT(r1.x != r2.x && r1.y != r2.y && r1.z != r2.z) << r1 << " " << r2;;
   }
   for (int x = r1.x; x <= r2.x; x++) {
     for (int y = r1.y; x <= r2.y; y++) {
