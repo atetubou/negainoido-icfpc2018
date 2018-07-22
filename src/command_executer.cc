@@ -109,7 +109,7 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
 }
 
 bool CommandExecuter::IsGrounded(const Point& p) {
-  if (always_low) {
+  if (always_low && valid_grounded_memo) {
     return grounded_memo[p.x][p.y][p.z];
   } else {
     return IsGroundedSlow(p, false);
@@ -124,14 +124,14 @@ bool CommandExecuter::IsGroundedSlow(const Point& p, bool check_all_mode) {
   const int adj_dy[] = { 0, 0,-1, 1, 0, 0};
   const int adj_dz[] = { 0, 0, 0, 0,-1, 1};
 
-  static int memo[kMaxResolution][kMaxResolution][kMaxResolution];
-
   const int R = system_status.R;
   int full_num = 0;
+
+  // Initialize
   for (int x=0; x<R; ++x) {
     for (int y=0; y<R; ++y) {
       for (int z=0; z<R; ++z) {
-        memo[x][y][z] = 0;
+        grounded_memo[x][y][z] = false;
         if (system_status.matrix[x][y][z] == FULL) {
           full_num++;
         }
@@ -141,12 +141,13 @@ bool CommandExecuter::IsGroundedSlow(const Point& p, bool check_all_mode) {
 
   SystemStatus& status = system_status;
 
+  // Check voxels where y = 0
   std::stack<Point> s;
   for (int x=0; x<R; ++x) {
     for (int z=0; z<R; ++z) {
       if (status.matrix[x][0][z] == VOID) continue;
       s.push(Point(x, 0, z));
-      memo[x][0][z] = 1;
+      grounded_memo[x][0][z] = true;
       full_num--;
     }
   }
@@ -159,18 +160,20 @@ bool CommandExecuter::IsGroundedSlow(const Point& p, bool check_all_mode) {
         int z = p.z + adj_dz[k];
         if (x < 0 || y < 0 || z < 0) continue;
         if (x >= R || y >= R || z >= R) continue;
-        if (memo[x][y][z]) continue;
+        if (grounded_memo[x][y][z]) continue;
         if (status.matrix[x][y][z] == VOID) continue;
-        memo[x][y][z] = 1;
+        grounded_memo[x][y][z] = 1;
         full_num--;
         s.push(Point(x, y, z));
       }
   }
 
+  valid_grounded_memo = true;
+
   if (check_all_mode) {
     return full_num == 0;
   } else {
-    return (memo[p.x][p.y][p.z] == 1);
+    return grounded_memo[p.x][p.y][p.z];
   }
 }
 
@@ -463,7 +466,8 @@ void CommandExecuter::Void(const uint32_t bot_id, const Point& nd) {
   v_cords.emplace_back(bot_id, c0, c0);
   v_cords.emplace_back(bot_id, c1, c1);
 
-  // TODO(hiroh): Update status for Grounded?
+  // re-calculation of grounded_memo is needed
+  valid_grounded_memo = false;
 }
 
 void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint32_t m) {
@@ -588,5 +592,7 @@ void CommandExecuter::GVoid(const std::vector<uint32_t>& bot_ids,
     v_cords.emplace_back(id, bot_status[id].pos, bot_status[id].pos);
   }
   v_cords.emplace_back(VolCord::kGVoid, r1, r2);
-  // TODO(hiroh): Update status for Grounded?
+
+  // re-calculation of grounded_memo is needed
+  valid_grounded_memo = false;
 }

@@ -81,6 +81,7 @@ class CommandExecuter {
   // Used for IsGrounded
   bool grounded_memo[kMaxResolution][kMaxResolution][kMaxResolution];
   bool always_low; // harmonics is always low until now
+  bool valid_grounded_memo; // false if VOID/GVOID was called after the last calculation
 
   // utility
   bool IsActiveBotId(const uint32_t id);
