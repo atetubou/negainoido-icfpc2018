@@ -72,7 +72,7 @@ def eval_solution(cnx, solution_id):
         prob_srcpath = '-'
 
     try:
-        if solution['solver_id'] == 'DEFALT' or problem_size(solution['problem_id']) >= 200:
+        if solution['solver_id'] == 'DEFALT' or problem_size(solution['problem_id']) >= 120:
             cmd = '../bazel-bin/src/simulator --src_filename %s --tgt_filename %s --nbt_filename %s' % (prob_srcpath,prob_path,dest)
         else:
             cmd = 'python ../soren/main.py %s %s %s' % (prob_srcpath,prob_path,dest)
