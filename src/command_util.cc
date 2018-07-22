@@ -25,6 +25,17 @@ Point& Point::operator-= (const Point& p) {
   return *this;
 }
 
+Point Point::operator* (int a) const {
+  return Point(x * a, y * a, z * a);
+}
+
+Point& Point::operator*= (int a) {
+  this->x *= a;
+  this->y *= a;
+  this->z *= a;
+  return *this;
+}
+
 bool operator==(const Point& p1, const Point& p2) {
     return
       p1.x == p2.x &&

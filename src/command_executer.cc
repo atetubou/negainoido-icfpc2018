@@ -325,7 +325,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     if (com.type == Command::Type::GFILL) {
       Point neighbor;
       auto represent_key = VerifyGFillCommand(com, &neighbor);
-      gvoid_group[std::move(represent_key)].emplace_back(com.id, neighbor);
+      gfill_group[std::move(represent_key)].emplace_back(com.id, neighbor);
     } else if (com.type == Command::Type::GVOID){
       Point neighbor;
       auto represent_key = VerifyGVoidCommand(com, &neighbor);
@@ -398,7 +398,6 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   }
 
   CE_ASSERT(fusion_count == 0) << fusion_count;
-
   // Check volatile cordinates
   for (size_t i = 0; i < v_cords.size(); i++) {
     for (size_t j = 0; j < v_cords.size(); j++) {
@@ -432,8 +431,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
               [](const auto& c1, const auto& c2) {
                 return c1.id < c2.id;
               });
-
-    auto turn_json = Command::CommandsToJson(commands);
+    auto turn_json = Command::CommandsToJson(commands_);
     json["turn"].append(std::move(turn_json));
   }
 
