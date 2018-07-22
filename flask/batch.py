@@ -8,6 +8,7 @@ import json
 import traceback
 import time
 from multiprocessing import Process, Queue, Value
+import sys
 from queue import Full
 
 dbconfig = {
@@ -26,12 +27,14 @@ def worker(worker_id):
     while True:
         solution_id = task_queue.get()
         print("worker %d is evaluating %d" % (worker_id, solution_id))
+        sys.stdout.flush()
         cnx = mysql.connector.connect(**dbconfig)
         try:
             eval_solution(cnx, solution_id)
         except:
             _,_, tb = sys.exc_info()
             print("exception on worker ", worker_id, tb)
+            sys.stdout.flush()
             comment = str(tb)
             curr=cnx.cursor()
             curr.execute("update solutions set score = -1, comment = %s where id = %s ", (comment, solution_id))
@@ -40,6 +43,7 @@ def worker(worker_id):
 
 def eval_solution(cnx, solution_id):
     print("solution", solution_id)
+    sys.stdout.flush()
     curr = cnx.cursor(dictionary=True)
     curr.execute("select * from solutions where id = %s", (solution_id,))
     solution = curr.fetchone()
@@ -77,6 +81,7 @@ def eval_solution(cnx, solution_id):
     
     except subprocess.CalledProcessError as exc:
         print("Status : FAIL", exc.returncode, exc.output)
+        sys.stdout.flush()
         comment = "Failed:" + exc.output
         curr.execute("update solutions set comment = %s, score = -1 where id = %s", (comment, solution_id))
         cnx.commit()
@@ -88,6 +93,8 @@ def main():
     
     for th in workers:
         th.start()
+    print("%d workers started" % NUM_WORKERS)
+    sys.stdout.flush()
     
     try:
         while True:
@@ -108,6 +115,7 @@ def main():
                 last_id = row['id']
             except Full:
                 print("queue is full")
+                sys.stdout.flush()
                 time.sleep(1)
     finally:
         for th in workers:
