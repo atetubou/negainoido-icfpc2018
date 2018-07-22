@@ -30,8 +30,8 @@
         <td> {{ r['id'] }} </td>
         <td> {{ r['r'] }} </td>
         <td> {{ r['solver_id'] }} </td>
-        <td> {{ r['score'] }} {% if r['live'] %}<br/>({{r['opt']}}){% endif %} </td>
-        <td> {{ r['max_score'] }} </td>
+        <td class="energy"> {{ r['score'] }} {% if r['live'] %}<br/><div class="topscore">{{r['opt']}}</div>{% endif %} </td>
+        <td class="energy"> {{ r['max_score'] }} </td>
         <td> {{ r['estimated_score'] }} / {{ r['suboptimal_score'] }} </td>
         <td> {{ r['updated_at'] }} </td>
         <td> {{ '✔️' if r['live'] else '' }} </td>
@@ -39,4 +39,14 @@
       {% endfor %}
     </tbody>
   </table>
+<style>
+.energy {
+    text-align: right;
+    font-size: 15px;
+    font-family: monospace;
+}
+.topscore {
+    color: red;
+}
+</style>
 {% endblock %}
