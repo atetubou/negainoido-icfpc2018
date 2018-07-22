@@ -21,15 +21,6 @@ static int dx[] = {-1,1,0,0,0,0};
 static int dy[] = {0,0,-1,1,0,0};
 static int dz[] = {0,0,0,0,-1,1};
 
-static Point dP[] = {
-  Point(-1,0,0),
-  Point(1,0,0),
-  Point(0,-1,0),
-  Point(0,1,0),
-  Point(0,0,-1),
-  Point(0,0,1),
-};
-
 #define DOWN_X 0
 #define UP_X 1
 #define DOWN_Y 2
