@@ -172,6 +172,7 @@ def list_solution() -> Result[Any]:
 def list_problems() -> Result[List[Any]]:
     conn = get_connection()
     curr = conn.cursor(dictionary=True)
+    
     try:
         curr.execute('select * from standing_scores')
         standing_tbl = { row['name']: row   for row in curr }
@@ -224,7 +225,9 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
                 row['opt'] = standing_tbl[row['name']]['score']
             row['live'] = row['name'] in standing_tbl
         
-        ret.sort(key = (lambda row: row['estimated_score'] - row['suboptimal_score']))
+        if 'name' not in request.args:
+            ret.sort(key = (lambda row: row['estimated_score'] - row['suboptimal_score']))
+
         return Ok({ "problems" : ret, "total_score" : total_score })
     finally:
         curr.close()
