@@ -136,7 +136,6 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
 
   if ((nbt_content[i] & 0b111) == 0b110) {
     // FusionS
-    --*nanobot_num;
     int nd = (nbt_content[i] >> 3) & 0b11111;
     int dx, dy, dz;
     LOG_IF(FATAL, !getnearcoordinate(nd, &dx, &dy, &dz))

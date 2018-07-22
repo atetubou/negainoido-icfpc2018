@@ -311,7 +311,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
 
         if (bot1.pos + com1.fusion_p_.nd == bot2.pos &&
             bot2.pos + com2.fusion_s_.nd == bot1.pos) {
-          Fusion(com1.id, com1.fusion_p_.nd, com2.id, com1.fusion_s_.nd);
+          Fusion(com1.id, com1.fusion_p_.nd, com2.id, com2.fusion_s_.nd);
           fusion_count += 2;
         }
       }
@@ -636,7 +636,7 @@ void CommandExecuter::Fusion(const uint32_t bot_id1, const Point& nd1,
   CE_ASSERT(IsValidCoordinate(bot1.pos)) << bot1.pos;
   CE_ASSERT(IsValidCoordinate(bot2.pos)) << bot2.pos;
   CE_ASSERT(bot1.pos + nd1 == bot2.pos) << bot1.pos << " " << nd1 << " " << bot2.pos;
-  CE_ASSERT(bot2.pos + nd2 == bot1.pos) << bot2.pos << " " << nd2 << " " << bot1.pos;
+  CE_ASSERT(bot2.pos + nd2 == bot1.pos) << bot_id2 << ":" << bot2.pos << " " << nd2 << " " << bot_id1 << ":" << bot1.pos;
 
   bot2.active = false;
   num_active_bots -= 1;
@@ -695,7 +695,7 @@ void CommandExecuter::GVoid(const std::vector<uint32_t>& bot_ids,
     CE_ASSERT(r1.x != r2.x && r1.y != r2.y && r1.z != r2.z) << r1 << " " << r2;;
   }
   for (int x = r1.x; x <= r2.x; x++) {
-    for (int y = r1.y; x <= r2.y; y++) {
+    for (int y = r1.y; y <= r2.y; y++) {
       for (int z = r1.z; z <= r2.z; z++) {
         if (system_status.matrix[x][y][z] == FULL) {
           system_status.matrix[x][y][z] = VOID;

@@ -123,6 +123,7 @@ Command Command::JsonToCommand(const Json::Value command) {
         c.fission_.nd.x = command["dx"].asInt();
         c.fission_.nd.y = command["dy"].asInt();
         c.fission_.nd.z = command["dz"].asInt();
+        c.fission_.m = command["m"].asInt();
     } else if (type == "Fill") {
         c.type = FILL;
         c.fill_.nd.x = command["dx"].asInt();
@@ -138,6 +139,24 @@ Command Command::JsonToCommand(const Json::Value command) {
         c.fusion_s_.nd.x = command["dx"].asInt();
         c.fusion_s_.nd.y = command["dy"].asInt();
         c.fusion_s_.nd.z = command["dz"].asInt();
+    } else if (type == "GVoid") {
+        c.type = GVOID;
+        c.gvoid_.nd.x = command["dx1"].asInt();
+        c.gvoid_.nd.y = command["dy1"].asInt();
+        c.gvoid_.nd.z = command["dz1"].asInt();
+        c.gvoid_.fd.x = command["dx2"].asInt();
+        c.gvoid_.fd.y = command["dy2"].asInt();
+        c.gvoid_.fd.z = command["dz2"].asInt();
+    } else if (type == "GFill") {
+        c.type = GFILL;
+        c.gvoid_.nd.x = command["dx1"].asInt();
+        c.gvoid_.nd.y = command["dy1"].asInt();
+        c.gvoid_.nd.z = command["dz1"].asInt();
+        c.gvoid_.fd.x = command["dx2"].asInt();
+        c.gvoid_.fd.y = command["dy2"].asInt();
+        c.gvoid_.fd.z = command["dz2"].asInt();
+    } else {
+        CHECK(false) << "Unknown type: " << type;
     }
     return c;
 }
