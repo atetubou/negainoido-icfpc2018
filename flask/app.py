@@ -149,7 +149,9 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.score, t.max
           from solutions where score > 0 group by problem_id) as best 
       left join solutions 
       on solutions.problem_id = best.problem_id and solutions.score = best.score) as t   
-  on t.problem_id = problems.name order by name asc
+  on t.problem_id = problems.name 
+  where name not like "LA%"
+  order by name asc
 """)
 
         ret = list(curr)
