@@ -43,7 +43,7 @@ func main() {
 
 	log.Printf("Simulator Result %s", simulatorResult)
 
-	officialResult := runCommandsOutput(fmt.Sprintf("python3 soren/main.py $(pwd)/shared/%s_tgt.mdl /tmp/nbt.nbt", *problem))
+	officialResult := runCommandsOutput(fmt.Sprintf("python3 soren/main.py - $(pwd)/shared/%s_tgt.mdl /tmp/nbt.nbt", *problem))
 
 	log.Printf("Official Result %s", officialResult)
 
