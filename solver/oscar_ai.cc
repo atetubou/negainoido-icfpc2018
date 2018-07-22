@@ -421,13 +421,15 @@ int main(int argc, char *argv[])
 
     int R = 1;
     vvv src_model;
-    if (FLAGS_src_filename != "-") {
+    if (!FLAGS_src_filename.empty() && FLAGS_src_filename != "-") {
+        LOG(INFO) << FLAGS_src_filename;
         src_model = ReadMDL(FLAGS_src_filename);
         R = src_model.size();
     }
 
     vvv tgt_model;
-    if(FLAGS_tgt_filename != "-") {
+    if(!FLAGS_tgt_filename.empty() && FLAGS_tgt_filename != "-") {
+        LOG(INFO) << FLAGS_tgt_filename;
         tgt_model = ReadMDL(FLAGS_tgt_filename);
         R = tgt_model.size();
     }

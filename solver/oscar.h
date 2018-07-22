@@ -4,6 +4,7 @@
 #include "src/base/base.h"
 #include <vector>
 #include <map>
+#include <set>
 
 class Vox {
     int color_count;
@@ -11,10 +12,9 @@ class Vox {
     public:
     std::vector<bool> voxels;
     std::vector<int> colors;
-    std::map<int,int> max_pos;
-    std::map<int,int> min_pos;
+    std::vector<int> depth;
+    std::map< int,set<int> > edges;
     int R;
-    std::map<int,int> g2d;
     Vox(const vvv &voxels);
     bool get(int x, int y, int z);
     void set(bool v, int x, int y, int z);

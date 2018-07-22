@@ -39,8 +39,6 @@ Vox::Vox(const vvv &voxels)
 }
 
 void Vox::add_color(int dir) {
-  g2d[color_count] = dir;
-  max_pos[color_count] = dir%2==1 ? 0 : R;
   color_count++;
 }
 bool Vox::get(int x, int y, int z)
