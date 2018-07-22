@@ -289,12 +289,17 @@ Json::Value SquareDelete(const vvv& voxels, bool use_flip) {
 
   auto dxzs = Getdxzs(R, n);  
 
-  int lx = 0;
-  int hx = n + 1;
-  int lz = 0;
-  int hz = n + 1;
+  int clx = 0;
+  int chx = n + 1;
+  int clz = 0;
+  int chz = n + 1;
   
   {
+    int lx = clx;
+    int hx = chx;
+    int lz = clz;
+    int hz = chz;
+
     for (int y = maxy; y >= 1; --y) {
       if (y == 1 && use_flip) {
         // Flip
@@ -307,13 +312,20 @@ Json::Value SquareDelete(const vvv& voxels, bool use_flip) {
       }
       
       for (const auto& xz : dxzs) {
+
         if (!IsAllEmpty(y - 1, lx, lz, hx, hz, voxels)) {
+          for (const auto& v : HorizontalMove(lx - clx, lz - clz, n)) {
+            json["turn"].append(v);
+          }
+
           json["turn"].append(GVoids(n + 1));
+
+          clx = lx;
+          chx = hx;
+          clz = lz;
+          chz = hz;
         }
 
-        for (const auto& v : HorizontalMove(xz.first, xz.second, n)) {
-          json["turn"].append(v);
-        }
         lx += xz.first;
         hx += xz.first;
         lz += xz.second;
@@ -321,7 +333,16 @@ Json::Value SquareDelete(const vvv& voxels, bool use_flip) {
       }
 
       if (!IsAllEmpty(y - 1, lx, lz, hx, hz, voxels)) {
-        json["turn"].append(GVoids(n + 1));
+          for (const auto& v : HorizontalMove(lx - clx, lz - clz, n)) {
+            json["turn"].append(v);
+          }
+
+          json["turn"].append(GVoids(n + 1));
+
+          clx = lx;
+          chx = hx;
+          clz = lz;
+          chz = hz;
       }
 
       json["turn"].append(SMoves(0, -1, 0));
@@ -364,11 +385,11 @@ Json::Value SquareDelete(const vvv& voxels, bool use_flip) {
   
   {
     std::vector<Command> moves;
-    for (int i = 0; i < lx; ++i) {
+    for (int i = 0; i < clx; ++i) {
       moves.push_back(Command::make_smove(1, Point(-1, 0, 0)));
     }
 
-    for (int i = 0; i < lz; ++i) {
+    for (int i = 0; i < clz; ++i) {
       moves.push_back(Command::make_smove(1, Point(0, 0, -1)));
     }
     
