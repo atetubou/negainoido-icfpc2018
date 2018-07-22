@@ -134,26 +134,24 @@ int main(int argc, char* argv[]) {
   LOG(INFO) << "Harmonics: " << ce->GetSystemStatus().harmonics;
 
   // Halt?
-  if (ce->GetActiveBotsNum() > 0) {
-      std::cout << -1 << std::endl;
-      exit(1);
-  }
+  LOG_IF(FATAL, ce->GetActiveBotsNum() > 0) 
+    << "ce->GetActiveBotsNum()=" << ce->GetActiveBotsNum();
 
   // Low?
-  if (ce->GetSystemStatus().harmonics != LOW) {
-      std::cout << -2 << std::endl;
-      exit(1);
-  }
-
+  LOG_IF(FATAL, ce->GetSystemStatus().harmonics != LOW)
+    << "ce->GetSystemStatus().harmonics=" << ce->GetSystemStatus().harmonics;
+  
   // N == M_tgt?
   auto&N = ce->GetSystemStatus().matrix;
   for (int x = 0; x < R; ++x) {
     for (int y = 0; y < R; ++y) {
       for (int z = 0; z < R; ++z) {
-        if (M_tgt[x][y][z] != N[x][y][z]) {
-          std::cout << -3 << std::endl;
-          exit(1);
-        }
+        LOG_IF(FATAL, M_tgt[x][y][z] != N[x][y][z]) 
+          << " x=" << x
+          << " y=" << y
+          << " z=" << z
+          << " M_tgt[x][y][z]=" << M_tgt[x][y][z]
+          << " N[x][y][z]=" << N[x][y][z];
       }
     }
   }
