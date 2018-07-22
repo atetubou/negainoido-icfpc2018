@@ -150,8 +150,13 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
   left join   
     (select solutions.problem_id, solutions.solver_id, solutions.id, best.score, best.max_score, created_at 
       from 
-        (select problem_id, MIN(score) as score, MAX(score) as max_score 
-          from solutions where score > 0 group by problem_id) as best 
+        (select best.problem_id, score, max_score from
+          (select problem_id, MIN(score) as score 
+            from solutions where score > 0 group by problem_id) as best
+          left join
+            (select problem_id, MAX(score) as max_score
+              from solutions where score > 0 and solver_id = 'DEFALT' group by problem_id) as def
+          on best.problem_id = def.problem_id) as best
       left join solutions 
       on solutions.problem_id = best.problem_id and solutions.score = best.score) as t   
   on t.problem_id = problems.name 
@@ -162,7 +167,7 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
         ret = list(curr)
         for i in range(len(ret)):
             r = problem_size(ret[i]['name'])
-            ret[i]['estimated_score'] = ret[i]['score'] and score(r, ret[i]['max_score'], ret[i]['score']) 
+            ret[i]['estimated_score'] = ret[i]['score'] and ret[i]['max_score'] and score(r, ret[i]['max_score'], ret[i]['score']) 
             ret[i]['r'] = r
 
         return Ok(ret)
