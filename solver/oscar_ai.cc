@@ -358,7 +358,7 @@ class OscarAI : public AI
 
             result_buff.push_back(commands[0]);
             if (i > 0) {
-                const Point &nd = commands[0].smove_lld;
+                const Point &nd = commands[0].smove_.lld;
                 result_buff.push_back(Command::make_fill(1, Point(-nd.x, -nd.y, -nd.z)));
                 result_buff = MergeSMove(result_buff);
                 for (auto c : result_buff) {
