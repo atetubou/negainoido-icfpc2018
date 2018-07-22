@@ -219,8 +219,8 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
             row['r'] = problem_size(row['name'])
             row['estimated_score'] = estimated_score(row)
             row['suboptimal_score'] = opt_score(row)
-            total_score += row['estimated_score']
             if row['name'] in standing_tbl:
+                total_score += row['estimated_score']
                 row['opt'] = standing_tbl[row['name']]['score']
             row['live'] = row['name'] in standing_tbl
         
