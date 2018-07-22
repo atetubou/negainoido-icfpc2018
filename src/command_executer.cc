@@ -283,8 +283,10 @@ std::pair<Point, Point> CommandExecuter::VerifyGVoidCommand(const Command& com, 
 }
 
 void CommandExecuter::Execute(const std::vector<Command>& commands) {
-
+#ifdef CE_DEBUG
+  // This function is heavy and therefore disabled in non-debug mode.
   VerifyWellFormedSystem();
+#endif
   VerifyCommandSeq(commands);
 
   // Update energy
