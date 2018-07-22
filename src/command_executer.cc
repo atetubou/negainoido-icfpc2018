@@ -398,14 +398,16 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   CE_ASSERT(fusion_count == 0) << fusion_count;
 
   // Check volatile cordinates
-  for (const auto& vcord1 : v_cords) {
-    for (const auto& vcord2 : v_cords) {
+  for (size_t i = 0; i < v_cords.size(); i++) {
+    for (size_t j = 0; j < v_cords.size(); j++) {
+      const auto& vcord1 = v_cords[i];
+      const auto& vcord2 = v_cords[j];
       bool colid = false;
-      if (vcord1.id == VolCord::kGVoid || vcord1.id == VolCord::kGFill ) {
-        // TODO(hiroh)
-      } else if (vcord1.id == VolCord::kGVoid || vcord1.id == VolCord::kGFill) {
+      if (vcord1.id == VolCord::kGVoid || vcord1.id == VolCord::kGFill ||
+          vcord2.id == VolCord::kGVoid || vcord2.id == VolCord::kGFill) {
         // TODO(hiroh)
       } else {
+        CE_ASSERT(vcord1.n == 2 && vcord2.n == 2) << vcord1.n << " " << vcord2.n;
         if (vcord1.id == vcord2.id) {
           continue;
         }
@@ -416,8 +418,8 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
       }
       CE_ASSERT(!colid)
         << "Invalid Move (Colid)\n"
-        << "vc1: id=" << vcord1.id << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
-        << "vc2: id=" << vcord2.id << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
+        << "vc1: id=" << vcord1.id << ", n=" << vcord1.n << ", from= " << vcord1.from << ", to=" << vcord1.to << "\n"
+        << "vc2: id=" << vcord2.id << ", n=" << vcord2.n << ", from= " << vcord2.from << ", to=" << vcord2.to << "\n";
     }
   }
 
@@ -660,7 +662,7 @@ void CommandExecuter::GFill(const std::vector<uint32_t>& bot_ids,
   for (const auto& id : bot_ids) {
     v_cords.emplace_back(id, bot_status[id].pos, bot_status[id].pos);
   }
-  v_cords.emplace_back(VolCord::kGFill, r1, r2);
+  v_cords.emplace_back(VolCord::kGFill, r1, r2, N);
 }
 
 void CommandExecuter::GVoid(const std::vector<uint32_t>& bot_ids,
@@ -689,7 +691,7 @@ void CommandExecuter::GVoid(const std::vector<uint32_t>& bot_ids,
   for (const auto& id : bot_ids) {
     v_cords.emplace_back(id, bot_status[id].pos, bot_status[id].pos);
   }
-  v_cords.emplace_back(VolCord::kGVoid, r1, r2);
+  v_cords.emplace_back(VolCord::kGVoid, r1, r2, N);
 
   // re-calculation of grounded_memo is needed
   valid_grounded_memo = false;
