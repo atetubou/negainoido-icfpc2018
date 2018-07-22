@@ -24,16 +24,36 @@ CommandExecuter::CommandExecuter(int R, bool output_json)
   bot_status[1].active = true;
   bot_status[1].pos = Point(0,0,0);
 
-  for (int i = 2; i <= 20; i++) {
+  for (int i = 2; i <= kMaxNumBots; i++) {
     bot_status[1].seeds.insert(i);
   }
 
   // Initialize for IsGrounded
   always_low = true;
+  valid_grounded_memo = false;
+}
+
+CommandExecuter::CommandExecuter(vvv src_model, bool output_json)
+  : num_active_bots(1), system_status(src_model.size()), output_json(output_json) {
+  // Bot[1] is active, exists at (0,0,0) and has all the seeds.
+  bot_status[1].active = true;
+  bot_status[1].pos = Point(0,0,0);
+
+  for (int i = 2; i <= kMaxNumBots; i++) {
+    bot_status[1].seeds.insert(i);
+  }
+
+  always_low = true;
+  int R = src_model.size();
   for (int i = 0; i < R; ++i)
     for (int j = 0; j < R; ++j)
       for (int k = 0; k < R; ++k)
-        grounded_memo[i][j][k] = false;
+        if (src_model[i][j][k])
+          system_status.matrix[i][j][k] = FULL;
+
+  // Initialize for IsGrounded
+  always_low = true;
+  valid_grounded_memo = false;
 }
 
 CommandExecuter::~CommandExecuter() {}

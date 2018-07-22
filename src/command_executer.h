@@ -12,6 +12,10 @@
 #include "glog/logging.h"
 #include "json/json.h"
 
+using v = std::vector<int>;
+using vv = std::vector<v>;
+using vvv = std::vector<vv>;
+
 enum Harmonics {
   LOW = 0,
   HIGH = 1,
@@ -25,7 +29,7 @@ enum VoxelState : uint8_t {
 class CommandExecuter {
  public:
   enum {
-    kMaxNumBots = 20,
+    kMaxNumBots = 40,
     kMaxResolution = 250,
   };
   struct SystemStatus {
@@ -43,6 +47,7 @@ class CommandExecuter {
   };
 
   CommandExecuter(int R, bool output_json);
+  CommandExecuter(vvv src_model, bool output_json);
   ~CommandExecuter();
 
   void Execute(const std::vector<Command>& commands);
