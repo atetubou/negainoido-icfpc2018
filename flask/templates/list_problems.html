@@ -12,7 +12,7 @@
         <th> solver </th>
         <th> energy </th>
         <th> default energy </th>
-        <th> score lower bound </th>
+        <th> score / optimal(0.01) </th>
         <th> updated_at </th>
       </tr>
     </thead>
@@ -30,7 +30,7 @@
         <td> {{ r['solver_id'] }} </td>
         <td> {{ r['score'] }} </td>
         <td> {{ r['max_score'] }} </td>
-        <td> {{ r['estimated_score'] }} </td>
+        <td> {{ r['estimated_score'] }} / {{ r['suboptimal_score'] }} </td>
         <td> {{ r['updated_at'] }} </td>
       </tr>
       {% endfor %}

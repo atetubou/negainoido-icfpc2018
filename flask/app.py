@@ -197,6 +197,7 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
         for i in range(len(ret)):
             r = problem_size(ret[i]['name'])
             ret[i]['estimated_score'] = ret[i]['score'] and ret[i]['max_score'] and score(r, ret[i]['max_score'], ret[i]['score']) 
+            ret[i]['suboptimal_score'] = ret[i]['score'] and ret[i]['max_score'] and score(r, ret[i]['max_score'], ret[i]['score'] // 100) 
             ret[i]['r'] = r
 
         return Ok(ret)
