@@ -242,11 +242,11 @@ void VerifyCommandSeq(const std::vector<Command>& commands) {
 std::pair<Point, Point> CommandExecuter::VerifyGFillCommand(const Command& com, Point *neighbor) {
   auto bot_id = com.id;
   LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
-  LOG_ASSERT(IsNCD(com.gfill_nd)) << com.gfill_nd;
-  LOG_ASSERT(IsFCD(com.gfill_fd)) << com.gfill_fd;
+  LOG_ASSERT(IsNCD(com.gfill_.nd)) << com.gfill_.nd;
+  LOG_ASSERT(IsFCD(com.gfill_.fd)) << com.gfill_.fd;
   auto pos = bot_status[bot_id].pos;
-  auto r1 = pos + com.gfill_nd;
-  auto r2 = r1 + com.gfill_fd;
+  auto r1 = pos + com.gfill_.nd;
+  auto r2 = r1 + com.gfill_.fd;
   LOG_ASSERT(IsValidCoordinate(r1)) << r1;
   LOG_ASSERT(IsValidCoordinate(r2)) << r2;
   auto r3 = Point(std::min(r1.x, r2.x), std::min(r1.y, r2.y), std::min(r1.z, r2.z));
@@ -260,11 +260,11 @@ std::pair<Point, Point> CommandExecuter::VerifyGFillCommand(const Command& com, 
 std::pair<Point, Point> CommandExecuter::VerifyGVoidCommand(const Command& com, Point *neighbor) {
   auto bot_id = com.id;
   LOG_ASSERT(IsActiveBotId(bot_id)) << bot_id;
-  LOG_ASSERT(IsNCD(com.gvoid_nd)) << com.gvoid_nd;
-  LOG_ASSERT(IsFCD(com.gvoid_fd)) << com.gvoid_fd;
+  LOG_ASSERT(IsNCD(com.gvoid_.nd)) << com.gvoid_.nd;
+  LOG_ASSERT(IsFCD(com.gvoid_.fd)) << com.gvoid_.fd;
   auto pos = bot_status[bot_id].pos;
-  auto r1 = pos + com.gvoid_nd;
-  auto r2 = r1 + com.gvoid_fd;
+  auto r1 = pos + com.gvoid_.nd;
+  auto r2 = r1 + com.gvoid_.fd;
   LOG_ASSERT(IsValidCoordinate(r1)) << r1;
   LOG_ASSERT(IsValidCoordinate(r2)) << r2;
   auto r3 = Point(std::min(r1.x, r2.x), std::min(r1.y, r2.y), std::min(r1.z, r2.z));
@@ -300,9 +300,9 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
         BotStatus& bot1 = bot_status[com1.id];
         BotStatus& bot2 = bot_status[com2.id];
 
-        if (bot1.pos + com1.fusion_p_nd == bot2.pos &&
-            bot2.pos + com2.fusion_s_nd == bot1.pos) {
-          Fusion(com1.id, com1.fusion_p_nd, com2.id, com1.fusion_s_nd);
+        if (bot1.pos + com1.fusion_p_.nd == bot2.pos &&
+            bot2.pos + com2.fusion_s_.nd == bot1.pos) {
+          Fusion(com1.id, com1.fusion_p_.nd, com2.id, com1.fusion_s_.nd);
           fusion_count += 2;
         }
       }
@@ -332,6 +332,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
         LOG_ASSERT(gg.second[i].second != gg.second[j].second) << i << " " << j << " " << gg.second[i].second;
       }
     }
+
     GFill(bot_ids, gg.first.first, gg.first.second);
   }
 
@@ -361,19 +362,19 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
       Flip(id);
       break;
     case Command::Type::SMOVE:
-      SMove(id, c.smove_lld);
+      SMove(id, c.smove_.lld);
       break;
     case Command::Type::LMOVE:
-      LMove(id, c.lmove_sld1, c.lmove_sld2);
+      LMove(id, c.lmove_.sld1, c.lmove_.sld2);
       break;
     case Command::Type::FISSION:
-      Fission(id, c.fission_nd, c.fission_m);
+      Fission(id, c.fission_.nd, c.fission_.m);
       break;
     case Command::Type::FILL:
-      Fill(id, c.fill_nd);
+      Fill(id, c.fill_.nd);
       break;
     case Command::Type::VOID:
-      Void(id, c.void_nd);
+      Void(id, c.void_.nd);
       break;
     case Command::Type::FUSION_P:
     case Command::Type::FUSION_S:
