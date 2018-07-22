@@ -1,4 +1,4 @@
-// vim-compile: cd .. && bazel run //src:skeleton -- --mdl_filename=/home/vagrant/icfpc/problems/LA049_tgt.mdl
+// vim-compile: cd .. && bazel run //src:skeleton -- --tgt_filename=/home/vagrant/icfpc/problems/LA049_tgt.mdl
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -12,10 +12,9 @@ using namespace std;
 #include "glog/logging.h"
 
 #include "src/base/base.h"
+#include "src/base/flags.h"
 #include "src/command_util.h"
 #include "src/command_executer.h"
-
-DEFINE_string(mdl_filename, "", "filepath of mdl");
 
 using Path = vector<Point>;
 
@@ -400,13 +399,13 @@ public:
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  if (FLAGS_mdl_filename.empty()) {
-    std::cout << "need to pass --mdl_filename=/path/to/mdl";
+  if (FLAGS_tgt_filename.empty()) {
+    std::cout << "need to pass --tgt_filename=/path/to/mdl";
     exit(1);
   }
 
-  vvv M = ReadMDL(FLAGS_mdl_filename);
-  WriteMDL(FLAGS_mdl_filename + "_dbl", M); // should be the same file
+  vvv M = ReadMDL(FLAGS_tgt_filename);
+  WriteMDL(FLAGS_tgt_filename + "_dbl", M); // should be the same file
 //  OutputMDL(M);
 
   auto skeleton = std::make_unique<Skeleton>(M);

@@ -10,6 +10,7 @@
 #include "glog/logging.h"
 
 #include "src/base/base.h"
+#include "src/base/flags.h"
 #include "src/command_util.h"
 #include "src/command_executer.h"
 
@@ -139,9 +140,6 @@ class OscarAI : public AI
 
     }
 };
-
-DEFINE_string(src_filename, "", "filepath of src");
-DEFINE_string(tgt_filename, "", "filepath of tgt");
 
 int main(int argc, char *argv[])
 {

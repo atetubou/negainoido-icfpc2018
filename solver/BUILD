@@ -9,6 +9,7 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
+        "//src/base:flags",
     ],
 )
 
@@ -37,6 +38,7 @@ cc_binary(
         "//src/base",
         "//src:command_executer",
         "simple_solve_lib",
+        "//src/base:flags",
     ],
 )
 
@@ -51,6 +53,7 @@ cc_binary(
         "@com_google_absl//absl/types:span",
         "//src/base",
         "//src:command_executer",
+        "//src/base:flags",
     ],
 )
 
@@ -66,6 +69,7 @@ cc_binary(
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
         "//src:command_executer",
+        "//src/base:flags",
     ],
 )
 
@@ -94,6 +98,7 @@ cc_binary(
         "@com_google_absl//absl/types:span",
         "//src/base",
         "square_delete",
+        "//src/base:flags",
     ],
 )
 
@@ -124,6 +129,7 @@ cc_binary(
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
         "//src:command_executer",
-        "oscar"
+        "oscar",
+        "//src/base:flags",
     ],
 )
