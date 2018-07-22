@@ -62,7 +62,7 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-if [ -z "$TYPE" ]; then
+if [ -z "$TYPE" -o -z "SOLVER" -o -z "$OUT_DIR" ]; then
     echo "Error: wrong options"
     usage
 fi
@@ -115,6 +115,5 @@ for i in $(seq 1 1000); do
 
     echo "bazel run //solver:$SOLVER -- --src_filename=$SRC --tgt_filename=$TGT $SOLVER_OPTS > $OUT 2>$OUT_REPORT && rm $OUT_REPORT"
 done |
-head -n 2 |
 shuffle |
-parallel -j ${J}
+parallel -v -j ${J}
