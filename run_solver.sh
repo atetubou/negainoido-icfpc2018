@@ -9,6 +9,7 @@ OUT_DIR=
 SOLVER=
 SOLVER_OPTS=
 SUBMIT=0
+RANGE=1-1000
 J=1
 
 usage() {
@@ -19,10 +20,15 @@ $0
     --solver             --- "//src:{solver}" (e.g. oscar_ai)
     --solver-opts        --- (e.g. --flip=false)
     -o out/
+    --range              --- (default: 1-1000; inclusive)
     [-j 1]               --- parallel
     [--submit]           --- submit the result
 EOM
     exit 1
+}
+
+range() {
+    echo $1 | sed 's/\([0-9]*\)-\([0-9]*\)/seq \1 \2/g' | sh
 }
 
 while [ $# -gt 0 ]; do
@@ -51,6 +57,10 @@ while [ $# -gt 0 ]; do
             J=$2
             shift 2
             ;;
+        --range )
+            RANGE=$2
+            shift 2
+            ;;
         --submit )
             SUBMIT=1
             shift
@@ -70,6 +80,7 @@ fi
 REPORT_DIR=$OUT_DIR-report
 
 echo ---
+echo RANGE $RANGE
 echo TYPE $TYPE
 echo SOLVER $SOLVER
 echo MDL_DIR $MDL_DIR
@@ -90,7 +101,7 @@ shuffle() {
     fi
 }
 
-for i in $(seq 1 1000); do
+for i in $(range "$RANGE"); do
 
     SRC=$(printf "$MDL_DIR/$TYPE%03d_src.mdl" $i)
     TGT=$(printf "$MDL_DIR/$TYPE%03d_tgt.mdl" $i)
