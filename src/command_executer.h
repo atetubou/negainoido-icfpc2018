@@ -85,8 +85,10 @@ class CommandExecuter {
 
   // Used for IsGrounded
   bool grounded_memo[kMaxResolution][kMaxResolution][kMaxResolution];
-  bool always_low; // harmonics is always low until now
-  bool valid_grounded_memo; // false if VOID/GVOID was called after the last calculation
+  bool all_voxels_are_grounded = true;
+  // false if VOID/GVOID was called after the last calculation
+  // or harmonics == HIGH
+  bool valid_grounded_memo = false;
 
   // utility
   bool IsActiveBotId(const uint32_t id);
@@ -94,7 +96,10 @@ class CommandExecuter {
   bool IsVoidCoordinate(const Point& p);
   bool IsVoidPath(const Point& p1, const Point& p2);
 
+  void UpdateGroundedMemo();
+  void UpdateGroundedPoint(const Point& pos);
   bool IsGroundedSlow(const Point&, bool);
+  bool AllVoxelsAreGrounded();
   void VerifyWellFormedSystem();
   std::pair<Point, Point> VerifyGFillCommand(const Command& com, Point *neighbor);
   std::pair<Point, Point> VerifyGVoidCommand(const Command& com, Point *neighbor);
