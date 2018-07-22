@@ -3,7 +3,9 @@ if [ ! -e env ]; then
     virtualenv env
 fi
 
-(cd ../; bazel build //...)
+(cd ../; bazel build //src:simulator)
+
+gsutil copy gs://negainoido-icfpc2018-shared-bucket/live.json live.json
 
 source env/bin/activate
 set -eu

@@ -14,6 +14,7 @@
         <th> default energy </th>
         <th> score / optimal(0.01) </th>
         <th> updated_at </th>
+        <th> live? </th>
       </tr>
     </thead>
     <tbody>
@@ -32,6 +33,7 @@
         <td> {{ r['max_score'] }} </td>
         <td> {{ r['estimated_score'] }} / {{ r['suboptimal_score'] }} </td>
         <td> {{ r['updated_at'] }} </td>
+        <td> {{ '✔️' if r['live'] else '' }} </td>
       </tr>
       {% endfor %}
     </tbody>

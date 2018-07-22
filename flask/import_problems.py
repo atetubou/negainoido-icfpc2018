@@ -2,6 +2,7 @@
 import mysql.connector
 import os
 import shutil
+import json
 
 import mysql.connector.pooling
 dbconfig = {
@@ -13,6 +14,7 @@ dbconfig = {
 cnx = mysql.connector.connect(**dbconfig)
 paths=["shared/problemsL/", "shared/problemsF/"]
 destpath="static/problems"
+
 
 for path in paths:
     for fname in os.listdir(path):
@@ -40,6 +42,18 @@ for path in paths:
 
         curr.close()
         cnx.commit()
+
+best_scores = json.load(open('live.json'))
+for key in best_scores.keys():
+    if key[0] != 'F':
+        continue
+    v = best_scores[key]
+    energy = v['energy']
+    team = v['team']
+    curr = cnx.cursor()
+    curr.execute('insert into standing_scores(name,team,score) values (%s,%s,%s)'
+                 ' on duplicate key update team = %s, score = %s', (key, team, energy, team, energy))
+    cnx.commit()
 
 cnx.commit()
         

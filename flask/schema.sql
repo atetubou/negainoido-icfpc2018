@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS problems(
     created_at TIMESTAMP NOT NULL default current_timestamp
 );
 
+
 CREATE TABLE IF NOT EXISTS solutions(
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     problem_id VARCHAR(20) NOT NULL,
@@ -20,3 +21,8 @@ CREATE TABLE IF NOT EXISTS solutions(
     created_at TIMESTAMP NOT NULL default current_timestamp
 );
 
+CREATE TABLE IF NOT EXISTS standing_scores(
+    name VARCHAR(20) NOT NULL PRIMARY KEY,
+    team TEXT,
+    score BIGINT
+);
