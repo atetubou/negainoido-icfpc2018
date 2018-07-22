@@ -205,8 +205,8 @@ bool CommandExecuter::IsGroundedSlow(const Point& p, bool check_all_mode) {
 
 void CommandExecuter::VerifyWellFormedSystem() {
   // Check if the harmonics is Low, then all Full voxels of the matrix are grounded.
-  CHECK(system_status.harmonics == HIGH ||
-        IsGroundedSlow(Point(0,0,0), true));
+  CE_ASSERT(system_status.harmonics == HIGH ||
+            IsGrounded(Point(0,0,0), true));
 
   // The position of each active nanobot is distinct and is Void in the matrix.
   std::set<Point> p_set;
@@ -224,15 +224,15 @@ void CommandExecuter::VerifyWellFormedSystem() {
       len += bot_status[i].seeds.size();
     }
   }
-  CHECK(p_set.size() == num_active_bots);
+  CE_ASSERT(p_set.size() == num_active_bots);
 
   // The seeds of each active nanobot are disjoint.
-  CHECK(seed_set.size() == len);
+  CE_ASSERT(seed_set.size() == len);
 
   // The seeds of each active nanobot does not include
   // the identifier of any active nanobot.
   for (auto seed : seed_set) {
-    CHECK(!bot_status[seed].active);
+    CE_ASSERT(!bot_status[seed].active);
   }
 }
 
@@ -243,7 +243,7 @@ void VerifyCommandSeq(const std::vector<Command>& commands) {
     bot_id_set.insert(c.id);
   }
 
-  CHECK(commands.size() == bot_id_set.size());
+  CE_ASSERT(commands.size() == bot_id_set.size());
 }
 
 std::pair<Point, Point> CommandExecuter::VerifyGFillCommand(const Command& com, Point *neighbor) {
@@ -437,7 +437,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
 }
 
 Json::Value CommandExecuter::GetJson() {
-  CHECK(output_json);
+  CE_ASSERT(output_json);
   return json;
 }
 
