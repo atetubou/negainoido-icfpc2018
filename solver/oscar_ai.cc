@@ -47,7 +47,7 @@ using P = std::pair<int,int>;
 #define DOWN_Z 4
 #define UP_Z 5
 
-static void calc_invalid(queue<P> &invalid, bvv &used, bvv &grounded) {
+static void calc_invalid(queue<P> &invalid, bvv &used, bvv &grounded, bvv &visited) {
     int R = used.size();
     while(!invalid.empty()) {
         P cur = invalid.front();
@@ -55,14 +55,18 @@ static void calc_invalid(queue<P> &invalid, bvv &used, bvv &grounded) {
         int k = cur.second;
         invalid.pop();
         if (j < 0 || j>= R || k<0 || k>=R) continue;
-        if(used[j][k])  continue;
+        if(visited[j][k])  continue;
+        visited[j][k] = true;
         used[j][k] = true;
-        grounded[j][k] = false;
-        for (int p=0;p<4;p++) {
-            int nx = j+dx[p];
-            int ny = k+dy[p];
-            if (grounded[nx][ny]) {
-                invalid.push(P(nx,ny));
+        if (grounded[j][k]) {
+            grounded[j][k] = false;
+        } else {
+            for (int p=0;p<4;p++) {
+                int nx = j+dx[p];
+                int ny = k+dy[p];
+                if (0<= nx && nx < R && 0 <= ny && ny < R && grounded[nx][ny]) {
+                    invalid.push(P(nx,ny));
+                }
             }
         }
     }
@@ -74,8 +78,9 @@ class OscarAI : public AI
     vvv tgt_model;
     Vox vox;
 
-    vector<Command> getPath(Point &pos, const Point &dest) {
-        LOG(INFO) << "finding " << pos << " " << dest;
+    vector<Command> getPath(const Point &pos, const Point &dest) {
+        //LOG(INFO) << "finding " << pos << " " << dest;
+        if (pos==dest) return {};
         queue<Point> que;
         que.push(pos);
         vvv hist = vvv(R,vv(R, v(R,-1)));
@@ -163,10 +168,11 @@ class OscarAI : public AI
         for (int i=0;i<R;i++) for (int j=0;j<R;j++) if(grounded[i][j]){
             res = true;
             Point cur = ce->GetBotStatus()[1].pos;
+            CHECK(ce->GetSystemStatus().matrix[i][j][k + sign] == VoxelState::VOID) << Point(i,j,k+sign);
             for (auto c : getPath(cur, Point(i, j,k + sign))) {
                 ce->Execute({c});
             }
-            ce->Execute({Command::make_void(1, Point(0,0, sign))});
+            ce->Execute({Command::make_void(1, Point(0,0, -sign))});
             vox.set(false, i,j,k);
 
         }
@@ -192,13 +198,14 @@ class OscarAI : public AI
                 queue<P> invalid;
                 bvv grounded = bvv(R, bv(R, false));
                 for (int j=0;j<R;j++) for (int k=0;k<R;k++) if(vox.get(i,j,k)) {
-                    if(j!=0 && vox.get(i+1, j, k) && !used[j][k]) {
+                    if(j!=0 && vox.get(i+1, j, k) && !used[j][k] && !vox.get(i-1,j,k)) {
                         grounded[j][k] = true;
                     } else {
                         invalid.push(P(j,k));
                     }
                 }
-                calc_invalid(invalid, used, grounded);
+                bvv visited = bvv(R, bv(R, false));
+                calc_invalid(invalid, used, grounded, visited);
                 renew |= remove_x(i, grounded, -1);
             }
             // DOWN_Y
@@ -207,13 +214,14 @@ class OscarAI : public AI
                 queue<P> invalid;
                 bvv grounded = bvv(R, bv(R, false));
                 for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(vox.get(i,j,k)) {
-                    if(!used[i][k] && vox.get(i, j+1, k)) {
+                    if(!used[i][k] && vox.get(i, j+1, k) && !vox.get(i,j-1,k)) {
                         grounded[i][k] = true;
                     } else {
                         invalid.push(P(i,k));
                     }
                 }
-                calc_invalid(invalid, used, grounded);
+                bvv visited = bvv(R, bv(R, false));
+                calc_invalid(invalid, used, grounded, visited);
                 renew |= remove_y(j, grounded, -1);
             }
             // DOWN_Z
@@ -222,13 +230,14 @@ class OscarAI : public AI
                 queue<P> invalid;
                 bvv grounded = bvv(R, bv(R, false));
                 for (int i=0;i<R;i++) for (int j=0;j<R;j++) if(vox.get(i,j,k)) {
-                    if(!used[i][j] &&j!=0 &&vox.get(i, j, k+1)) {
+                    if(!used[i][j] &&j!=0 &&vox.get(i, j, k+1) && !vox.get(i,j,k-1)) {
                         grounded[i][j] = true;
                     } else {
                         invalid.push(P(i,j));
                     }
                 }
-                calc_invalid(invalid, used, grounded);
+                bvv visited = bvv(R, bv(R, false));
+                calc_invalid(invalid, used, grounded, visited);
                 renew |= remove_z(k, grounded, -1);
             }
             
@@ -238,13 +247,14 @@ class OscarAI : public AI
                 queue<P> invalid;
                 bvv grounded = bvv(R, bv(R, false));
                 for (int j=0;j<R;j++) for (int k=0;k<R;k++) if(vox.get(i,j,k)) {
-                    if(!used[j][k] && j!=0 &&vox.get(i-1, j, k)) {
+                    if(!used[j][k] && j!=0 &&vox.get(i-1, j, k) && !vox.get(i+1,j,k)) {
                         grounded[j][k] = true;
                     } else {
                         invalid.push(P(j,k));
                     }
                 }
-                calc_invalid(invalid, used, grounded);
+                bvv visited = bvv(R, bv(R, false));
+                calc_invalid(invalid, used, grounded, visited);
                 renew |= remove_x(i, grounded, 1);
             }
             // UP_Y
@@ -253,13 +263,14 @@ class OscarAI : public AI
                 queue<P> invalid;
                 bvv grounded = bvv(R, bv(R, false));
                 for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(vox.get(i,j,k)) {
-                    if(!used[i][k] &&( j==0 || vox.get(i, j-1, k))) {
+                    if(!used[i][k] &&( j==0 || vox.get(i, j-1, k)) && !vox.get(i,j+1,k)) {
                         grounded[i][k] = true;
                     } else {
                         invalid.push(P(i,k));
                     }
                 }
-                calc_invalid(invalid, used, grounded);
+                bvv visited = bvv(R, bv(R, false));
+                calc_invalid(invalid, used, grounded, visited);
                 renew |= remove_y(j, grounded, 1);
             }
             // UP_Z
@@ -268,18 +279,22 @@ class OscarAI : public AI
                 queue<P> invalid;
                 bvv grounded = bvv(R, bv(R, false));
                 for (int i=0;i<R;i++) for (int j=0;j<R;j++) if(vox.get(i,j,k)) {
-                    if(!used[i][j] && j!=0 && vox.get(i, j, k-1)) {
+                    if(!used[i][j] && j!=0 && vox.get(i, j, k-1) && !vox.get(i,j,k+1)) {
                         grounded[i][j] = true;
                     } else {
                         invalid.push(P(i,j));
                     }
                 }
-                calc_invalid(invalid, used, grounded);
+                bvv visited = bvv(R, bv(R, false));
+                calc_invalid(invalid, used, grounded, visited);
                 renew |= remove_z(k, grounded, 1);
             }
+
+
         }
 
-        for (auto c : getPath(pos, Point(0,0,0))) {
+        LOG(INFO) << "finalvent";
+        for (auto c : getPath(ce->GetBotStatus()[1].pos, Point(0,0,0))) {
             ce->Execute({c});
         }
 
@@ -287,6 +302,7 @@ class OscarAI : public AI
         for (int i=0;i<R;i++) for(int j=0;j<R;j++) for(int k=0;k<R;k++) {
             CHECK(ce->GetSystemStatus().matrix[i][j][k] == 0) << "Failed to delete" << Point(i,j,k);
         } 
+        LOG(INFO) << "removed src";
         // build all by simple_solve
 
         priority_queue<pair<int, Point>, vector<pair<int, Point>>, greater<pair<int, Point>>> pque;
