@@ -103,6 +103,7 @@ shuffle() {
 
 for i in $(range "$RANGE"); do
 
+    PROBLEM_ID=$(printf "$TYPE%03d" $i)
     SRC=$(printf "$MDL_DIR/$TYPE%03d_src.mdl" $i)
     TGT=$(printf "$MDL_DIR/$TYPE%03d_tgt.mdl" $i)
     OUT=$(printf "$OUT_DIR/$TYPE%03d.nbt" $i)
@@ -124,29 +125,11 @@ for i in $(range "$RANGE"); do
         fi
     fi
 
-    echo "bazel run //solver:$SOLVER -- --src_filename=$SRC --tgt_filename=$TGT $SOLVER_OPTS > $OUT 2>$OUT_REPORT && rm $OUT_REPORT || cat $OUT_REPORT"
+    if [ $SUBMIT -eq 0 ]; then
+        echo "bazel run //solver:$SOLVER -- --src_filename=$SRC --tgt_filename=$TGT $SOLVER_OPTS > $OUT 2>$OUT_REPORT && rm $OUT_REPORT || cat $OUT_REPORT"
+    else
+        echo "bazel run //solver:$SOLVER -- --src_filename=$SRC --tgt_filename=$TGT $SOLVER_OPTS > $OUT 2>$OUT_REPORT && rm $OUT_REPORT && curl http://negainoido:icfpc_ojima@35.196.88.166/submit_solution -F problem_id=${PROBLEM_ID} -F solver_id=${SOLVER} -F comment=from-run_solver -F nbt=@${OUT} > /dev/null || cat $OUT_REPORT"
+    fi
 done |
 shuffle |
 parallel -v -j ${J}
-
-
-if [ $SUBMIT -eq 0 ]; then
-    exit
-fi
-
-# submitting
-for i in $(range "$RANGE"); do
-    PROBLEM_ID=$(printf "$TYPE%03d" $i)
-    NBT_FILE=$(printf "$OUT_DIR/$TYPE%03d.nbt" $i)
-    LOG_FILE=$(printf "$REPORT_DIR/$TYPE%03d.log" $i)
-    if [ -f "$NBT_FILE" -a ! -f "$LOGFILE" ]; then
-        echo "Submitting $NBT_FILE"
-
-    curl http://negainoido:icfpc_ojima@35.196.88.166/submit_solution \
-         -F problem_id=${PROBLEM_ID} \
-         -F solver_id=${SOLVER} \
-         -F comment=from-run_solver \
-         -F nbt=@${NBT_FILE} > /dev/null
-    fi
-
-done
