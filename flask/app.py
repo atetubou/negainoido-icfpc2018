@@ -56,10 +56,13 @@ def test_error():
 @api('/gen_zip', 'gen_zip.html', methods=['GET','POST'])
 def gen_zip() -> Result[Any]:
     if request.method != 'POST':
-        return Ok(list(os.listdir('static/zip')))
+        return Ok(None)
 
-    subprocess.call('python dump_best_solutions.py', shell =True)
-    return Ok(list(os.listdir('static/zip')))
+    try:
+        result = subprocess.check_output('python dump_best_solutions.py', shell =True, universal_newlines=True)
+        return Ok(result)
+    except subprocess.CalledProcessError as exc:
+        return Ok('return code' + str(exc.returncode) + '\n' + exc.output)
 
 
 @api('/test_insert', 'test_insert.html', methods=['GET','POST'])

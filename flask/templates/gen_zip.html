@@ -5,11 +5,7 @@
 <form method="post">
     <button type="submit" class="btn btn-default">Submit</button>
 </form>
-<ul>
-    {% for i in data %}
-    <li>
-        <a href="/static/zip/{{ i }}"> {{ i }} </a>
-    </li>
-    {% endfor %}
-</ul>
+{% if data %}
+<div><code><pre>{{ data }}</pre></div>
+{% endif %}
 {% endblock %}

@@ -47,17 +47,15 @@ subprocess.call('gsutil acl ch -u AllUsers:R gs://negainoido-icfpc2018-shared-bu
 team_id = os.environ['TEAM_ID']
 url = 'https://storage.googleapis.com/negainoido-icfpc2018-shared-bucket/zip/' + dest
 
+op = 'curl' if os.environ['FLASK_ENV'] == 'production' else 'echo'
 cmd = """
-echo -L --data-urlencode action=submit 
+%s -L --data-urlencode action=submit 
         --data-urlencode privateID=%s 
         --data-urlencode submissionURL="%s" 
         --data-urlencode submissionSHA=%s https://script.google.com/macros/s/AKfycbzQ7Etsj7NXCN5thGthCvApancl5vni5SFsb1UoKgZQwTzXlrH7/exec
-""" % (team_id, url, sha1)
+""" % (op, team_id, url, sha1)
 cmd = ''.join(cmd.split('\n'))
 
-message = subprocess.check_output(cmd,shell=True,universal_newlines=True)
-print(message)
-curr.execute('insert into test(message) values (%s)', (message,))
-cnx.commit()
+subprocess.call(cmd,shell=True,universal_newlines=True)
 
 
