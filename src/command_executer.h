@@ -75,7 +75,8 @@ class CommandExecuter {
     uint32_t id;
     Point from;
     Point to; // enclosed region [From, To].
-    VolCord(uint32_t id, const Point& from, const Point& to) : id(id), from(std::move(from)), to(std::move(to)) {}
+    int n;
+  VolCord(uint32_t id, const Point& from, const Point& to, int n = 2) : id(id), from(std::move(from)), to(std::move(to)), n(n) {}
   };
   std::vector<VolCord> v_cords;
   size_t num_active_bots;
