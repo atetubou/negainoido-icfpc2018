@@ -129,6 +129,11 @@ Command Command::JsonToCommand(const Json::Value command) {
         c.fill_.nd.x = command["dx"].asInt();
         c.fill_.nd.y = command["dy"].asInt();
         c.fill_.nd.z = command["dz"].asInt();
+    } else if (type == "Void") {
+        c.type = VOID;
+        c.gvoid_.nd.x = command["dx"].asInt();
+        c.gvoid_.nd.y = command["dy"].asInt();
+        c.gvoid_.nd.z = command["dz"].asInt();
     } else if (type == "FusionP") {
         c.type = FUSION_P;
         c.fusion_p_.nd.x = command["dx"].asInt();
