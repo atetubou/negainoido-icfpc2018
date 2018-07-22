@@ -233,9 +233,12 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
                 return score(row['r'], row['max_score'], opt, opt)
             else:
                 return 0
+        ids = set()
 
-        ret = list(curr)
-        for row in ret:
+        ret = []
+        for row in list(curr):
+            if row['name'] in ids:
+                continue
             row['r'] = problem_size(row['name'])
             row['estimated_score'] = estimated_score(row)
             row['suboptimal_score'] = opt_score(row)
@@ -243,6 +246,9 @@ select name, ifnull(t.created_at,problems.created_at) updated_at, t.solver_id, t
                 total_score += row['estimated_score']
                 row['opt'] = standing_tbl[row['name']]['energy']
             row['live'] = row['name'] in standing_tbl
+            ids.add(row['name'])
+            ret.append(row)
+
         
         if 'name' not in request.args:
             ret.sort(key = (lambda row: row['estimated_score'] - row['suboptimal_score']))
