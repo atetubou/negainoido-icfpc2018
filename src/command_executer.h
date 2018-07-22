@@ -96,7 +96,8 @@ class CommandExecuter {
 
   bool IsGroundedSlow(const Point&, bool);
   void VerifyWellFormedSystem();
-
+  std::pair<Point, Point> VerifyGFillCommand(const Command& com, Point *neighbor);
+  std::pair<Point, Point> VerifyGVoidCommand(const Command& com, Point *neighbor);
   void Halt(const uint32_t bot_id);
   void Wait(const uint32_t bot_id);
   void Flip(const uint32_t bot_id);
@@ -108,6 +109,8 @@ class CommandExecuter {
   void Fission(const uint32_t bot_id, const Point& nd, const uint32_t m);
   void Fusion(const uint32_t bot_id1, const Point& nd1,
               const uint32_t bot_id2, const Point& nd2);
+  void GFill(const std::vector<uint32_t>& bot_ids,
+             const Point& r1, const Point& r2);
   void GVoid(const std::vector<uint32_t>& bot_ids,
              const Point& r1, const Point& r2);
 };
