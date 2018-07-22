@@ -240,4 +240,5 @@ TEST(CommandExecuter, OneFission) {
 }
 
 // TODO(hiroh): test Fusion
+// TODO(hiroh): test GFill
 // TODO(hiroh): test Gvoid
