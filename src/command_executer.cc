@@ -325,11 +325,11 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
     if (com.type == Command::Type::GFILL) {
       Point neighbor;
       auto represent_key = VerifyGFillCommand(com, &neighbor);
-      gvoid_group[std::move(represent_key)].emplace_back(i, neighbor);
+      gfill_group[std::move(represent_key)].emplace_back(com.id, neighbor);
     } else if (com.type == Command::Type::GVOID){
       Point neighbor;
       auto represent_key = VerifyGVoidCommand(com, &neighbor);
-      gvoid_group[std::move(represent_key)].emplace_back(i, neighbor);
+      gvoid_group[std::move(represent_key)].emplace_back(com.id, neighbor);
     }
   }
   for (const auto& gg : gfill_group) {
@@ -398,7 +398,6 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   }
 
   CE_ASSERT(fusion_count == 0) << fusion_count;
-
   // Check volatile cordinates
   for (size_t i = 0; i < v_cords.size(); i++) {
     for (size_t j = 0; j < v_cords.size(); j++) {
@@ -432,8 +431,7 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
               [](const auto& c1, const auto& c2) {
                 return c1.id < c2.id;
               });
-
-    auto turn_json = Command::CommandsToJson(commands);
+    auto turn_json = Command::CommandsToJson(commands_);
     json["turn"].append(std::move(turn_json));
   }
 
@@ -664,7 +662,7 @@ void CommandExecuter::GFill(const std::vector<uint32_t>& bot_ids,
     CE_ASSERT(r1.x != r2.x && r1.y != r2.y && r1.z != r2.z) << r1 << " " << r2;;
   }
   for (int x = r1.x; x <= r2.x; x++) {
-    for (int y = r1.y; x <= r2.y; y++) {
+    for (int y = r1.y; y <= r2.y; y++) {
       for (int z = r1.z; z <= r2.z; z++) {
         if (system_status.matrix[x][y][z] == VOID) {
           system_status.matrix[x][y][z] = FULL;

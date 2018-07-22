@@ -9,7 +9,7 @@ std::string ReadFile(absl::string_view filename) {
   // http://www.cplusplus.com/reference/istream/istream/read/
   std::ifstream is(std::string(filename), std::ifstream::binary);
   std::string buffer;
-  
+
   LOG_IF(FATAL, !is) << "failed to read file " << filename;
 
   // get length of file:
@@ -21,7 +21,7 @@ std::string ReadFile(absl::string_view filename) {
 
   // read data as a block:
   is.read(&buffer[0], length);
-    
+
   LOG_IF(FATAL, !is) << "error: only " << is.gcount() << " could be read";
 
   return buffer;
@@ -32,7 +32,7 @@ vvv ReadMDL(absl::string_view filename) {
   const std::string buffer = ReadFile(filename);
   int R = static_cast<unsigned char>(buffer[0]);
   int idx = 0;
-  
+
   vvv M(R, vv(R, v(R, 0)));
   int i = 8;
   unsigned b = 0;
@@ -100,9 +100,9 @@ void OutputMDL(const vvv &M) {
 std::string encodecommand(const Json::Value& command) {
   CHECK(command.isMember("command")) << command;
   CHECK(command["command"].isString()) << command;
-  
+
   const std::string command_name = command["command"].asString();
-  
+
   if (command_name == "Halt") {
     return {static_cast<char>(0b11111111)};
   }
@@ -119,7 +119,7 @@ std::string encodecommand(const Json::Value& command) {
     if (dx != 0) return {0b01, dx + 5};
     if (dy != 0) return {0b10, dy + 5};
     if (dz != 0) return {0b11, dz + 5};
-    
+
     LOG(FATAL) << command;
     return {0, 0};
   };
@@ -128,7 +128,7 @@ std::string encodecommand(const Json::Value& command) {
     if (dx != 0) return {0b01, dx + 15};
     if (dy != 0) return {0b10, dy + 15};
     if (dz != 0) return {0b11, dz + 15};
-    
+
     LOG(FATAL) << command;
     return {0, 0};
   };
@@ -138,7 +138,7 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(command.isMember("dx") && command["dx"].isInt()) << command;
     CHECK(command.isMember("dy") && command["dy"].isInt()) << command;
     CHECK(command.isMember("dz") && command["dz"].isInt()) << command;
-    
+
     auto lld = getlong(command["dx"].asInt(), command["dy"].asInt(), command["dz"].asInt());
     return {static_cast<char>((lld.first << 4) | 0b0100), static_cast<char>(lld.second)};
   }
@@ -147,7 +147,7 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(command.isMember("dx1") && command["dx1"].isInt()) << command;
     CHECK(command.isMember("dy1") && command["dy1"].isInt()) << command;
     CHECK(command.isMember("dz1") && command["dz1"].isInt()) << command;
-    
+
     CHECK(command.isMember("dx2") && command["dx2"].isInt()) << command;
     CHECK(command.isMember("dy2") && command["dy2"].isInt()) << command;
     CHECK(command.isMember("dz2") && command["dz2"].isInt()) << command;
@@ -165,8 +165,8 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(-1 <= dx && dx <= 1);
     CHECK(-1 <= dy && dy <= 1);
     CHECK(-1 <= dz && dz <= 1);
-
-    CHECK(std::abs(dx) + std::abs(dy) + std::abs(dz) == 1);
+    auto mlen = std::abs(dx) + std::abs(dy) + std::abs(dz);
+    CHECK(0 < mlen && mlen <= 2);
 
     return (dx + 1) * 9 + (dy + 1) * 3 + (dz + 1);
   };
@@ -175,7 +175,7 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(command.isMember("dx") && command["dx"].isInt()) << command;
     CHECK(command.isMember("dy") && command["dy"].isInt()) << command;
     CHECK(command.isMember("dz") && command["dz"].isInt()) << command;
-    
+
     int nd = getnd(command["dx"].asInt(), command["dy"].asInt(), command["dz"].asInt());
     return {static_cast<char>((nd << 3) | 0b011)};
   }
@@ -184,18 +184,18 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(command.isMember("dx") && command["dx"].isInt()) << command;
     CHECK(command.isMember("dy") && command["dy"].isInt()) << command;
     CHECK(command.isMember("dz") && command["dz"].isInt()) << command;
-    
+
     int nd = getnd(command["dx"].asInt(), command["dy"].asInt(), command["dz"].asInt());
-    return {static_cast<char>((nd << 3) | 0b111)};    
+    return {static_cast<char>((nd << 3) | 0b111)};
   }
 
   if (command_name == "FusionS") {
     CHECK(command.isMember("dx") && command["dx"].isInt()) << command;
     CHECK(command.isMember("dy") && command["dy"].isInt()) << command;
     CHECK(command.isMember("dz") && command["dz"].isInt()) << command;
-    
+
     int nd = getnd(command["dx"].asInt(), command["dy"].asInt(), command["dz"].asInt());
-    return {static_cast<char>((nd << 3) | 0b110)};    
+    return {static_cast<char>((nd << 3) | 0b110)};
   }
 
   if (command_name == "Fission") {
@@ -213,7 +213,7 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(command.isMember("dx") && command["dx"].isInt()) << command;
     CHECK(command.isMember("dy") && command["dy"].isInt()) << command;
     CHECK(command.isMember("dz") && command["dz"].isInt()) << command;
-    
+
     int nd = getnd(command["dx"].asInt(), command["dy"].asInt(), command["dz"].asInt());
     return {static_cast<char>((nd << 3) | 0b010)};
   }
@@ -222,27 +222,26 @@ std::string encodecommand(const Json::Value& command) {
     CHECK(command.isMember("dx1") && command["dx1"].isInt()) << command;
     CHECK(command.isMember("dy1") && command["dy1"].isInt()) << command;
     CHECK(command.isMember("dz1") && command["dz1"].isInt()) << command;
-    
+
     CHECK(command.isMember("dx2") && command["dx2"].isInt()) << command;
     CHECK(command.isMember("dy2") && command["dy2"].isInt()) << command;
     CHECK(command.isMember("dz2") && command["dz2"].isInt()) << command;
 
     int nd = getnd(command["dx1"].asInt(), command["dy1"].asInt(), command["dz1"].asInt());
     return {static_cast<char>((nd << 3) | 0b001),
-        static_cast<char>(command["dx2"].asInt()),
-        static_cast<char>(command["dy2"].asInt()),
-        static_cast<char>(command["dz2"].asInt())};
+        static_cast<char>(command["dx2"].asInt() + 30),
+        static_cast<char>(command["dy2"].asInt() + 30),
+        static_cast<char>(command["dz2"].asInt() + 30)};
   }
 
   if (command_name == "GVoid") {
     CHECK(command.isMember("dx1") && command["dx1"].isInt()) << command;
     CHECK(command.isMember("dy1") && command["dy1"].isInt()) << command;
     CHECK(command.isMember("dz1") && command["dz1"].isInt()) << command;
-    
+
     CHECK(command.isMember("dx2") && command["dx2"].isInt()) << command;
     CHECK(command.isMember("dy2") && command["dy2"].isInt()) << command;
     CHECK(command.isMember("dz2") && command["dz2"].isInt()) << command;
-
     int nd = getnd(command["dx1"].asInt(), command["dy1"].asInt(), command["dz1"].asInt());
     return {static_cast<char>((nd << 3) | 0b000),
         static_cast<char>(command["dx2"].asInt() + 30),
@@ -267,7 +266,7 @@ std::string Json2Binary(const Json::Value& json) {
       CHECK(command.isMember("bot_id") && command["bot_id"].isInt()) << command;
       commands.emplace_back(command["bot_id"].asInt(), encodecommand(command));
     }
-    
+
     std::sort(commands.begin(), commands.end());
     for (const auto& c : commands) {
       ret += c.second;
