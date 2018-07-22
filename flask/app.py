@@ -60,9 +60,19 @@ def gen_zip() -> Result[Any]:
 
     try:
         result = subprocess.check_output('python dump_best_solutions.py', shell =True, universal_newlines=True)
-        return Ok(result)
     except subprocess.CalledProcessError as exc:
-        return Ok('return code' + str(exc.returncode) + '\n' + exc.output)
+        result = 'return code' + str(exc.returncode) + '\n' + exc.output
+
+    conn = get_connection()
+    curr = conn.cursor()
+    try:
+        curr.execute('insert into test(message) values (%s)', (message,))
+        conn.commit()
+    finally:
+        curr.close()
+        conn.close()
+    
+    return Ok(result)
 
 
 @api('/test_insert', 'test_insert.html', methods=['GET','POST'])

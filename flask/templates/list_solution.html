@@ -24,10 +24,10 @@
           <a href="{{ url_for('solution_id_as_html', id = r['id']) }}">
             {{ r['id'] }}
           </a></td>
-        <td> {{ r['problem_id']  }} </td>
-        <td> {{ r['solver_id'] }} </td>
-        <td> {{ r['score']  }} </td>
-        <td> {{ r['created_at'] }} </td>
+          <td><a href="{{ url_for('list_solution_as_html') }}?problem={{  r['problem_id']}}">{{ r['problem_id']  }}</a></td>
+        <td>{{ r['solver_id'] }}</td>
+        <td>{{ r['score']  }}</td>
+        <td>{{ r['created_at'] }}</td>
       </tr>
       {% endfor %}
     </tbody>
