@@ -1,4 +1,5 @@
 #include "command_executer.h"
+#include "base/base.h"
 
 #include <iostream>
 #include <algorithm>
@@ -140,6 +141,9 @@ bool CommandExecuter::IsGrounded(const Point& p) {
 bool CommandExecuter::AllVoxelsAreGrounded() {
   if (!valid_grounded_memo) {
     UpdateGroundedMemo();
+  }
+  if (!all_voxels_are_grounded) {
+    std::cout << Json2Binary(GetJson());
   }
 
   return all_voxels_are_grounded;

@@ -17,14 +17,12 @@ class Vox {
     std::map<int,int> g2d;
     Vox(const vvv &voxels);
     bool get(int x, int y, int z);
+    void set(bool v, int x, int y, int z);
     int get_color(int x, int y, int z);
     void set_color(int v, int x, int y, int z);
     int get_color(Point &p);
     void set_color(int v, Point &p);
     vvv convert();
-    void dfs(int color, int x, int y, int z, int dir, int base);
-    void set_colors();
-    int get_color_count();
 };
 
 #endif

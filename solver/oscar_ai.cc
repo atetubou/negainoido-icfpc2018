@@ -39,13 +39,34 @@ static Point dP[] = {
 using bv = std::vector<bool>;
 using bvv = std::vector<bv>;
 using bvvv = std::vector<bvv>;
-
+using P = std::pair<int,int>;
 #define DOWN_X 0
 #define UP_X 1
 #define DOWN_Y 2
 #define UP_Y 3
 #define DOWN_Z 4
 #define UP_Z 5
+
+static void calc_invalid(queue<P> &invalid, bvv &used, bvv &grounded) {
+    int R = used.size();
+    while(!invalid.empty()) {
+        P cur = invalid.front();
+        int j = cur.first;
+        int k = cur.second;
+        invalid.pop();
+        if (j < 0 || j>= R || k<0 || k>=R) continue;
+        if(used[j][k])  continue;
+        used[j][k] = true;
+        grounded[j][k] = false;
+        for (int p=0;p<4;p++) {
+            int nx = j+dx[p];
+            int ny = k+dy[p];
+            if (grounded[nx][ny]) {
+                invalid.push(P(nx,ny));
+            }
+        }
+    }
+}
 
 class OscarAI : public AI
 {
@@ -108,47 +129,50 @@ class OscarAI : public AI
         return MergeSMove(rev_ret);
     }
 
-    void remove_dest_color(Point &pos, int tar_color, int mh) {
-        priority_queue< pair<int, Point>, vector< pair<int,Point> >, greater< pair<int,Point> > > pque;
-        int dir = vox.g2d[tar_color];
-        if (dir/2==0) {
-            for (int j=0;j<R;j++) for (int k=0;k<R;k++) {
-                if (vox.get_color(mh,j,k)==tar_color) {
-                    Point tmp =Point(mh,j,k);
-                    pque.push(make_pair((tmp-pos).Manhattan(), tmp));
-                }
-            }
-        }
-        else if (dir/2==1) {
-            for (int i=0;i<R;i++) for (int k=0;k<R;k++) {
-                if (vox.get_color(i,mh,k)==tar_color) {
-                    Point tmp =Point(i,mh,k);
-                    pque.push(make_pair((tmp-pos).Manhattan(), tmp));
-                }
-            }
-        }
-        else {
-            for (int i=0;i<R;i++) for (int j=0;j<R;j++) {
-                if (vox.get_color(i,j,mh)==tar_color) {
-                    Point tmp =Point(i,j,mh);
-                    pque.push(make_pair((tmp-pos).Manhattan(), tmp));
-                }
-            }
-        }
-        while(!pque.empty()) {
-            Point tar = pque.top().second;
-            pque.pop();
-            LOG(INFO) << "try to remove " << tar << " color " << vox.get_color(tar);
-            vector<Command> commands = getPath(pos, tar + dP[dir]);
-            commands.push_back(Command::make_void(1, Point(-dx[dir], -dy[dir], -dz[dir])));
-            for (auto c : commands) {
+    bool remove_x(int i, bvv &grounded, int sign) {
+        bool res = false;
+        for (int j=0;j<R;j++) for (int k=0;k<R;k++) if(grounded[j][k]){
+            res = true;
+            Point cur = ce->GetBotStatus()[1].pos;
+            for (auto c : getPath(cur, Point(i+sign, j,k))) {
                 ce->Execute({c});
             }
-            pos = tar + dP[dir];
-            CHECK(ce->GetBotStatus()[1].pos == tar + dP[dir]) << "diff ce pos=" << ce->GetBotStatus()[1].pos << " tar=" << tar ;
+            ce->Execute({Command::make_void(1, Point(-sign,0,0))});
+            vox.set(false, i,j,k);
         }
-        return;
+        return res;
     }
+    
+    bool remove_y(int j, bvv &grounded, int sign) {
+        bool res = false;
+        for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(grounded[i][k]){
+            res = true;
+            Point cur = ce->GetBotStatus()[1].pos;
+            for (auto c : getPath(cur, Point(i, j+sign,k))) {
+                ce->Execute({c});
+            }
+            ce->Execute({Command::make_void(1, Point(0,-sign,0))});
+            vox.set(false, i,j,k);
+
+        }
+        return res;
+    }
+    
+    bool remove_z(int k, bvv &grounded, int sign) {
+        bool res = false;
+        for (int i=0;i<R;i++) for (int j=0;j<R;j++) if(grounded[i][j]){
+            res = true;
+            Point cur = ce->GetBotStatus()[1].pos;
+            for (auto c : getPath(cur, Point(i, j,k + sign))) {
+                ce->Execute({c});
+            }
+            ce->Execute({Command::make_void(1, Point(0,0, sign))});
+            vox.set(false, i,j,k);
+
+        }
+        return res;
+    }
+
 
   public:
     OscarAI(const vvv &src_model, const vvv &tgt_model) : AI(src_model), tgt_model(tgt_model), vox(src_model) {
@@ -157,28 +181,102 @@ class OscarAI : public AI
     ~OscarAI() override = default;
 
     void Run() override {
-        vox.set_colors();
-
         Point pos = Point(0,0,0);
-
         // remove all 
-        int tar_color = vox.get_color_count() - 1;
-
-        while (tar_color >=0) {
-            int mh = vox.max_pos[tar_color];
-            int dir = vox.g2d[tar_color];
-            LOG(INFO) << "target color :" << tar_color <<  " dir " << dir;
-            while(mh>=0 && mh < R) {
-                remove_dest_color(pos, tar_color, mh);
-                mh -= dx[dir];
-                mh -= dy[dir];
-                mh -= dz[dir];
-                pos = ce->GetBotStatus()[1].pos;
+        bool renew = true;
+        while (renew) {
+            // DOWN_X
+            renew = false;
+            bvv used = bvv(R,bv(R,false));
+            for (int i=1;i<R;i++) {
+                queue<P> invalid;
+                bvv grounded = bvv(R, bv(R, false));
+                for (int j=0;j<R;j++) for (int k=0;k<R;k++) if(vox.get(i,j,k)) {
+                    if(j!=0 && vox.get(i+1, j, k) && !used[j][k]) {
+                        grounded[j][k] = true;
+                    } else {
+                        invalid.push(P(j,k));
+                    }
+                }
+                calc_invalid(invalid, used, grounded);
+                renew |= remove_x(i, grounded, -1);
             }
-            for (int i=0;i<R;i++) for(int j=0;j<R;j++) for(int k=0;k<R;k++) {
-                CHECK(vox.get_color(i,j,k) !=tar_color || ce->GetSystemStatus().matrix[i][j][k] == VoxelState::VOID) << "Failed to delete color" << tar_color << " " << Point(i,j,k);
+            // DOWN_Y
+            used = bvv(R,bv(R,false));
+            for (int j=1;j<R;j++) {
+                queue<P> invalid;
+                bvv grounded = bvv(R, bv(R, false));
+                for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(vox.get(i,j,k)) {
+                    if(!used[i][k] && vox.get(i, j+1, k)) {
+                        grounded[i][k] = true;
+                    } else {
+                        invalid.push(P(i,k));
+                    }
+                }
+                calc_invalid(invalid, used, grounded);
+                renew |= remove_y(j, grounded, -1);
             }
-            tar_color--;
+            // DOWN_Z
+            used = bvv(R,bv(R,false));
+            for (int k=1;k<R;k++) {
+                queue<P> invalid;
+                bvv grounded = bvv(R, bv(R, false));
+                for (int i=0;i<R;i++) for (int j=0;j<R;j++) if(vox.get(i,j,k)) {
+                    if(!used[i][j] &&j!=0 &&vox.get(i, j, k+1)) {
+                        grounded[i][j] = true;
+                    } else {
+                        invalid.push(P(i,j));
+                    }
+                }
+                calc_invalid(invalid, used, grounded);
+                renew |= remove_z(k, grounded, -1);
+            }
+            
+            // UP_X
+            used = bvv(R,bv(R,false));
+            for (int i=R-2;i>=0;i--) {
+                queue<P> invalid;
+                bvv grounded = bvv(R, bv(R, false));
+                for (int j=0;j<R;j++) for (int k=0;k<R;k++) if(vox.get(i,j,k)) {
+                    if(!used[j][k] && j!=0 &&vox.get(i-1, j, k)) {
+                        grounded[j][k] = true;
+                    } else {
+                        invalid.push(P(j,k));
+                    }
+                }
+                calc_invalid(invalid, used, grounded);
+                renew |= remove_x(i, grounded, 1);
+            }
+            // UP_Y
+            used = bvv(R,bv(R,false));
+            for (int j=R-2;j>=0;j--) {
+                queue<P> invalid;
+                bvv grounded = bvv(R, bv(R, false));
+                for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(vox.get(i,j,k)) {
+                    if(!used[i][k] &&( j==0 || vox.get(i, j-1, k))) {
+                        grounded[i][k] = true;
+                    } else {
+                        invalid.push(P(i,k));
+                    }
+                }
+                calc_invalid(invalid, used, grounded);
+                renew |= remove_y(j, grounded, 1);
+            }
+            // UP_Z
+            used = bvv(R,bv(R,false));
+            for (int k=R-2;k>=0;k--) {
+                queue<P> invalid;
+                bvv grounded = bvv(R, bv(R, false));
+                for (int i=0;i<R;i++) for (int j=0;j<R;j++) if(vox.get(i,j,k)) {
+                    if(!used[i][j] && j!=0 && vox.get(i, j, k-1)) {
+                        grounded[i][j] = true;
+                    } else {
+                        invalid.push(P(i,j));
+                    }
+                }
+                calc_invalid(invalid, used, grounded);
+                renew |= remove_z(k, grounded, 1);
+            }
         }
 
         for (auto c : getPath(pos, Point(0,0,0))) {
@@ -188,8 +286,7 @@ class OscarAI : public AI
         CHECK(ce->GetBotStatus()[1].pos == Point(0,0,0));
         for (int i=0;i<R;i++) for(int j=0;j<R;j++) for(int k=0;k<R;k++) {
             CHECK(ce->GetSystemStatus().matrix[i][j][k] == 0) << "Failed to delete" << Point(i,j,k);
-        }
-
+        } 
         // build all by simple_solve
 
         priority_queue<pair<int, Point>, vector<pair<int, Point>>, greater<pair<int, Point>>> pque;
