@@ -13,14 +13,14 @@
         <th> energy </th>
         <th> default energy </th>
         <th> score lower bound </th>
-        <th> created_at </th>
+        <th> updated_at </th>
       </tr>
     </thead>
     <tbody>
       {% for r in data %}
       <tr>
         <td> 
-          {{ r['problem_id'] }}
+          {{ r['name'] }}
         {#  <!-- <a href="{{ url_for('problem_id_as_html', id = r['name']) }}"> --> #}
 {#            <!-- {{ r['name'] }} --> #}
 {#          <!-- </a> --> #}
@@ -31,7 +31,7 @@
         <td> {{ r['score'] }} </td>
         <td> {{ r['max_score'] }} </td>
         <td> {{ r['estimated_score'] }} </td>
-        <td> {{ r['created_at'] }} </td>
+        <td> {{ r['updated_at'] }} </td>
       </tr>
       {% endfor %}
     </tbody>

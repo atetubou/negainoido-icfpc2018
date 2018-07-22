@@ -139,18 +139,23 @@ def list_problems() -> Result[List[Any]]:
     conn = get_connection()
     curr = conn.cursor(dictionary=True)
     try:
-        curr.execute(
-            "select id, best.problem_id, solver_id, best.score, best.max_score, created_at"
-            " from solutions inner join"
-            " (select problem_id, MIN(score) as score, MAX(score) as max_score from solutions where score > 0 group by problem_id) as best"
-            " on solutions.problem_id = best.problem_id and solutions.score = best.score"
-            " order by best.problem_id asc, solutions.score asc"
-        )
+        curr.execute("""
+select name, ifnull(t.created_at,problems.created_at) updated_at, t.score, t.max_score, t.id 
+  from problems 
+  left join   
+    (select solutions.problem_id, solutions.id, best.score, best.max_score, created_at 
+      from 
+        (select problem_id, MIN(score) as score, MAX(score) as max_score 
+          from solutions where score > 0 group by problem_id) as best 
+      left join solutions 
+      on solutions.problem_id = best.problem_id and solutions.score = best.score) as t   
+  on t.problem_id = problems.name order by name asc
+""")
 
         ret = list(curr)
         for i in range(len(ret)):
-            r = problem_size(ret[i]['problem_id'])
-            ret[i]['estimated_score'] = score(r, ret[i]['max_score'], ret[i]['score'])
+            r = problem_size(ret[i]['name'])
+            ret[i]['estimated_score'] = ret[i]['score'] and score(r, ret[i]['max_score'], ret[i]['score']) 
             ret[i]['r'] = r
 
         return Ok(ret)

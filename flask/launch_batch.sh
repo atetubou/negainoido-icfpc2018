@@ -9,6 +9,6 @@ fi
 source env/bin/activate
 source secret.sh
 #python batch.py
-nohup python batch.py > batch.log &
+nohup python batch.py > batch.log 2>&1 &
 echo $! > batch.pid
 
