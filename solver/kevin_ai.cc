@@ -105,19 +105,43 @@ class KevinAI : public CrimeaAI {
                         Command::make_wait(4)
                     });
                 }
-                DLOG(INFO) << "try gfill";
-                ce->Execute({
-                    Command::make_gfill(1, dP[UP_Y] * -sign,  Point(p,0,q)),
-                    Command::make_gfill(2, dP[UP_Y] * -sign,  Point(-p,0,q)),
-                    Command::make_gfill(3, dP[UP_Y] * -sign,  Point(-p,0,-q)),
-                    Command::make_gfill(4, dP[UP_Y] * -sign,  Point(p,0,-q)),
-
-                });
                 int color = vox.add_color();
-                for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
-                    grounded[i+s][k+t] = false;
-                    vox.set(true, i+s, j,k+t);
-                    vox.set_color(color, i+s, j, k+t);
+                while(1) {
+                    DLOG(INFO) << "try gfill";
+                    ce->Execute({
+                        Command::make_gfill(1, dP[UP_Y] * -sign,  Point(p,0,q)),
+                        Command::make_gfill(2, dP[UP_Y] * -sign,  Point(-p,0,q)),
+                        Command::make_gfill(3, dP[UP_Y] * -sign,  Point(-p,0,-q)),
+                        Command::make_gfill(4, dP[UP_Y] * -sign,  Point(p,0,-q)),
+                    });
+                    for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
+                        grounded[i+s][k+t] = false;
+                        vox.set(true, i+s, j,k+t);
+                        vox.set_color(color, i+s, j, k+t);
+                    }
+                    int r = 1;
+                    while(k + q + r < R-1 && r < q) {
+                        bool flag = true;
+                        for(int s=0;s<p+1;s++) if(!grounded[i+s][k+q+r]){
+                            flag = false;
+                            break;
+                        }
+                        if(!flag) break;
+                        r++;
+                    }
+                    r--;
+                    if (r > 1) {
+                        DLOG(INFO) << "try gfill again. move +" << r;
+                        ce->Execute({
+                            Command::make_smove(1, Point(0,0,r)),
+                            Command::make_smove(2, Point(0,0,r)),
+                            Command::make_smove(3, Point(0,0,r)),
+                            Command::make_smove(4, Point(0,0,r))
+                        });
+                        k+= r;
+                    } else {
+                        break;
+                    }
                 }
                 
                 DLOG(INFO) << "try moving";
