@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Select Test</h1>
+  <label>id:</label> <a> {{ data['id']}} </a><br />
+  <label>created_at:</label> <a> {{ data['created_at']}} </a> <br />
+  <label>message:</label><br />
+      <pre><code>{{data['message']}}</code></pre>
+{% endblock %}
