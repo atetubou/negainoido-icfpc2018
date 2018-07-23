@@ -30,6 +30,7 @@ Vox::Vox(const vvv &voxels)
   R = voxels.size();
   this->voxels.resize((R + 2) * (R + 2) * (R + 2), false);
   this->colors.resize((R + 2) * (R + 2) * (R + 2), -1);
+  this->color_count = 0;
   for (int i = 0; i < R; i++)
     for (int j = 0; j < R; j++)
       for (int k = 0; k < R; k++)
