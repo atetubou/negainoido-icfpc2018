@@ -23,7 +23,7 @@ CommandExecuter::SystemStatus::SystemStatus(int r)
 }
 
 CommandExecuter::BotStatus::BotStatus()
-  : bot_id(0), active(false), pos(0, 0, 0) {}
+  : id(0), active(false), pos(0, 0, 0) {}
 
 std::pair<CommandExecuter::BotStatus, CommandExecuter::BotStatus> 
 CommandExecuter::BotStatus::TryFission(const Point& v, int m) {
@@ -37,7 +37,8 @@ CommandExecuter::BotStatus::TryFission(const Point& v, int m) {
   CHECK_LE(static_cast<size_t>(m), vseeds.size());
 
   child.pos = pos + v;
-  child.bot_id = vseeds[0];
+  child.id = vseeds[0];
+
   for (int i = 1; i <= m; ++i) {
     child.seeds.insert(vseeds[i]);
   }
