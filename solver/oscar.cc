@@ -86,7 +86,7 @@ bool Vox::get(int x, int y, int z)
 
 void Vox::set(bool v,int x, int y, int z)
 {
-  DLOG(INFO) << "set" << Point(x,y,z);
+  DVLOG(2) << "set" << Point(x,y,z);
   DCHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
   DCHECK(y >= -1 && y < R + 1) << "out of range y: " << y << " R: " << R;
   DCHECK(z >= -1 && z < R + 1) << "out of range z: " << z << " R: " << R;
@@ -103,7 +103,7 @@ int Vox::get_color(int x, int y, int z)
 
 void Vox::set_color(int v, int x, int y, int z)
 {
-  DLOG(INFO) << "set_color" << Point(x,y,z);
+  DVLOG(2) << "set_color" << Point(x,y,z);
   DCHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
   DCHECK(y >= -1 && y < R + 1) << "out of range y: " << y << " R: " << R;
   DCHECK(z >= -1 && z < R + 1) << "out of range z: " << z << " R: " << R;
