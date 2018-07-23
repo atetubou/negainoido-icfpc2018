@@ -142,8 +142,10 @@ bool CommandExecuter::IsVoidPath(const Point& p1, const Point& p2) {
 
   while (true) {
 
-    if (!IsVoidCoordinate(p))
+    if (!IsVoidCoordinate(p)) {
+      LOG(ERROR) << "not void coordinate: " << p;
       return false;
+    }
 
     if (p == p2)
       break;

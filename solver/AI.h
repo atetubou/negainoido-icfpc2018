@@ -19,6 +19,8 @@ class AI {
     return ce->GetBotStatus()[id];
   }
 
+ AI(int R) : ce(std::make_unique<CommandExecuter>(R, true)) {}
+
  AI(vvv model) : ce(std::make_unique<CommandExecuter>(model, true)) {}
 
   std::vector<Command> FillCommand(std::vector<Command> commands,
