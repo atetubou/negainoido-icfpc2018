@@ -44,7 +44,7 @@ public:
     CHECK_EQ(v.Manhattan(), 1) 
       << v << " " << bid << " " << bot(bid).pos << " " << goal;
 
-    bids.push_back(bot(bid).TryFission(v, m).second.id);
+    bids.push_back(*bot(bid).seeds.begin());
     
     ExecuteOrWait({Command::make_fission(bid, v, m)});
 
