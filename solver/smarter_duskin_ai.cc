@@ -63,13 +63,40 @@ std::vector<Command> Goto(Point target) {
   for (int i = 0; i < tz; i++)
     commands.emplace_back(Command::make_smove(1, Point(0, 0, smove_max_leng)));
 
-  // TODO(hiroh): optimize more.
-  if (target.x % smove_max_leng)
-    commands.emplace_back(Command::make_smove(1, Point(target.x % smove_max_leng, 0, 0)));
-  if (target.y % smove_max_leng)
-    commands.emplace_back(Command::make_smove(1, Point(0, target.y % smove_max_leng, 0)));
-  if (target.z % smove_max_leng)
-    commands.emplace_back(Command::make_smove(1, Point(0, 0, target.z % smove_max_leng)));
+  int remain_x = target.x % smove_max_leng;
+  int remain_y = target.y % smove_max_leng;
+  int remain_z = target.z % smove_max_leng;
+  int cnt_zero = (remain_x == 0) + (remain_y == 0) + (remain_z == 0);
+
+  bool OK = false;
+  if (cnt_zero == 1) {
+    if (remain_x == 0) {
+      if (remain_y <= 5 && remain_z <= 5) {
+        commands.emplace_back(Command::make_lmove(1, Point(0, remain_y, 0), Point(0, 0, remain_z)));
+        OK = true;
+      }
+    } else if (remain_y == 0) {
+      if (remain_x <= 5 && remain_z <= 5) {
+        commands.emplace_back(Command::make_lmove(1, Point(remain_x, 0, 0), Point(0, 0, remain_z)));
+        OK = true;
+      }
+    } else {
+      LOG_ASSERT(remain_z == 0);
+      if (remain_x <= 5 && remain_y <= 5) {
+        commands.emplace_back(Command::make_lmove(1, Point(remain_x, 0, 0), Point(0, remain_y, 0)));
+        OK = true;
+      }
+    }
+  }
+
+  if (!OK) {
+    if (target.x % smove_max_leng)
+      commands.emplace_back(Command::make_smove(1, Point(target.x % smove_max_leng, 0, 0)));
+    if (target.y % smove_max_leng)
+      commands.emplace_back(Command::make_smove(1, Point(0, target.y % smove_max_leng, 0)));
+    if (target.z % smove_max_leng)
+      commands.emplace_back(Command::make_smove(1, Point(0, 0, target.z % smove_max_leng)));
+  }
   return commands;
 }
 
@@ -88,11 +115,17 @@ void SmarterDuskinAI::Run() {
   // Back to Origin.
   for (const auto& com : commands) {
     Command rev_com;
-    LOG_ASSERT(com.type == Command::Type::SMOVE);
-    rev_com = Command::make_smove(1, com.smove_.lld * -1);
+    // LOG_ASSERT(com.type == Command::Type::SMOVE);
+    if (com.type == Command::Type::SMOVE) {
+      rev_com = Command::make_smove(1, com.smove_.lld * -1);
+    } else {
+      LOG_ASSERT(com.type == Command::Type::LMOVE);
+      rev_com = Command::make_lmove(1, com.lmove_.sld1 * -1, com.lmove_.sld2 * -1);
+    }
     ce->Execute({rev_com});
   }
   ce->Execute({Command::make_halt(1)});
+  LOG(INFO) << "Energy:" << ce->GetSystemStatus().energy;
 }
 
 int main(int argc, char *argv[]) {
