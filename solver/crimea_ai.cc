@@ -240,6 +240,7 @@ bool CrimeaAI::fill_y(const int j, bvv &grounded, int sign) {
             for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
                 grounded[i+s][k+t] = false;
                 vox.set(true, i+s, j,k+t);
+                vox.set_color(0, i+s, j, k+t);
             }
             
             DLOG(INFO) << "try moving";
@@ -282,6 +283,7 @@ bool CrimeaAI::fill_y(const int j, bvv &grounded, int sign) {
         }
         ce->Execute({Command::make_fill(1, Point(0,-sign,0))});
         vox.set(true, i,j,k);
+        vox.set_color(0, i, j, k);
     }
     if(res) {
         DLOG(INFO) << "updated y" << j; 

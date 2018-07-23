@@ -30,7 +30,7 @@ Vox::Vox(const vvv &voxels)
   R = voxels.size();
   this->voxels.resize((R + 2) * (R + 2) * (R + 2), false);
   this->colors.resize((R + 2) * (R + 2) * (R + 2), -1);
-  this->color_count = 0;
+  this->par = vector<int>(1, 0);
   for (int i = 0; i < R; i++)
     for (int j = 0; j < R; j++)
       for (int k = 0; k < R; k++)
@@ -39,9 +39,43 @@ Vox::Vox(const vvv &voxels)
       }
 }
 
-void Vox::add_color(int dir) {
-  color_count++;
+int Vox::add_color() {
+  int res = par.size();
+  par.push_back(res);
+  return res;
 }
+
+int Vox::merge(int l, int r) {
+  if(l==-1 || r==-1) {
+    DLOG(INFO) << "failed union";
+    return -1;
+  }
+  if(l==r) return l;
+  if(l < r) {
+    par[r] = l;
+    return l;
+  }
+  else {
+    par[l] = r;
+    return r;
+  }
+}
+
+int Vox::get_parent(int c) {
+  int p = par[c];
+  if(p==c) {
+    return c;
+  }
+  p = get_parent(p);
+  par[c] = p;
+  return p;
+}
+
+int Vox::get_parent_color(int x, int y, int z) {
+  int color = get_color(x,y,z);
+  return get_parent(color);
+}
+
 bool Vox::get(int x, int y, int z)
 {
   DCHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
@@ -72,6 +106,15 @@ void Vox::set_color(int v, int x, int y, int z)
   DCHECK(y >= -1 && y < R + 1) << "out of range y: " << y << " R: " << R;
   DCHECK(z >= -1 && z < R + 1) << "out of range z: " << z << " R: " << R;
   colors[(x + 1) * (R + 2) * (R + 2) + (y + 1) * (R + 2) + z + 1] = v;
+  for (int d=0;d<6;d++) {
+    int nx = x+dx[d];
+    int ny = y+dy[d];
+    int nz = z+dz[d];
+    if(get(nx,ny,nz)) {
+      int nc = get_color(nx,ny,nz);
+      merge(nc, v);
+    }
+  }
 }
 
 int Vox::get_color(Point &p)

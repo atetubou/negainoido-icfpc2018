@@ -113,9 +113,11 @@ class KevinAI : public CrimeaAI {
                     Command::make_gfill(4, dP[UP_Y] * -sign,  Point(p,0,-q)),
 
                 });
+                int color = vox.add_color();
                 for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
                     grounded[i+s][k+t] = false;
                     vox.set(true, i+s, j,k+t);
+                    vox.set_color(color, i+s, j, k+t);
                 }
                 
                 DLOG(INFO) << "try moving";
@@ -152,14 +154,15 @@ class KevinAI : public CrimeaAI {
         for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(grounded[i][k]){
             res = true;
             Point cur = ce->GetBotStatus()[1].pos;
-            if (ce->GetSystemStatus().harmonics == Harmonics::LOW && !vox.get(i,j+sign,k)) {
-                ce->Execute({Command::make_flip(1)});
-            }
             for (auto c : getPath(cur, Point(i, j+sign,k))) {
                 ce->Execute({c});
             }
-            ce->Execute({Command::make_fill(1, Point(0,-sign,0))});
             vox.set(true, i,j,k);
+            vox.set(vox.add_color(), i, j, k);
+            if (ce->GetSystemStatus().harmonics == Harmonics::LOW && vox.get_parent_color(i,j+sign,k) != 0) {
+                ce->Execute({Command::make_flip(1)});
+            }
+            ce->Execute({Command::make_fill(1, Point(0,-sign,0))});
         }
         if(res) {
             DLOG(INFO) << "updated y" << j; 
@@ -239,6 +242,17 @@ class KevinAI : public CrimeaAI {
                 }
             }
             safe_fill_y(j,grounded,1);
+            if (ce->GetSystemStatus().harmonics == Harmonics::HIGH) {
+                int find = false;
+                for (int i=0;i<R;i++) for (int k=0;k<R;k++) if (vox.get(i,j,k) && vox.get_parent_color(i,j,k)!= 0) {
+                    find = true;
+                    break;
+                }
+                if(!find) {
+                    DLOG(INFO) << "seems safe";
+                    ce->Execute({Command::make_flip(1)});
+                }
+            }
         }
         if (ce->GetSystemStatus().harmonics != Harmonics::LOW) {
             ce->Execute({Command::make_flip(1)});
