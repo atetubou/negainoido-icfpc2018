@@ -9,10 +9,14 @@ using namespace std;
 static int dx[] = {-1,0,0,1,0,0};
 static int dy[] = {0,-1,0,0,1,0};
 static int dz[] = {0,0,-1,0,0,1};
+const int R = 250;
 
 vector<Command> get_commands_for_next(const Point& current, const Point& dest,
                                       const evvv& voxel_states) {
-  const int R = voxel_states.size();
+  const int x_size = voxel_states.size();
+  const int y_size = voxel_states[0].size();
+  const int z_size = voxel_states[0][0].size();
+  // const int R = voxel_states.size();
 
   struct State {
     State(int estimated, int current_cost, const Point& p) :
@@ -54,7 +58,7 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
       int nx = cur.x + dx[i];
       int ny = cur.y + dy[i];
       int nz = cur.z + dz[i];
-      if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
+      if (nx >= 0 && ny>= 0 && nz >= 0 && nx < x_size && ny < y_size && nz < z_size) {
         if (tmp_map[nx][ny][nz] >= 0) continue;
 
         if (voxel_states[nx][ny][nz] != MyVoxelState::kALREADYFILLED) {
@@ -76,7 +80,7 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
       int nx = rc.x + dx[i];
       int ny = rc.y + dy[i];
       int nz = rc.z + dz[i];
-      if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
+      if (nx >= 0 && ny>= 0 && nz >= 0 && nx < x_size && ny < y_size && nz < z_size) {
         const int tmpv = tmp_map[nx][ny][nz];
         if (minc > tmpv && tmpv >= 0) {
           mind = i;
@@ -103,13 +107,19 @@ vector<Command> get_commands_for_next(const Point& current, const Point& dest,
 }
 
 std::vector<Command> SimpleSolve(const vvv& voxels) {
+  return SimpleSolve(voxels, Point(0, 0, 0), true);
+}
+
+std::vector<Command> SimpleSolve(const vvv& voxels, const Point &dest, const bool halt) {
   using state = pair<pair<int, int>, Point>;
   priority_queue<state, vector<state>, greater<state> > pque;
 
-  const int R = voxels.size();
+  const int x_size = voxels.size();
+  const int y_size = voxels[0].size();
+  const int z_size = voxels[0][0].size();
 
-  for (size_t x = 0; x < voxels.size(); x++) {
-    for(size_t z = 0; z < voxels[x][0].size(); z++) {
+  for (int x = 0; x < x_size; x++) {
+    for(int z = 0; z < z_size; z++) {
       if (voxels[x][0][z] == 1) {
         pque.push(make_pair(make_pair(x, x + z), Point(x, 0, z)));
       }
@@ -119,7 +129,7 @@ std::vector<Command> SimpleSolve(const vvv& voxels) {
   vector<Point> visit_order;
   visit_order.emplace_back(0, 0, 0);
 
-  vvv visited(R, vv(R, v(R, 0)));
+  vvv visited(x_size, vv(y_size, v(z_size, 0)));
 
   while(!pque.empty()) {
     const Point cur = pque.top().second;
@@ -136,7 +146,7 @@ std::vector<Command> SimpleSolve(const vvv& voxels) {
       int nx = cur.x + dx[i];
       int ny = cur.y + dy[i];
       int nz = cur.z + dz[i];
-      if (nx >= 0 && ny>= 0 && nz >= 0 && nx < R && ny < R && nz < R) {
+      if (nx >= 0 && ny>= 0 && nz >= 0 && nx < x_size && ny < y_size && nz < z_size) {
         if (voxels[nx][ny][nz] == 1 && !visited[nx][ny][nz]) {
           pque.push(make_pair(make_pair(ny * R * R + nx, nx + ny + nz), Point(nx,ny,nz)));
         }
@@ -144,12 +154,12 @@ std::vector<Command> SimpleSolve(const vvv& voxels) {
     }
   }
 
-  visit_order.emplace_back(0, 0, 0);
+  visit_order.emplace_back(dest);
 
-  evvv voxel_states(R, evv(R, ev(R, MyVoxelState::kALWAYSEMPTY)));
-  for (int x = 0; x < R; ++x) {
-    for (int y = 0; y < R; ++y) {
-      for (int z = 0; z < R; ++z) {
+  evvv voxel_states(x_size, evv(y_size, ev(z_size, MyVoxelState::kALWAYSEMPTY)));
+  for (int x = 0; x < x_size; ++x) {
+    for (int y = 0; y < y_size; ++y) {
+      for (int z = 0; z < z_size; ++z) {
         if (voxels[x][y][z]) {
           voxel_states[x][y][z] = MyVoxelState::kSHOULDBEFILLED;
         }
@@ -165,6 +175,7 @@ std::vector<Command> SimpleSolve(const vvv& voxels) {
   for (size_t i = 0; i + 1 < visit_order.size(); ++i) {
     const auto cur = visit_order[i];
     const auto& next = visit_order[i + 1];
+    if (cur == next) continue;
 
     const auto commands = get_commands_for_next(cur, next, voxel_states);
 
@@ -182,11 +193,12 @@ std::vector<Command> SimpleSolve(const vvv& voxels) {
     }
   }
 
-  result_buff.push_back(Command::make_halt(1));
+  if (halt) {
+    result_buff.push_back(Command::make_halt(1));
+  }
   result_buff = MergeSMove(result_buff);
 
-  LOG(INFO) << "done path construction R=" << R
-            << " total_move=" << total_move;
+  LOG(INFO) << "done path construction" << " total_move=" << total_move;
 
   return result_buff;
 }

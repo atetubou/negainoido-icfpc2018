@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Gen Zip </h1>
+<form method="post">
+    <button type="submit" class="btn btn-default">Submit</button>
+</form>
+{% if data %}
+<div><code><pre>{{ data }}</pre></div>
+{% endif %}
+{% endblock %}

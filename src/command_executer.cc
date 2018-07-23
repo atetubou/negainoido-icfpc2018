@@ -3,8 +3,13 @@
 
 #include <iostream>
 #include <algorithm>
+#include <tuple>
+
+// If you define CE_FAST, voxel grounded (O(R^3) at worst)doesn't run!
+// #define CE_FAST
 
 #define CE_DEBUG
+
 #ifdef CE_DEBUG
 #define UNREACHABLE() CHECK(false)
 #define CE_ASSERT(cond) LOG_ASSERT(cond)
@@ -12,6 +17,22 @@
 #define UNREACHABLE()
 #define CE_ASSERT(cond) DLOG_ASSERT(cond)
 #endif // CE_DEBUG
+
+constexpr uint32_t MY_UNION_ID_BASE = CommandExecuter::kMaxResolution + 1;
+
+#define MY_UNION_ID(x,y,z) ((uint32_t) x * (MY_UNION_ID_BASE * MY_UNION_ID_BASE) + y * (MY_UNION_ID_BASE) + z)
+
+const Point kGrounded = Point(CommandExecuter::kMaxResolution, CommandExecuter::kMaxResolution, CommandExecuter::kMaxResolution);
+const uint32_t kGroundedID = MY_UNION_ID(CommandExecuter::kMaxResolution, CommandExecuter::kMaxResolution, CommandExecuter::kMaxResolution);
+
+std::tuple<uint32_t,uint32_t,uint32_t> XYZFromUnionValue(uint32_t value) {
+  uint32_t z = value % MY_UNION_ID_BASE;
+  value /= MY_UNION_ID_BASE;
+  uint32_t y = value % MY_UNION_ID_BASE;
+  value /= MY_UNION_ID_BASE;
+  uint32_t x = value;
+  return std::make_tuple(x,y,z);
+}
 
 
 // CommandExecuter
@@ -54,7 +75,7 @@ CommandExecuter::BotStatus::TryFission(const Point& v, int m) const {
 
 CommandExecuter::CommandExecuter(int R, bool output_json)
   : num_active_bots(1), system_status(R), output_json(output_json),
-    all_voxels_are_grounded(true), valid_grounded_memo(false) {
+    grounded_memo_is_valid(false), num_filled_voxels(0) {
   for (size_t i = 0; i < bot_status.size(); i++) {
     bot_status[i].id = i;
   }
@@ -65,11 +86,14 @@ CommandExecuter::CommandExecuter(int R, bool output_json)
   for (int i = 2; i <= kMaxNumBots; i++) {
     bot_status[1].seeds.insert(i);
   }
+
+  // Because grounded_memo_is_valid is false, UpdateGroundedMemo() is called
+  // later at the needed time. So there is no need to initialize grounded_memo
+  // right here.
 }
 
 CommandExecuter::CommandExecuter(vvv src_model, bool output_json)
-  : num_active_bots(1), system_status(src_model.size()), output_json(output_json),
-    all_voxels_are_grounded(true), valid_grounded_memo(false) {
+  : num_active_bots(1), system_status(src_model.size()), output_json(output_json), grounded_memo_is_valid(false), num_filled_voxels(0) {
   // Bot[1] is active, exists at (0,0,0) and has all the seeds.
   bot_status[1].active = true;
   bot_status[1].pos = Point(0,0,0);
@@ -82,8 +106,14 @@ CommandExecuter::CommandExecuter(vvv src_model, bool output_json)
   for (int i = 0; i < R; ++i)
     for (int j = 0; j < R; ++j)
       for (int k = 0; k < R; ++k)
-        if (src_model[i][j][k])
+        if (src_model[i][j][k]) {
           system_status.matrix[i][j][k] = FULL;
+          num_filled_voxels += 1;
+        }
+
+  // Because grounded_memo_is_valid is false, UpdateGroundedMemo() is called
+  // later at the needed time. So there is no need to initialize grounded_memo
+  // right here.
 }
 
 CommandExecuter::~CommandExecuter() {}
@@ -164,19 +194,19 @@ bool CommandExecuter::IsFull(const Point& p) {
 }
 
 bool CommandExecuter::IsGrounded(const Point& p) {
-  if (!valid_grounded_memo) {
+  if (!grounded_memo_is_valid) {
     UpdateGroundedMemo();
   }
 
-  return grounded_memo[p.x][p.y][p.z];
+  return Find(p.x, p.y, p.z) == kGroundedID;
 }
 
 bool CommandExecuter::AllVoxelsAreGrounded() {
-  if (!valid_grounded_memo) {
+  if (!grounded_memo_is_valid) {
     UpdateGroundedMemo();
   }
-
-  return all_voxels_are_grounded;
+  size_t num_connected_voxels = grounded_gsize[kMaxResolution][kMaxResolution][kMaxResolution];
+  return num_connected_voxels == num_filled_voxels;
 }
 
 
@@ -195,7 +225,8 @@ void CommandExecuter::UpdateGroundedMemo() {
   for (int x=0; x<R; ++x) {
     for (int y=0; y<R; ++y) {
       for (int z=0; z<R; ++z) {
-        grounded_memo[x][y][z] = false;
+        grounded_memo[x][y][z] = MY_UNION_ID(x,y,z);
+        grounded_gsize[x][y][z] = 1;
         if (system_status.matrix[x][y][z] == FULL) {
           full_num++;
         }
@@ -203,38 +234,41 @@ void CommandExecuter::UpdateGroundedMemo() {
     }
   }
 
+  // Reset as no grounded voxels.
+  grounded_gsize[kMaxResolution][kMaxResolution][kMaxResolution] = 0;
+  grounded_memo[kMaxResolution][kMaxResolution][kMaxResolution] = kGroundedID;
   SystemStatus& status = system_status;
 
   // Check voxels where y = 0
+  memset(_bfs, 0, sizeof(_bfs));
   std::stack<Point> s;
   for (int x=0; x<R; ++x) {
     for (int z=0; z<R; ++z) {
       if (status.matrix[x][0][z] == VOID) continue;
       s.push(Point(x, 0, z));
-      grounded_memo[x][0][z] = true;
+      Union(Point(x, 0, z), kGrounded);
+      _bfs[x][0][z] = true;
       full_num--;
     }
   }
 
   while (not s.empty()) {
-      Point p = s.top(); s.pop();
-      for (int k = 0; k < 6; k++) {
-        int x = p.x + adj_dx[k];
-        int y = p.y + adj_dy[k];
-        int z = p.z + adj_dz[k];
-        if (x < 0 || y < 0 || z < 0) continue;
-        if (x >= R || y >= R || z >= R) continue;
-        if (grounded_memo[x][y][z]) continue;
-        if (status.matrix[x][y][z] == VOID) continue;
-        grounded_memo[x][y][z] = 1;
-        full_num--;
-        s.push(Point(x, y, z));
-      }
+    Point p = s.top(); s.pop();
+    for (int k = 0; k < 6; k++) {
+      int x = p.x + adj_dx[k];
+      int y = p.y + adj_dy[k];
+      int z = p.z + adj_dz[k];
+      if (x < 0 || y < 0 || z < 0) continue;
+      if (x >= R || y >= R || z >= R) continue;
+      if (status.matrix[x][y][z] == VOID) continue;
+      Union(Point(x,y,z), p);
+      if (_bfs[x][y][z]) continue;
+      full_num--;
+      s.push(Point(x, y, z));
+      _bfs[x][y][z] = true;
+    }
   }
-
-  valid_grounded_memo = true;
-
-  all_voxels_are_grounded = (full_num == 0);
+  grounded_memo_is_valid = true;
 }
 
 void CommandExecuter::VerifyWellFormedSystem() {
@@ -317,12 +351,11 @@ std::pair<Point, Point> CommandExecuter::VerifyGVoidCommand(const Command& com, 
 }
 
 void CommandExecuter::Execute(const std::vector<Command>& commands) {
-#ifdef CE_DEBUG
+#if !defined(CE_FAST)
   // This function is heavy and therefore disabled in non-debug mode.
   VerifyWellFormedSystem();
 #endif
   VerifyCommandSeq(commands);
-
   // Update energy
   const long long R = system_status.R;
   if (system_status.harmonics == HIGH) {
@@ -332,6 +365,17 @@ void CommandExecuter::Execute(const std::vector<Command>& commands) {
   }
 
   system_status.energy += 20 * num_active_bots;
+
+  // Update grounded_memo_is_valid at first for the sake of performance.
+  // If we can find that groudned_map will be invalid, we don't have
+  // to update grounded_memo in GFill() and Fill().
+  if (std::find_if(commands.begin(), commands.end(),
+                   [](const auto&com) {
+                     return (com.type == Command::Type::VOID ||
+                             com.type == Command::Type::GVOID);
+                   }) != commands.end()) {
+    grounded_memo_is_valid = false;
+  }
 
   int fusion_count = 0;
   // Execute FusionP and FusionS
@@ -515,7 +559,6 @@ void CommandExecuter::Flip(const uint32_t bot_id) {
     system_status.harmonics = LOW;
   } else {
     system_status.harmonics = HIGH;
-    valid_grounded_memo = false;
   }
 }
 
@@ -561,6 +604,7 @@ void CommandExecuter::Void(const uint32_t bot_id, const Point& nd) {
   CE_ASSERT(IsValidCoordinate(c1)) << c1;
 
   if (system_status.matrix[c1.x][c1.y][c1.z] == FULL) {
+    num_filled_voxels -= 1;
     system_status.matrix[c1.x][c1.y][c1.z] = VOID;
     system_status.energy -= 12;
   } else {
@@ -571,7 +615,9 @@ void CommandExecuter::Void(const uint32_t bot_id, const Point& nd) {
   v_cords.emplace_back(bot_id, c1, c1);
 
   // re-calculation of grounded_memo is needed
-  valid_grounded_memo = false;
+  // Since some voxels can become ungrounded, sets
+  // all_voxels_are_grounded to true.
+  grounded_memo_is_valid = false;
 }
 
 void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint32_t m) {
@@ -617,9 +663,13 @@ void CommandExecuter::Fission(const uint32_t bot_id, const Point& nd, const uint
 }
 
 void CommandExecuter::UpdateGroundedPoint(const Point& pos) {
-  if (pos.y == 0 || grounded_memo[pos.x][pos.y - 1][pos.z]) {
-    grounded_memo[pos.x][pos.y][pos.z] = true;
-  } else if (valid_grounded_memo) {
+  // If grounded_memo_is_valid is false, there is no way to update
+  // grounded_memo[pos.x][pos.y][pos.z] correctly.
+  // UpdageGroundedMemo() should be called later.
+  if (pos.y == 0) {
+    Union(pos, kGrounded);
+  }
+  if (grounded_memo_is_valid) {
     const int R = system_status.R;
     const int adj_dx[] = {-1, 1, 0, 0, 0, 0};
     const int adj_dy[] = { 0, 0,-1, 1, 0, 0};
@@ -628,8 +678,9 @@ void CommandExecuter::UpdateGroundedPoint(const Point& pos) {
       Point p = pos + Point(adj_dx[i], adj_dy[i], adj_dz[i]);
       if (p.x < 0  || p.y < 0  || p.z < 0) continue;
       if (p.x >= R || p.y >= R || p.z >= R) continue;
-
-      grounded_memo[pos.x][pos.y][pos.z] |= grounded_memo[p.x][p.y][p.z];
+      if (system_status.matrix[p.x][p.y][p.z] == FULL) {
+        Union(pos, p);
+      }
     }
   }
 }
@@ -645,6 +696,7 @@ void CommandExecuter::Fill(const uint32_t bot_id, const Point& nd) {
   CE_ASSERT(IsValidCoordinate(c1)) << c1;
 
   if (system_status.matrix[c1.x][c1.y][c1.z] == VOID) {
+    num_filled_voxels += 1;
     system_status.matrix[c1.x][c1.y][c1.z] = FULL;
     system_status.energy += 12;
   } else {
@@ -701,6 +753,7 @@ void CommandExecuter::GFill(const std::vector<uint32_t>& bot_ids,
     for (int y = r1.y; y <= r2.y; y++) {
       for (int z = r1.z; z <= r2.z; z++) {
         if (system_status.matrix[x][y][z] == VOID) {
+          num_filled_voxels += 1;
           system_status.matrix[x][y][z] = FULL;
           system_status.energy += 12;
           UpdateGroundedPoint(Point(x, y, z));
@@ -732,6 +785,7 @@ void CommandExecuter::GVoid(const std::vector<uint32_t>& bot_ids,
     for (int y = r1.y; y <= r2.y; y++) {
       for (int z = r1.z; z <= r2.z; z++) {
         if (system_status.matrix[x][y][z] == FULL) {
+          num_filled_voxels -= 1;
           system_status.matrix[x][y][z] = VOID;
           system_status.energy -= 12;
         } else {
@@ -746,5 +800,40 @@ void CommandExecuter::GVoid(const std::vector<uint32_t>& bot_ids,
   v_cords.emplace_back(VolCord::kGVoid, r1, r2, N);
 
   // re-calculation of grounded_memo is needed
-  valid_grounded_memo = false;
+  grounded_memo_is_valid = false;
+}
+
+uint32_t CommandExecuter::Find(int x, int y, int z) {
+  if (grounded_memo[x][y][z] == kGroundedID ||
+      grounded_memo[x][y][z] == MY_UNION_ID(x,y,z)) {
+    return grounded_memo[x][y][z];
+  } else {
+    uint32_t v = grounded_memo[x][y][z];
+    uint32_t nx, ny, nz;
+    std::tie(nx, ny, nz) = XYZFromUnionValue(v);
+    return grounded_memo[x][y][z] = Find(nx, ny, nz);
+  }
+}
+
+void CommandExecuter::Union(const Point& p1, const Point& p2) {
+
+  uint32_t p1_root = grounded_memo[p1.x][p1.y][p1.z] = Find(p1.x, p1.y, p1.z);
+  uint32_t p2_root = grounded_memo[p2.x][p2.y][p2.z] = Find(p2.x, p2.y, p2.z);
+  if (p1_root == p2_root) {
+    return;
+  }
+  // TODO(hiroh): Utilize rank.
+  // Because kGrounded is max of uint32_t. rank is alwasy kGrounded,
+  // if either one is kGrounded.
+  uint32_t p1_rootx, p1_rooty, p1_rootz;
+  uint32_t p2_rootx, p2_rooty, p2_rootz;
+  std::tie(p1_rootx, p1_rooty, p1_rootz) = XYZFromUnionValue(p1_root);
+  std::tie(p2_rootx, p2_rooty, p2_rootz) = XYZFromUnionValue(p2_root);
+  if (p1_root < p2_root) {
+    grounded_memo[p1_rootx][p1_rooty][p1_rootz] = p2_root;
+    grounded_gsize[p2_rootx][p2_rooty][p2_rootz] += grounded_gsize[p1_rootx][p1_rooty][p1_rootz];
+  } else {
+    grounded_memo[p2_rootx][p2_rooty][p2_rootz] = p1_root;
+    grounded_gsize[p1_rootx][p1_rooty][p1_rootz] += grounded_gsize[p2_rootx][p2_rooty][p2_rootz];
+  }
 }

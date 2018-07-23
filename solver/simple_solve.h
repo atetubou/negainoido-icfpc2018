@@ -19,5 +19,6 @@ std::vector<Command> get_commands_for_next(const Point& current, const Point& de
                                            const evvv& voxel_states);
 
 std::vector<Command> SimpleSolve(const vvv& voxels);
+std::vector<Command> SimpleSolve(const vvv& voxels, const Point &dest, const bool halt);
 
 #endif

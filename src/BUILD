@@ -31,6 +31,23 @@ cc_library(
 )
 
 cc_library(
+    name = "command_executer_unsafe",
+    srcs = ["command.h",
+            "command.cc",
+            "command_executer.h",
+            "command_executer.cc",
+            "command_util.h",
+            "command_util.cc",
+    ],
+    copts = ["-std=c++14", "-D CE_FAST"],
+    deps = ["//external:glog",
+            "@jsoncpp_git//:jsoncpp",
+            "//src/base",
+            "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
     name = "command_executer",
     srcs = ["command.h",
             "command.cc",
@@ -77,6 +94,21 @@ cc_binary(
         "@com_github_gflags_gflags//:gflags",
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
+    ],
+)
+
+cc_binary(
+    name = "simulator_unsafe",
+    srcs = ["simulator.cc"],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        ":command_executer_unsafe",
+        ":nbt_loader",
+        "//src/base:flags",
     ],
 )
 

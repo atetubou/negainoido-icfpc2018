@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Select Test</h1>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th> id </th>
+        <th> message </th>
+        <th> created_at </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in data %}
+      <tr>
+        <td> 
+          <a href="{{ url_for('test_select_id_as_html', id = r['id']) }}">
+            {{ r['id'] }}
+          </a></td>
+        <td> {{ r['message'] | truncate(20, True) }} </td>
+        <td> {{ r['created_at'] }} </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

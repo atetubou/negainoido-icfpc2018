@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Problems</h1>
+<h2> Estimated live stainding score: {{ data.total_score }} </h2>
+<a href="?name">Name</a> <a href="?nobishiro">伸び代</a>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th> name </th>
+        <th> id </th>
+        <th> R </th>
+        <th> solver </th>
+        <th> energy </th>
+        <th> default energy </th>
+        <th> score / optimal(0.01) </th>
+        <th> updated_at </th>
+        <th> live? </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in data.problems %}
+      <tr>
+        <td> 
+            <a href="{{ url_for('list_solution_as_html')}}?problem={{r['name']}}"> {{ r['name'] }} </a>
+        {#  <!-- <a href="{{ url_for('problem_id_as_html', id = r['name']) }}"> --> #}
+{#            <!-- {{ r['name'] }} --> #}
+{#          <!-- </a> --> #}
+</td>
+        <td>{{ r['id'] }}</td>
+        <td>{{ r['r'] }}</td>
+        <td>{{ r['solver_id'] }}</td>
+        <td class="energy">{{ r['score'] }}{% if r['live'] %}<br/><div class="topscore">{{r['opt']}}</div>{% endif %}</td>
+        <td class="energy">{{ r['max_score'] }}</td>
+        <td>{{ r['estimated_score'] }}/{{ r['suboptimal_score'] }}</td>
+        <td>{{ r['updated_at'] }}</td>
+        <td>{{ '✔️' if r['live'] else '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+<style>
+.energy {
+    text-align: right;
+    font-size: 20px;
+    font-family: monospace;
+}
+.topscore {
+    font-size: 20px;
+    color: red;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Submit Solution</h1>
+<form method="post" enctype="multipart/form-data">
+    <div class="form-group">
+        <label>Problem ID:</label>
+        <input type="text" name="problem_id">
+    </div>
+    <div class="form-group">
+        <label>Solver ID:</label><br />
+        <input type="text" name="solver_id">
+        <a> Name of solver AI </a>
+    </div>
+    <div class="form-group">
+        <label>Comment:</label><br />
+        <textarea name="comment"></textarea>
+    </div>
+    <div class="form-group">
+        <label>NBT file:</label><br />
+        <input type="file" name="nbt">
+    </div>
+    <button type="submit" class="btn btn-default">Submit</button>
+</form>
+{% endblock %}
