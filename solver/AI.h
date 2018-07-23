@@ -8,10 +8,9 @@
 #include "src/base/base.h"
 #include "src/command_executer.h"
 
-class AI {
- private:
-  static const int kMAXSMOVE = 15;
+static constexpr int kMAXSMOVE = 15;
 
+class AI {
  protected:
   std::unique_ptr<CommandExecuter> ce;
  public:
@@ -22,6 +21,7 @@ class AI {
  AI(int R) : ce(std::make_unique<CommandExecuter>(R, true)) {}
 
  AI(vvv model) : ce(std::make_unique<CommandExecuter>(model, true)) {}
+ AI(int R) : ce(std::make_unique<CommandExecuter>(R, true)) {}
 
   std::vector<Command> FillCommand(std::vector<Command> commands,
                                    Command c) const;

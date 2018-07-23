@@ -121,9 +121,23 @@ cc_binary(
 
 
 cc_library(
-    name = "oscar",
+    name = "crimea_ai",
     copts = ["-std=c++14"],
-    srcs = ["oscar.cc", "oscar.h"],
+    srcs = ["crimea_ai.h", "oscar.cc", "oscar.h", "crimea_ai.cc", "AI.h"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
+        "//src:command_executer",
+        "//src/base",
+    ],
+)
+
+cc_library(
+    name = "crimea_ai_debug",
+    copts = ["-std=c++14", "-DDCHECK_ALWAYS_ON"],
+    srcs = ["crimea_ai.h", "oscar.cc", "oscar.h", "crimea_ai.cc", "AI.h"],
     deps = [
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",
@@ -146,7 +160,58 @@ cc_binary(
         "@jsoncpp_git//:jsoncpp",
         "//src/base",
         "//src:command_executer",
-        "oscar",
+        "crimea_ai",
+        "//src/base:flags",
+        ":ai",
+    ],
+)
+
+cc_binary(
+    name = "oscar_ai_debug",
+    srcs = ["oscar_ai.cc"],
+    copts = ["-std=c++14", "-DDCHECK_ALWAYS_ON"],
+    deps = [
+        "simple_solve_lib",
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        "//src:command_executer",
+        "crimea_ai_debug",
+        "//src/base:flags",
+        ":ai",
+    ],
+)
+
+cc_binary(
+    name = "kevin_ai",
+    srcs = ["kevin_ai.cc" ],
+    copts = ["-std=c++14"],
+    deps = [
+        "simple_solve_lib",
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        "//src:command_executer",
+        "crimea_ai",
+        "//src/base:flags",
+        ":ai",
+    ],
+)
+
+cc_binary(
+    name = "kevin_ai_debug",
+    srcs = ["kevin_ai.cc" ],
+    copts = ["-std=c++14", "-DDCHECK_ALWAYS_ON"],
+    deps = [
+        "simple_solve_lib",
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        "//src:command_executer",
+        "crimea_ai_debug",
         "//src/base:flags",
         ":ai",
     ],
@@ -204,6 +269,39 @@ cc_binary(
     deps = [
         "@com_google_absl//absl/types:span",
         "//external:glog",
+        "//src/base",
+        "//src:command_executer",
+        "//src/base:flags",
+        ":ai",
+    ],
+)
+
+cc_binary(
+    name = "udon_ai",
+    srcs = ["udon_ai.cc",
+           ],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
+        "//src/base",
+        "//src:command_executer",
+        "//src/base:flags",
+        ":ai",
+    ],
+)
+
+cc_binary(
+    name = "itigo",
+    srcs = ["itigo.cc"],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
         "//src/base",
         "//src:command_executer",
         "//src/base:flags",

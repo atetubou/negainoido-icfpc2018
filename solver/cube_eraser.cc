@@ -11,6 +11,8 @@
 #include "solver/AI.h"
 
 
+DEFINE_bool(flip, true, "do flip?");
+DEFINE_bool(dig, false, "do dig?");
 DEFINE_bool(json, false, "output json");
 
 
@@ -114,12 +116,11 @@ class CubeEraser : public AI {
           3,
           ce->GetBotStatus()[3].pos,
           ce->GetBotStatus()[3].pos + Point(0, 0, goal_dz));
-      for (size_t i = 0; i < commands.size(); ++i) {
+      for (auto& c : commands) {
         exec({
             Command::make_wait(1),
             Command::make_wait(2),
-            command_by(commands[i], 3),
-            command_by(commands[i], 6),
+            c, command_by(c, 6)
             });
       }
     }
@@ -152,11 +153,16 @@ class CubeEraser : public AI {
       for (int z = 0; z < R - len + 1; ++z) {
         int m = 0;
         for (int t = y; t >= 0; --t) {
+
           if (model[x][t][z] or
               model[x+len-1][t][z] or
               model[x][t][z+len-1] or
               model[x+len-1][t][z+len-1]) {
-            break;
+            if (not FLAGS_dig) {
+              break;
+            } else {
+              if (t == y) break;
+            }
           }
 
           int h = y - t + 1;
@@ -168,7 +174,7 @@ class CubeEraser : public AI {
             }
           }
           if (h == 2 and m == 0) break;
-          if (mx < m) {
+          if (h > 2 and mx < m) {
             mx = m;
             ret = std::make_pair(true, Point(x, t, z));
           }
@@ -251,6 +257,43 @@ class CubeEraser : public AI {
             Command::make_fission(6, Point(0, -1, 0), 0),
             });
       }
+      if (FLAGS_dig) { // DIG
+        auto& matrix = ce->GetSystemStatus().matrix;
+        while (ce->GetBotStatus()[8].pos.y > cube.second.y) {
+          bool need_dig = false;
+          for (int i : {8,5,4,7}) {
+            int x = ce->GetBotStatus()[i].pos.x;
+            int y = ce->GetBotStatus()[i].pos.y - 1;
+            int z = ce->GetBotStatus()[i].pos.z;
+            if (matrix[x][y][z]) {
+              need_dig = true;
+              break;
+            }
+          }
+          if (need_dig) {
+            exec({
+                Command::make_wait(1),
+                Command::make_wait(2),
+                Command::make_wait(3),
+                Command::make_wait(6),
+                Command::make_void(8, Point(0, -1, 0)),
+                Command::make_void(5, Point(0, -1, 0)),
+                Command::make_void(4, Point(0, -1, 0)),
+                Command::make_void(7, Point(0, -1, 0))
+                });
+          }
+          exec({
+              Command::make_wait(1),
+              Command::make_wait(2),
+              Command::make_wait(3),
+              Command::make_wait(6),
+              Command::make_smove(8, Point(0, -1, 0)),
+              Command::make_smove(5, Point(0, -1, 0)),
+              Command::make_smove(4, Point(0, -1, 0)),
+              Command::make_smove(7, Point(0, -1, 0))
+              });
+        }
+      }
       { // Move
         auto commands = MassuguGo(
             8,
@@ -269,7 +312,6 @@ class CubeEraser : public AI {
               });
         }
       }
-      LOG(INFO) << "GVOID";
       { // GVoid: 1--8, 2--5, 3--4, 6--7
         Point nd_down = Point(0, -1, 0);
         Point nd_up = Point(0, 1, 0);
@@ -405,7 +447,9 @@ public:
   ~CubeEraser() override = default;
 
   void Run() override {
-    exec({ Command::make_flip(1) });
+    if (FLAGS_flip) {
+      exec({ Command::make_flip(1) });
+    }
     GotoTop();
     MakeSquare();
     LOG(INFO) << "start work";
