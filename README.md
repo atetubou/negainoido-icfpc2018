@@ -13,7 +13,7 @@
 
 
 ### Run
-* `bazel run //solver:itigo -- --src_filename=- --tgt_filename=FA001_tgt.mdl > `
+* `bazel run //solver:itigo -- --src_filename=- --tgt_filename=FA001_tgt.mdl > nbt.nbt`
 
 #### solvers
 * itigo
