@@ -21,7 +21,9 @@ static Point dP[] = {
 };
 
 
+
 using namespace std;
+using cvv = vector<vector<Command>>;
 static void calc_invalid(queue<P> &invalid, bvv &used, bvv &grounded, bvv &visited) {
     int R = used.size();
     while(!invalid.empty()) {
@@ -48,132 +50,149 @@ static void calc_invalid(queue<P> &invalid, bvv &used, bvv &grounded, bvv &visit
 }
 
 class KevinAI : public CrimeaAI {
+    bool safe_fill_y_execute(int i, int j, int k, bvv &grounded, int fd, int sign, int id) {
+        bool res = false;
+        int p=0; int q=0;
+        while(p < fd && grounded[i+p][k]) p++;
+        while(q < fd && grounded[i][k+q]) q++;
+        if (p==1 || q == 1) return false;
+        bool flag = true;
+        for (int s=0;s<p;s++) for (int t=0;t<q;t++) if(!tvox.get(i+s,j,k+t)) {
+            flag = false;
+            break;
+        }
+        if (flag && (p> 2 || q > 2)) {
+            DLOG(INFO) << "try s fill y " << p << " " << q;
+            p--; q--;
+            Point cur = ce->GetBotStatus()[1].pos;
+            for (auto c : getPath(cur, Point(i, j + sign,k))) {
+                ce->Execute({c});
+            }
+            DLOG(INFO) << "try fisision";
+            vector<int> ids(4);
+            ids[0] = id;
+            auto itr = ce->GetBotStatus()[id].seeds.begin();
+            for (int s=1;s<4;s++) {
+                ids[s] = *itr;
+                itr++;
+            }
+
+            ce->Execute({Command::make_fission(ids[0], dP[UP_X], 1)});
+            ce->Execute({Command::make_fission(ids[0], dP[UP_Z], 0), Command::make_fission(ids[1], dP[UP_Z], 0)});
+            vector<Command> moving;
+            DLOG(INFO) << "try moving";
+            moving.push_back(Command::make_wait(ids[0]));
+            if (p==1) {
+                moving.push_back(Command::make_wait(ids[1]));
+                moving.push_back(Command::make_smove(ids[2], dP[UP_Z] * (q-1)));
+                moving.push_back(Command::make_smove(ids[3], dP[UP_Z] * (q-1)));
+            } else if (q==1) {
+                moving.push_back(Command::make_smove(ids[1], dP[UP_X] * (p-1)));
+                moving.push_back(Command::make_smove(ids[2], dP[UP_X] * (p-1)));
+                moving.push_back(Command::make_wait(ids[3]));
+            } else {
+                moving.push_back(Command::make_smove(ids[1], dP[UP_X] * (p-1)));
+                moving.push_back(Command::make_lmove(ids[2], dP[UP_X] * (p-1), dP[UP_Z] * (q-1)));
+                moving.push_back(Command::make_smove(ids[3], dP[UP_Z] * (q-1)));
+            }
+            ce->Execute(moving);
+            bool shouldHigh = false;
+            int color = vox.add_color();
+            for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
+                vox.set(true, i+s, j,k+t);
+                vox.set_color(color, i+s, j, k+t);
+            }
+            if (ce->GetSystemStatus().harmonics == Harmonics::LOW) {
+                shouldHigh = vox.get_parent_color(i,j,k) != 0;
+            }
+            if (shouldHigh) {
+                DLOG(INFO) << "need to high";
+                ce->Execute({
+                    Command::make_flip(ids[0]),
+                    Command::make_wait(ids[1]),
+                    Command::make_wait(ids[2]),
+                    Command::make_wait(ids[3])
+                });
+            }
+            while(1) {
+                DLOG(INFO) << "try gfill";
+                ce->Execute({
+                    Command::make_gfill(ids[0], dP[UP_Y] * -sign,  Point(p,0,q)),
+                    Command::make_gfill(ids[1], dP[UP_Y] * -sign,  Point(-p,0,q)),
+                    Command::make_gfill(ids[2], dP[UP_Y] * -sign,  Point(-p,0,-q)),
+                    Command::make_gfill(ids[3], dP[UP_Y] * -sign,  Point(p,0,-q)),
+                });
+                for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
+                    grounded[i+s][k+t] = false;
+                    vox.set(true, i+s, j,k+t);
+                    vox.set_color(color, i+s, j, k+t);
+                }
+                int r = 1;
+                while(k + q + r < R-1 && r < q) {
+                    bool flag = true;
+                    for(int s=0;s<p+1;s++) if(!grounded[i+s][k+q+r]){
+                        flag = false;
+                        break;
+                    }
+                    if(!flag) break;
+                    r++;
+                }
+                r--;
+                if (r > 1) {
+                    DLOG(INFO) << "try gfill again. move +" << r;
+                    ce->Execute({
+                        Command::make_smove(ids[0], Point(0,0,r)),
+                        Command::make_smove(ids[1], Point(0,0,r)),
+                        Command::make_smove(ids[2], Point(0,0,r)),
+                        Command::make_smove(ids[3], Point(0,0,r))
+                    });
+                    k+= r;
+                } else {
+                    break;
+                }
+            }
+            
+            DLOG(INFO) << "try moving";
+            moving.clear();
+            moving.push_back(Command::make_wait(ids[0]));
+            if (p==1) {
+                moving.push_back(Command::make_wait(ids[1]));
+                moving.push_back(Command::make_smove(ids[2], Point(0,0,-q+1)));
+                moving.push_back(Command::make_smove(ids[3], Point(0,0,-q+1)));
+            } else if (q==1) {
+                moving.push_back(Command::make_smove(ids[1], Point(-p+1,0,0)));
+                moving.push_back(Command::make_smove(ids[2], Point(-p+1,0,0)));
+                moving.push_back(Command::make_wait(ids[3]));
+            } else {
+                moving.push_back(Command::make_smove(ids[1], Point(-p+1,0,0)));
+                moving.push_back(Command::make_lmove(ids[2], Point(-p+1,0,0), Point(0,0,-q+1)));
+                moving.push_back(Command::make_smove(ids[3], Point(0,0,-q+1)));
+            }
+            ce->Execute(moving);
+            ce->Execute({
+                Command::make_fusion_p(ids[0], dP[UP_Z]),
+                Command::make_fusion_p(ids[1], dP[UP_Z]),
+                Command::make_fusion_s(ids[2], dP[UP_Z] * -1),
+                Command::make_fusion_s(ids[3], dP[UP_Z] * -1),
+            });
+            ce->Execute({
+                Command::make_fusion_p(ids[0], dP[UP_X]),
+                Command::make_fusion_s(ids[1], dP[UP_X] * -1),
+            });
+            q++;
+            res = true;
+        }
+        return res;
+    }
+
     bool safe_fill_y(const int j, bvv &grounded, int sign) {
         bool res = false;
         int fd = min(R, 6);
+        for (int i=0;i<R-fd;i++) for (int k=0;k<R-fd;k++) if(grounded[i][k] && vox.get(i,j-sign,k)) {
+            res |= safe_fill_y_execute(i,j,k,grounded,fd,sign, 1);
+        }
         for (int i=0;i<R-fd;i++) for (int k=0;k<R-fd;k++) if(grounded[i][k]) {
-            int p=0; int q=0;
-            while(p < fd && grounded[i+p][k]) p++;
-            while(q < fd && grounded[i][k+q]) q++;
-            if (p==1 || q == 1) continue;
-            bool flag = true;
-            for (int s=0;s<p;s++) for (int t=0;t<q;t++) if(!tvox.get(i+s,j,k+t)) {
-                flag = false;
-                break;
-            }
-            if (flag && (p> 2 || q > 2)) {
-                bool shouldHigh = false;
-                if (ce->GetSystemStatus().harmonics == Harmonics::LOW) {
-                    shouldHigh = true;
-                    for (int s=0;s<p;s++) for (int t=0;t<q;t++) if(vox.get(i+s,j-sign,k+t)) {
-                        shouldHigh = false;
-                        s = p; t = q;
-                    }
-                }
-                DLOG(INFO) << "try s fill y " << p << " " << q;
-                p--; q--;
-                Point cur = ce->GetBotStatus()[1].pos;
-                for (auto c : getPath(cur, Point(i, j + sign,k))) {
-                    ce->Execute({c});
-                }
-                DLOG(INFO) << "try fisision";
-                ce->Execute({Command::make_fission(1, dP[UP_X], 1)});
-                ce->Execute({Command::make_fission(1, dP[UP_Z], 0), Command::make_fission(2, dP[UP_Z], 0)});
-                vector<Command> moving;
-                DLOG(INFO) << "try moving";
-                moving.push_back(Command::make_wait(1));
-                if (p==1) {
-                    moving.push_back(Command::make_wait(2));
-                    moving.push_back(Command::make_smove(3, dP[UP_Z] * (q-1)));
-                    moving.push_back(Command::make_smove(4, dP[UP_Z] * (q-1)));
-                } else if (q==1) {
-                    moving.push_back(Command::make_smove(2, dP[UP_X] * (p-1)));
-                    moving.push_back(Command::make_smove(3, dP[UP_X] * (p-1)));
-                    moving.push_back(Command::make_wait(4));
-                } else {
-                    moving.push_back(Command::make_smove(2, dP[UP_X] * (p-1)));
-                    moving.push_back(Command::make_lmove(3, dP[UP_X] * (p-1), dP[UP_Z] * (q-1)));
-                    moving.push_back(Command::make_smove(4, dP[UP_Z] * (q-1)));
-                }
-                ce->Execute(moving);
-                if (shouldHigh) {
-                    DLOG(INFO) << "need to high";
-                    ce->Execute({
-                        Command::make_flip(1),
-                        Command::make_wait(2),
-                        Command::make_wait(3),
-                        Command::make_wait(4)
-                    });
-                }
-                int color = vox.add_color();
-                while(1) {
-                    DLOG(INFO) << "try gfill";
-                    ce->Execute({
-                        Command::make_gfill(1, dP[UP_Y] * -sign,  Point(p,0,q)),
-                        Command::make_gfill(2, dP[UP_Y] * -sign,  Point(-p,0,q)),
-                        Command::make_gfill(3, dP[UP_Y] * -sign,  Point(-p,0,-q)),
-                        Command::make_gfill(4, dP[UP_Y] * -sign,  Point(p,0,-q)),
-                    });
-                    for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
-                        grounded[i+s][k+t] = false;
-                        vox.set(true, i+s, j,k+t);
-                        vox.set_color(color, i+s, j, k+t);
-                    }
-                    int r = 1;
-                    while(k + q + r < R-1 && r < q) {
-                        bool flag = true;
-                        for(int s=0;s<p+1;s++) if(!grounded[i+s][k+q+r]){
-                            flag = false;
-                            break;
-                        }
-                        if(!flag) break;
-                        r++;
-                    }
-                    r--;
-                    if (r > 1) {
-                        DLOG(INFO) << "try gfill again. move +" << r;
-                        ce->Execute({
-                            Command::make_smove(1, Point(0,0,r)),
-                            Command::make_smove(2, Point(0,0,r)),
-                            Command::make_smove(3, Point(0,0,r)),
-                            Command::make_smove(4, Point(0,0,r))
-                        });
-                        k+= r;
-                    } else {
-                        break;
-                    }
-                }
-                
-                DLOG(INFO) << "try moving";
-                moving.clear();
-                moving.push_back(Command::make_wait(1));
-                if (p==1) {
-                    moving.push_back(Command::make_wait(2));
-                    moving.push_back(Command::make_smove(3, Point(0,0,-q+1)));
-                    moving.push_back(Command::make_smove(4, Point(0,0,-q+1)));
-                } else if (q==1) {
-                    moving.push_back(Command::make_smove(2, Point(-p+1,0,0)));
-                    moving.push_back(Command::make_smove(3, Point(-p+1,0,0)));
-                    moving.push_back(Command::make_wait(4));
-                } else {
-                    moving.push_back(Command::make_smove(2, Point(-p+1,0,0)));
-                    moving.push_back(Command::make_lmove(3, Point(-p+1,0,0), Point(0,0,-q+1)));
-                    moving.push_back(Command::make_smove(4, Point(0,0,-q+1)));
-                }
-                ce->Execute(moving);
-                ce->Execute({
-                    Command::make_fusion_p(1, dP[UP_Z]),
-                    Command::make_fusion_p(2, dP[UP_Z]),
-                    Command::make_fusion_s(3, dP[UP_Z] * -1),
-                    Command::make_fusion_s(4, dP[UP_Z] * -1),
-                });
-                ce->Execute({
-                    Command::make_fusion_p(1, dP[UP_X]),
-                    Command::make_fusion_s(2, dP[UP_X] * -1),
-                });
-                q++;
-                res = true;
-            }
+            res |= safe_fill_y_execute(i,j,k,grounded,fd,sign, 1);
         }
         for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(grounded[i][k]){
             res = true;
