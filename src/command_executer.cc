@@ -105,8 +105,10 @@ CommandExecuter::CommandExecuter(vvv src_model, bool output_json)
   for (int i = 0; i < R; ++i)
     for (int j = 0; j < R; ++j)
       for (int k = 0; k < R; ++k)
-        if (src_model[i][j][k])
+        if (src_model[i][j][k]) {
           system_status.matrix[i][j][k] = FULL;
+          num_filled_voxels += 1;
+        }
 
   // Because grounded_memo_is_valid is false, UpdateGroundedMemo() is called
   // later at the needed time. So there is no need to initialize grounded_memo
@@ -202,7 +204,6 @@ bool CommandExecuter::AllVoxelsAreGrounded() {
   if (!grounded_memo_is_valid) {
     UpdateGroundedMemo();
   }
-
   size_t num_connected_voxels = grounded_gsize[kMaxResolution][kMaxResolution][kMaxResolution];
   return num_connected_voxels == num_filled_voxels;
 }
@@ -238,32 +239,34 @@ void CommandExecuter::UpdateGroundedMemo() {
   SystemStatus& status = system_status;
 
   // Check voxels where y = 0
+  memset(_bfs, 0, sizeof(_bfs));
   std::stack<Point> s;
   for (int x=0; x<R; ++x) {
     for (int z=0; z<R; ++z) {
       if (status.matrix[x][0][z] == VOID) continue;
       s.push(Point(x, 0, z));
       Union(Point(x, 0, z), kGrounded);
+      _bfs[x][0][z] = true;
       full_num--;
     }
   }
 
   while (not s.empty()) {
-      Point p = s.top(); s.pop();
-      for (int k = 0; k < 6; k++) {
-        int x = p.x + adj_dx[k];
-        int y = p.y + adj_dy[k];
-        int z = p.z + adj_dz[k];
-        if (x < 0 || y < 0 || z < 0) continue;
-        if (x >= R || y >= R || z >= R) continue;
-        if (grounded_memo[x][y][z]) continue;
-        if (status.matrix[x][y][z] == VOID) continue;
-        Union(Point(x,y,z), p);
-        full_num--;
-        s.push(Point(x, y, z));
-      }
+    Point p = s.top(); s.pop();
+    for (int k = 0; k < 6; k++) {
+      int x = p.x + adj_dx[k];
+      int y = p.y + adj_dy[k];
+      int z = p.z + adj_dz[k];
+      if (x < 0 || y < 0 || z < 0) continue;
+      if (x >= R || y >= R || z >= R) continue;
+      if (status.matrix[x][y][z] == VOID) continue;
+      Union(Point(x,y,z), p);
+      if (_bfs[x][y][z]) continue;
+      full_num--;
+      s.push(Point(x, y, z));
+      _bfs[x][y][z] = true;
+    }
   }
-
   grounded_memo_is_valid = true;
 }
 

@@ -91,7 +91,7 @@ class CommandExecuter {
   // Used for IsGrounded
   uint32_t grounded_memo[kMaxResolution+1][kMaxResolution+1][kMaxResolution+1];
   size_t grounded_gsize[kMaxResolution+1][kMaxResolution+1][kMaxResolution+1];
-
+  bool _bfs[kMaxResolution+1][kMaxResolution+1][kMaxResolution+1];
   // false if VOID/GVOID was called after the last calculation.
   bool grounded_memo_is_valid = false;
 
