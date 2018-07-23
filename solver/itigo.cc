@@ -147,6 +147,40 @@ public:
     Rz = high.z - low.z + 1;
   }
 
+  static std::vector<std::pair<int, int>> GetXZ(int x, int z) {
+    std::vector<std::pair<int, int>> ret;
+    
+    int dx[] = {1, 0, -1, 0};
+    int dz[] = {0, 1, 0, 1};
+    int didx = 0;
+
+    int cx = 0;
+    int cz = 0;
+    while (true) {
+      int nx = cx + dx[didx];
+      int nz = cz + dz[didx];
+
+      if (0 <= nx && nx < x &&
+          0 <= nz && nz < z) {
+      } else if (dz[didx] == 1) {
+        break;
+      } else {
+        didx = (didx + 1) % 4;
+        continue;
+      }
+      
+      ret.emplace_back(cx, cz);
+      cx = nx;
+      cz = nz;
+      
+      if (dz[didx] == 1) {
+        didx = (didx + 1) % 4;
+      }
+    }
+
+    return ret;
+  }
+
   void Run() override {
     CalcRegion();
 
@@ -162,21 +196,22 @@ public:
     int lenz = Rz / m;
 
     std::vector<std::vector<Point>> targets(n * m);
+    
+    auto XZorder = GetXZ(Rx, Rz);
 
     for (int sy = 0; sy < Ry - 1; ++sy) {
-      for (int sx = 0; sx < Rx; ++sx) {
-        for (int sz = 0; sz < Rz; ++sz) {
-          int x = sx + low.x;
-          int y = sy + low.y;
-          int z = sz + low.z;
-          if (!model[x][y][z]) continue;
+      for (auto xz : XZorder) {
+        int x = xz.first + low.x;
+        int y = sy + low.y;
+        int z = xz.second + low.z;
+        if (!model[x][y][z]) continue;
 
-          int bx = std::min(sx / lenx, n - 1);
-          int bz = std::min(sz / lenz, m - 1);
+        int bx = std::min(xz.first / lenx, n - 1);
+        int bz = std::min(xz.second / lenz, m - 1);
           
-          targets[bz * n + bx].emplace_back(x, y + 1, z);
-        }
+        targets[bz * n + bx].emplace_back(x, y + 1, z);
       }
+      std::reverse(XZorder.begin(), XZorder.end());
     }
 
     if (use_flip) {
