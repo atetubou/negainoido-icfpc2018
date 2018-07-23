@@ -28,4 +28,4 @@
 * vertial_ai
 * cube_eraser
 * kevin_ai
-* bestcat
+* bestcat (bash)
