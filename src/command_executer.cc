@@ -26,7 +26,7 @@ CommandExecuter::SystemStatus::SystemStatus(int r)
 CommandExecuter::BotStatus::BotStatus()
   : id(0), active(false), pos(0, 0, 0) {}
 
-std::pair<CommandExecuter::BotStatus, CommandExecuter::BotStatus> 
+std::pair<CommandExecuter::BotStatus, CommandExecuter::BotStatus>
 CommandExecuter::BotStatus::TryFission(const Point& v, int m) const {
   std::set<uint32_t> child_seeds;
 
@@ -55,6 +55,9 @@ CommandExecuter::BotStatus::TryFission(const Point& v, int m) const {
 CommandExecuter::CommandExecuter(int R, bool output_json)
   : num_active_bots(1), system_status(R), output_json(output_json),
     all_voxels_are_grounded(true), valid_grounded_memo(false) {
+  for (size_t i = 0; i < bot_status.size(); i++) {
+    bot_status[i].id = i;
+  }
   // Bot[1] is active, exists at (0,0,0) and has all the seeds.
   bot_status[1].active = true;
   bot_status[1].pos = Point(0,0,0);
