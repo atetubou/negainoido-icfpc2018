@@ -40,7 +40,7 @@ class CommandExecuter {
     explicit SystemStatus(int r);
   };
   struct BotStatus {
-    int bot_id;
+    int id;
     bool active;
     Point pos;
     std::set<uint32_t> seeds;
