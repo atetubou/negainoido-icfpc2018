@@ -1,6 +1,7 @@
 #include "command_executer.h"
 
 #include <memory>
+#include <numeric>
 
 #include "gtest/gtest.h"
 #include "command.h"
@@ -207,6 +208,27 @@ TEST(CommandExecuter, OneFission) {
   for (int i = M + 3 ; i <= CommandExecuter::kMaxNumBots; i++) {
     EXPECT_TRUE(b_aft[1].seeds.find(i) != b_aft[1].seeds.end());
   }
+}
+
+TEST(CommandExecuter, BotStatusTryFission) {
+  CommandExecuter::BotStatus bot;
+  std::vector<int> vseeds(9);
+  std::iota(vseeds.begin(), vseeds.end(), 2);
+
+  bot.id = 1;
+  bot.seeds = std::set<uint32_t>(vseeds.begin(), vseeds.end());
+
+  auto fission = bot.TryFission(Point(0, 0, 0), 5);
+  EXPECT_EQ(fission.first.id, 1);
+  EXPECT_EQ(fission.second.id, 2);
+
+  ASSERT_EQ(fission.first.seeds.size(), 3);
+  EXPECT_EQ(fission.first.seeds, 
+            std::set<uint32_t>({8, 9, 10}));
+
+  ASSERT_EQ(fission.second.seeds.size(), 5);
+  EXPECT_EQ(fission.second.seeds, 
+            std::set<uint32_t>({3, 4, 5, 6, 7}));
 }
 
 // TODO(hiroh): test Fusion

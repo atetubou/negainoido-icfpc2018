@@ -190,7 +190,7 @@ public:
 //        exit(1);
       }
       lastmcount = mcount;
-      cerr << mcount << " " << grand.size() << endl; 
+      cerr << mcount << " " << grand.size() << endl;
     }
 
     // move to the origin

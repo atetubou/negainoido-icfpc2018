@@ -42,6 +42,7 @@ cc_library(
     copts = ["-std=c++14"],
     deps = ["//external:glog",
             "@jsoncpp_git//:jsoncpp",
+            "//src/base",
             "@com_google_absl//absl/types:span",
     ],
 )
@@ -91,6 +92,18 @@ cc_binary(
         ":command_executer",
         ":nbt_loader",
         "//src/base:flags",
+    ],
+)
+
+cc_binary(
+    name = "trace_connector",
+    srcs = ["trace_connector.cc"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        ":nbt_loader",
     ],
 )
 

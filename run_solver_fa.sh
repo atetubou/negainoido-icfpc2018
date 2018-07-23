@@ -15,6 +15,7 @@ for mdl in $MDL_PATH/FA*.mdl; do
     fi
 done | shuf | parallel -j ${P}
 
+
 for nbt in $OUT_DIR/FA*.nbt; do
     problem_id=$(basename ${nbt} | sed s/.nbt//g)
     curl http://negainoido:icfpc_ojima@35.196.88.166/submit_solution \

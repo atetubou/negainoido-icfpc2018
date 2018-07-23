@@ -40,10 +40,12 @@ class CommandExecuter {
     explicit SystemStatus(int r);
   };
   struct BotStatus {
+    int id;
     bool active;
     Point pos;
     std::set<uint32_t> seeds;
     BotStatus();
+    std::pair<BotStatus, BotStatus> TryFission(const Point& p, int m) const;
   };
 
   CommandExecuter(int R, bool output_json);
@@ -53,6 +55,8 @@ class CommandExecuter {
   void Execute(const std::vector<Command>& commands);
   Json::Value GetJson();
   void PrintTraceAsJson();
+
+  bool IsFull(const Point&);
 
   bool IsGrounded(const Point&);
 
