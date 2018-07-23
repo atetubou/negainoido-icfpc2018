@@ -25,7 +25,7 @@ best = {}
 
 for row in curr:
     problem_id = row['problem_id']
-    if problem_id[:2]=='LA' or problem_id[:2] == 'PD':
+    if problem_id[:2]=='LA' or problem_id[0] == 'P':
         continue
     score = row['score']
     if problem_id not in best or best[problem_id]['score'] > score:
