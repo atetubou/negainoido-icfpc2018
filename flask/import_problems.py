@@ -43,6 +43,26 @@ for path in paths:
         curr.close()
         cnx.commit()
 
+curr= cnx.cursor(dictionary=True)
+curr.execute('select * from problems where name like "FR%"')
+problems = list(curr)
+curr.close()
+for problem in problems:
+    pd_name = 'PD' + problem['name'][2:]
+    curr= cnx.cursor(dictionary=True)
+    curr.execute('select * from problems where name = %s', (pd_name,))
+    if not curr.fetchone():
+        curr.execute('insert into problems(name) values (%s)', (pd_name,))
+        curr.close()
+        continue
+    src_path = 'static/problems/'+pd_name+'_src.mdl'
+    shutil.copy( problem['src_filepath'], src_path)
+
+    curr.execute('update problems set src_filepath = %s where name = %s' , (src_path, pd_name))
+    curr.close()
+    cnx.commit()
+
+
 best_scores = json.load(open('live.json'))
 for key in best_scores.keys():
     if key[0] != 'F':
