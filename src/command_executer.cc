@@ -5,9 +5,10 @@
 #include <algorithm>
 #include <tuple>
 
-#ifndef CE_NO_DEBUG
+// If you define CE_FAST, voxel grounded (O(R^3) at worst)doesn't run!
+// #define CE_FAST
+
 #define CE_DEBUG
-#endif
 
 #ifdef CE_DEBUG
 #define UNREACHABLE() CHECK(false)
@@ -350,7 +351,7 @@ std::pair<Point, Point> CommandExecuter::VerifyGVoidCommand(const Command& com, 
 }
 
 void CommandExecuter::Execute(const std::vector<Command>& commands) {
-#ifdef CE_DEBUG
+#if !defined(CE_FAST)
   // This function is heavy and therefore disabled in non-debug mode.
   VerifyWellFormedSystem();
 #endif

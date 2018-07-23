@@ -39,7 +39,7 @@ cc_library(
             "command_util.h",
             "command_util.cc",
     ],
-    copts = ["-std=c++14", "-D CE_NO_DEBUG"],
+    copts = ["-std=c++14", "-D CE_FAST"],
     deps = ["//external:glog",
             "@jsoncpp_git//:jsoncpp",
             "//src/base",
