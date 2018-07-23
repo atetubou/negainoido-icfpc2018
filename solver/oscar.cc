@@ -43,33 +43,33 @@ void Vox::add_color(int dir) {
 }
 bool Vox::get(int x, int y, int z)
 {
-  CHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
-  CHECK(y >= -1 && y < R + 1) << "out of range y: " << y << " R: " << R;
-  CHECK(z >= -1 && z < R + 1) << "out of range z: " << z << " R: " << R;
+  DCHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
+  DCHECK(y >= -1 && y < R + 1) << "out of range y: " << y << " R: " << R;
+  DCHECK(z >= -1 && z < R + 1) << "out of range z: " << z << " R: " << R;
   return voxels[(x + 1) * (R + 2) * (R + 2) + (y + 1) * (R + 2) + z + 1];
 }
 
 void Vox::set(bool v,int x, int y, int z)
 {
-  CHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
-  CHECK(y >= -1 && y < R + 1) << "out of range y: " << y << " R: " << R;
-  CHECK(z >= -1 && z < R + 1) << "out of range z: " << z << " R: " << R;
+  DCHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
+  DCHECK(y >= -1 && y < R + 1) << "out of range y: " << y << " R: " << R;
+  DCHECK(z >= -1 && z < R + 1) << "out of range z: " << z << " R: " << R;
   voxels[(x + 1) * (R + 2) * (R + 2) + (y + 1) * (R + 2) + z + 1] = v;
 }
 
 int Vox::get_color(int x, int y, int z)
 {
-  CHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
-  CHECK(y >= -1 && y < R + 1) << "out of range y: " << y << " R: " << R;
-  CHECK(z >= -1 && z < R + 1) << "out of range z: " << z << " R: " << R;
+  DCHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
+  DCHECK(y >= -1 && y < R + 1) << "out of range y: " << y << " R: " << R;
+  DCHECK(z >= -1 && z < R + 1) << "out of range z: " << z << " R: " << R;
   return colors[(x + 1) * (R + 2) * (R + 2) + (y + 1) * (R + 2) + z + 1];
 }
 
 void Vox::set_color(int v, int x, int y, int z)
 {
-  CHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
-  CHECK(y >= -1 && y < R + 1) << "out of range y: " << y << " R: " << R;
-  CHECK(z >= -1 && z < R + 1) << "out of range z: " << z << " R: " << R;
+  DCHECK(x >= -1 && x < R + 1) << "out of range x: " << x << " R: " << R;
+  DCHECK(y >= -1 && y < R + 1) << "out of range y: " << y << " R: " << R;
+  DCHECK(z >= -1 && z < R + 1) << "out of range z: " << z << " R: " << R;
   colors[(x + 1) * (R + 2) * (R + 2) + (y + 1) * (R + 2) + z + 1] = v;
 }
 
