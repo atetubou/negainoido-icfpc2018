@@ -169,6 +169,23 @@ cc_binary(
 cc_binary(
     name = "kevin_ai",
     srcs = ["kevin_ai.cc" ],
+    copts = ["-std=c++14"],
+    deps = [
+        "simple_solve_lib",
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        "//src:command_executer",
+        "crimea_ai",
+        "//src/base:flags",
+        ":ai",
+    ],
+)
+
+cc_binary(
+    name = "kevin_ai_debug",
+    srcs = ["kevin_ai.cc" ],
     copts = ["-std=c++14", "-DDCHECK_ALWAYS_ON"],
     deps = [
         "simple_solve_lib",
