@@ -73,9 +73,9 @@ def eval_solution(cnx, solution_id):
 
     try:
         if solution['solver_id'] == 'DEFALT' or problem_size(solution['problem_id']) >= 120:
-            cmd = '../bazel-bin/src/simulator --src_filename %s --tgt_filename %s --nbt_filename %s' % (prob_srcpath,prob_path,dest)
+            cmd = '../bazel-bin/src/simulator --src_filename %s --tgt_filename %s --nbt_filename %s 2>&1' % (prob_srcpath,prob_path,dest)
         else:
-            cmd = 'python ../soren/main.py %s %s %s' % (prob_srcpath,prob_path,dest)
+            cmd = 'python ../soren/main.py %s %s %s 2>&1' % (prob_srcpath,prob_path,dest)
         s = subprocess.check_output(cmd,
                                     shell=True, 
                                     universal_newlines =True)
