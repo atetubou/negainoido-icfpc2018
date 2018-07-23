@@ -9,11 +9,12 @@ done
 
 usage() {
     cat <<EOM
-$0 [ -o OUT_DIR ]
+$0 [ -o OUT_DIR ] [ --range n-m ]
 EOM
 }
 
 OUT_DIR=/tmp/cat_fr
+RANGE="1-115"
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -25,12 +26,24 @@ while [ $# -gt 0 ]; do
             OUT_DIR=${2%/}
             shift 2
             ;;
+        --range )
+            RANGE=$2
+            shift 2
+            ;;
+        * )
+            usage
+            exit 1
+            ;;
     esac
 done
 
 echo "* nbt files will be output to $OUT_DIR"
 mkdir -p $OUT_DIR
 BASIC_AUTH=negainoido:icfpc_ojima
+
+range() {
+    echo $1 | sed 's/\([0-9]*\)-\([0-9]*\)/seq \1 \2/g' | sh
+}
 
 best() {
     URL=http://${BASIC_AUTH}@35.196.88.166/list_solution/json?problem=$1
@@ -39,7 +52,7 @@ best() {
     sort -n | head -1
 }
 
-for i in $(seq 1 115); do
+for i in $(range "$RANGE"); do
 
     I=$(printf "%03d" $i)
     OUT="$OUT_DIR/FR${I}.nbt"
