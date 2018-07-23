@@ -217,6 +217,7 @@ public:
 
     if (use_flip) {
       ExecuteOrWait({Command::make_flip(1)});
+      flipped = true;
     }
 
     std::vector<size_t> idx(n * m);
@@ -236,7 +237,7 @@ public:
           auto down2 = bot(bid).pos;
           down2.y -= 2;
 
-          if (down2.y >= 0 && model[down2.x][down2.y][down2.z] == 0) {
+          if (down2.y >= 1 && model[down2.x][down2.y][down2.z] == 0) {
             need_flip = true;
           }
 
@@ -251,6 +252,7 @@ public:
       }
 
       if (need_flip && !flipped) {
+        LOG(INFO) << "flip ";
         ExecuteOrWait({Command::make_flip(1)});
         flipped = true;
       }
