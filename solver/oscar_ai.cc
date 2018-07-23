@@ -392,8 +392,8 @@ class OscarAI : public AI
 
                 });
                 for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
-                    grounded[i+s][k+t] = false;
-                    vox.set(false, i+s, j,k+t);
+                    grounded[i+s][j+t] = false;
+                    vox.set(false, i+s, j+t,k);
                 }
                 
                 LOG(INFO) << "try moving";
