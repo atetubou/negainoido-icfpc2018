@@ -11,8 +11,8 @@
 
 DEFINE_bool(flip, false, "do flip?");
 DEFINE_bool(json, false, "output json");
-DEFINE_int32(x_num, 6, "x separation");
-DEFINE_int32(z_num, 6, "z separation");
+// DEFINE_int32(x_num, 6, "x separation");
+// DEFINE_int32(z_num, 6, "z separation");
 
 class Itigo : public AI {
   const vvv model;
@@ -26,15 +26,24 @@ class Itigo : public AI {
   int Ry = 0;
   int Rz = 0;
   bool flipped = false;
-
+  const int given_x_num;
+  const int given_z_num;
 public:
-  Itigo(const vvv &model, bool use_flip) 
+  Itigo(const vvv &model, bool use_flip, int given_x_num, int given_z_num)
     : AI(model.size()), model(model), R(model.size()),
-      use_flip(use_flip) {
+      use_flip(use_flip), given_x_num(given_x_num), given_z_num(given_z_num) {
     bids.push_back(1);
   }
 
   ~Itigo() override = default;
+
+  long long GetEnegy() {
+    return ce->GetSystemStatus().energy;
+  }
+
+  Json::Value GetJson() {
+    return ce->GetJson();
+  }
 
   void ExecuteOrWait(const std::vector<Command> commands) {
     ce->Execute(FillWait(commands));
@@ -42,11 +51,11 @@ public:
 
   void FissionAndGo(int bid, const Point& goal, int m) {
     Point v = (goal - bot(bid).pos).Normalize();
-    CHECK_EQ(v.Manhattan(), 1) 
+    CHECK_EQ(v.Manhattan(), 1)
       << v << " " << bid << " " << bot(bid).pos << " " << goal;
 
     bids.push_back(*bot(bid).seeds.begin());
-    
+
     ExecuteOrWait({Command::make_fission(bid, v, m)});
 
     std::vector<std::pair<int, Point>> targets = {
@@ -63,11 +72,11 @@ public:
   void DebugSeed() const {
     for (size_t i = 0; i < bids.size(); ++i) {
       int b = bids[i];
-      LOG(INFO) 
-        << " i=" << i
-        << " bid=" << b 
-        << " pos=" << bot(b).pos
-        << " seed size=" << bot(b).seeds.size();
+      // LOG(INFO)
+      //   << " i=" << i
+      //   << " bid=" << b
+      //   << " pos=" << bot(b).pos
+      //   << " seed size=" << bot(b).seeds.size();
     }
   }
 
@@ -107,14 +116,14 @@ public:
       for (const auto& t : targets) {
         const Point target = t.second;
         int bid = t.first;
-        
+
         if (bot(bid).pos == target) {
           continue;
         }
 
         turn.push_back(GetStepSMove(bid, bot(bid).pos, target));
       }
-      
+
       if (turn.empty()) {
         break;
       }
@@ -150,7 +159,7 @@ public:
 
   static std::vector<std::pair<int, int>> GetXZ(int x, int z) {
     std::vector<std::pair<int, int>> ret;
-    
+
     int dx[] = {1, 0, -1, 0};
     int dz[] = {0, 1, 0, 1};
     int didx = 0;
@@ -169,11 +178,11 @@ public:
         didx = (didx + 1) % 4;
         continue;
       }
-      
+
       ret.emplace_back(cx, cz);
       cx = nx;
       cz = nz;
-      
+
       if (dz[didx] == 1) {
         didx = (didx + 1) % 4;
       }
@@ -185,11 +194,11 @@ public:
   void Run() override {
     CalcRegion();
 
-    LOG(INFO) << low << " " << high;
+    // LOG(INFO) << low << " " << high;
 
     ExecuteOrWait({Command::make_smove(1, Point(0, 1, 0))});
-    const int n = std::min(FLAGS_x_num, Rx);
-    const int m = std::min(FLAGS_z_num, Rz);
+    const int n = std::min(given_x_num, Rx);
+    const int m = std::min(given_z_num, Rz);
 
     DoHaiti(n, m);
 
@@ -197,7 +206,7 @@ public:
     int lenz = Rz / m;
 
     std::vector<std::vector<Point>> targets(n * m);
-    
+
     auto XZorder = GetXZ(Rx, Rz);
 
     for (int sy = 0; sy < Ry - 1; ++sy) {
@@ -209,7 +218,7 @@ public:
 
         int bx = std::min(xz.first / lenx, n - 1);
         int bz = std::min(xz.second / lenz, m - 1);
-          
+
         targets[bz * n + bx].emplace_back(x, y + 1, z);
       }
       std::reverse(XZorder.begin(), XZorder.end());
@@ -230,7 +239,7 @@ public:
         if (idx[i] == targets[i].size()) continue;
         const Point target = targets[i][idx[i]];
         int bid = bids[i];
-        
+
         if (bot(bid).pos == target) {
           ++idx[i];
           turn.push_back(Command::make_fill(bid, Point(0, -1, 0)));
@@ -246,13 +255,13 @@ public:
 
         turn.push_back(GetStepSMove(bid, bot(bid).pos, target));
       }
-      
+
       if (turn.empty()) {
         break;
       }
 
       if (need_flip && !flipped) {
-        LOG(INFO) << "flip ";
+        // LOG(INFO) << "flip ";
         ExecuteOrWait({Command::make_flip(1)});
         flipped = true;
       }
@@ -263,7 +272,7 @@ public:
     if (flipped) {
       ExecuteOrWait({Command::make_flip(1)});
     }
-    
+
     {
       std::vector<std::pair<int, Point>> before_fusion;
 
@@ -274,11 +283,11 @@ public:
         }
       }
 
-      LOG(INFO) << "move to up";
+      // LOG(INFO) << "move to up";
 
       DoMove(before_fusion);
 
-      LOG(INFO) << "moved to up";
+      // LOG(INFO) << "moved to up";
     }
 
     // OK
@@ -302,12 +311,12 @@ public:
       ExecuteOrWait(fusion);
     }
 
-    LOG(INFO) << "xfusion";
+    // LOG(INFO) << "xfusion";
 
     for (int i = n - 1; i > 0; --i) {
       std::vector<std::pair<int, Point>> before_fusion;
       std::vector<Command> fusion;
-      
+
       int cbid = bids[i];
       int pbid = bids[i - 1];
       const Point ppos = bot(pbid).pos;
@@ -332,7 +341,47 @@ int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
   const vvv voxels = ReadMDL(FLAGS_tgt_filename);
-  auto ai = std::make_unique<Itigo>(voxels, FLAGS_flip);
-  ai->Run();
-  ai->Finalize();
+  const int R = voxels.size();
+  auto low = Point(R - 1, R - 1, R - 1);
+  auto high = Point(0, 0, 0);
+  for (int y = 0; y < R; ++y) {
+    for (int x = 0; x < R; ++x) {
+      for (int z = 0; z < R; ++z) {
+        if (!voxels[x][y][z]) continue;
+        low.x = std::min(low.x, x);
+        low.y = std::min(low.y, y);
+        low.z = std::min(low.z, z);
+
+        high.x = std::max(high.x, x + 1);
+        high.y = std::max(high.y, y + 1);
+        high.z = std::max(high.z, z + 1);
+      }
+    }
+  }
+  auto Rx = high.x - low.x + 1;
+  auto Ry = high.y - low.y + 1;
+  auto Rz = high.z - low.z + 1;
+  Json::Value tuned_json;
+  long long min_energy = 1LL<<60;
+  std::pair<int,int> xz_num(0,0);
+  for (int x_num = 2; x_num <= Rx; x_num++) {
+    for (int z_num = 2; z_num <= Rz; z_num++) {
+      if (x_num * z_num >= 40) {
+        continue;
+      }
+      LOG(INFO) << x_num << " " << z_num;
+      auto ai = std::make_unique<Itigo>(voxels, FLAGS_flip, x_num, z_num);
+      ai->Run();
+      auto energy = ai->GetEnegy();
+      if (energy < min_energy) {
+        min_energy = energy;
+        xz_num = std::make_pair(x_num, z_num);
+        tuned_json = std::move(ai->GetJson());
+      }
+    }
+  }
+  LOG(INFO) << "optimized result:"
+  LOG(INFO) << xz_num.first << " " << xz_num.second;
+  LOG(INFO) << min_energy;
+  std::cout << tuned_json;
 }
