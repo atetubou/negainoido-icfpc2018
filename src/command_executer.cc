@@ -5,7 +5,10 @@
 #include <algorithm>
 #include <tuple>
 
+#ifndef CE_NO_DEBUG
 #define CE_DEBUG
+#endif
+
 #ifdef CE_DEBUG
 #define UNREACHABLE() CHECK(false)
 #define CE_ASSERT(cond) LOG_ASSERT(cond)
