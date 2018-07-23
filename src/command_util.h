@@ -21,6 +21,14 @@ struct Point {
   int Manhattan() const {
     return std::abs(x) + std::abs(y) + std::abs(z);
   }
+
+  Point Normalize() const {
+    Point p = *this;
+    if (p.x) p.x /= std::abs(p.x);
+    if (p.y) p.y /= std::abs(p.y);
+    if (p.z) p.z /= std::abs(p.z);
+    return p;
+  }
 };
 
 bool operator==(const Point& p1, const Point& p2);
