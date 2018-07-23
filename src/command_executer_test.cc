@@ -209,6 +209,11 @@ TEST(CommandExecuter, OneFission) {
   }
 }
 
+TEST(CommandExecuter, BotStatusTryFission) {
+  CommandExecuter::BotStatus bot;
+  EXPECT_TRUE(false);
+}
+
 // TODO(hiroh): test Fusion
 // TODO(hiroh): test GFill
 // TODO(hiroh): test Gvoid

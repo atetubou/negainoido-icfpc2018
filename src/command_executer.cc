@@ -23,7 +23,32 @@ CommandExecuter::SystemStatus::SystemStatus(int r)
 }
 
 CommandExecuter::BotStatus::BotStatus()
-  : active(false), pos(0, 0, 0) {}
+  : bot_id(0), active(false), pos(0, 0, 0) {}
+
+std::pair<CommandExecuter::BotStatus, CommandExecuter::BotStatus> 
+CommandExecuter::BotStatus::TryFission(const Point& v, int m) {
+  std::set<uint32_t> child_seeds;
+
+  BotStatus parent = *this;
+  BotStatus child;
+
+  std::vector<uint32_t> vseeds(seeds.begin(), seeds.end());
+
+  CHECK_LE(static_cast<size_t>(m), vseeds.size());
+
+  child.pos = pos + v;
+  child.bot_id = vseeds[0];
+  for (int i = 1; i <= m; ++i) {
+    child.seeds.insert(vseeds[i]);
+  }
+
+  parent.seeds.clear();
+  for (size_t i = m + 1; i < vseeds.size(); ++i) {
+    parent.seeds.insert(vseeds[i]);
+  }
+
+  return {parent, child};
+}
 
 CommandExecuter::CommandExecuter(int R, bool output_json)
   : num_active_bots(1), system_status(R), output_json(output_json),

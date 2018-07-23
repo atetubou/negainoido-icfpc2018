@@ -40,10 +40,12 @@ class CommandExecuter {
     explicit SystemStatus(int r);
   };
   struct BotStatus {
+    int bot_id;
     bool active;
     Point pos;
     std::set<uint32_t> seeds;
     BotStatus();
+    std::pair<BotStatus, BotStatus> TryFission(const Point& p, int m);
   };
 
   CommandExecuter(int R, bool output_json);
