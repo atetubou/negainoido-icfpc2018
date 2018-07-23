@@ -60,24 +60,28 @@ public:
   void PushMoveStraight(Point);
 
   void Dfs(Point & cur);
+
 };
 
 bool visited[250][250][250];
 
 class UdonAI : public AI {
 public:
+  int R;
   std::vector<Agent> agents;
   static constexpr size_t num_bots = 8;
   vvv model;
   UdonAI(const vvv &model_) : AI(model_) {
 
-    int r = model_.size();
-    model = vvv(r, vv(r, v(r, 0)));
+    R = model_.size();
+    model = vvv(R, vv(R, v(R, 0)));
 
-    for (int i = 0; i < r; i++)
-      for (int j = 0; j < r; j++)
-        for (int k = 0; k < r; k++)
+    for (int i = 0; i < R; i++)
+      for (int j = 0; j < R; j++)
+        for (int k = 0; k < R; k++)
           model[i][j][k] = model_[i][j][k];
+
+    DevideRegion();
   }
   ~UdonAI() override = default;
   void Run();
@@ -93,11 +97,17 @@ public:
   Point GetPosition(int bot_id);
   bool AgentValid(int bot_id);
 
+  bool InSpace(Point p);
+  void DevideRegion();
+  void RegionBfs(int color, Point& cur);
+
   CommandExecuter::SystemStatus GetSystemStatus() {
     return ce->GetSystemStatus();
   }
 
   std::queue<Command> agents_commands[20];
+
+  std::pair<int, int> DFSRegion[250][250][250];
 };
 
 inline int sign(int x) {
@@ -114,6 +124,20 @@ Point sign_vec(Point p) {
   return Point(sign(p.x),
                sign(p.y),
                sign(p.z));
+}
+
+int Id2Region(int id) {
+  if (id == 1 || id == 6) {
+    return 0;
+  } else if (id == 3 || id == 2) {
+    return 1;
+  } else if (id == 4 || id == 5) {
+    return 2;
+  } else if (id == 7 || id == 8) {
+    return 3;
+  }
+  CHECK(false);
+  return -1;
 }
 
 Command make_go_straight(const int id, const Point& src, const Point& dst) {
@@ -157,10 +181,9 @@ void Agent::PushMoveStraight(Point p) {
 }
 
 bool Agent::InArea(Point& p) {
-
-  return (area_min.x <= p.x && p.x <= area_max.x &&
-          area_min.y <= p.y && p.y <= area_max.y &&
-          area_min.z <= p.z && p.z <= area_max.z);
+  //std::cerr<<"InArea: p" << p << " "<< (udonAI->InSpace(p) && udonAI->DFSRegion[p.x][p.y][p.z].second == bot_id )<< std::endl;
+  return udonAI->InSpace(p) &&
+    udonAI->DFSRegion[p.x][p.y][p.z].second == Id2Region(bot_id);
 }
 
 Point Agent::GetCurPos() {
@@ -191,9 +214,18 @@ Command Agent::Go(std::vector<Agent>& agents) {
 
 void Agent::Dfs(Point & cur) {
   const Point dxz[] = {
+    Point(0,0,1),
+    Point(-1,0,0),
+    Point(0,0,-1),
+    Point(1,0,0),
+  };
+
+  /*
+  const Point dxz[] = {
     Point(1,0,0), Point(-1,0,0),
     Point(0,0,1), Point(0,0,-1),
   };
+  */
 
   for(int i=0;i<4; ++i) {
     Point p = cur + dxz[i];
@@ -223,9 +255,9 @@ void Agent::InitWork() {
     return;
   }
 
-  std::cerr<<"Bot" << bot_id << " "<< area_min << " "<< area_max<<std::endl;
+  //std::cerr<<"Bot" << bot_id << " "<< area_min << " "<< area_max<<std::endl;
 
-  int R = udonAI->GetSystemStatus().R;
+  int R = udonAI->R;
 
   for(int x = 0; x < R; x++)
     for(int y = 0; y < R; y++)
@@ -249,17 +281,15 @@ void Agent::InitWork() {
 void Agent::LastLayer() {
   CHECK(bot_id != 3 && bot_id != 4 && bot_id != 6 && bot_id != 7);
 
-  std::cerr<<"Bot" << bot_id << " "<< area_min << " "<< area_max<<std::endl;
+  //std::cerr<<"Bot" << bot_id << " "<< area_min << " "<< area_max<<std::endl;
 
-  int R = udonAI->GetSystemStatus().R;
+  int R = udonAI->R;
 
   for(int x = 0; x < R; x++)
     for(int y = 0; y < R; y++)
       for(int z = 0; z < R; z++)
         visited[x][y][z] = false;
 
-  // Go Area Ma
-  std::stack<Point> s;
   Point cur = GetCurPos();
   Dfs(cur);
 }
@@ -282,6 +312,12 @@ bool UdonAI::AgentValid(int bot_id) {
   return ce->GetBotStatus()[bot_id].active;
 }
 
+bool UdonAI::InSpace(Point p) {
+  return (0 <= p.x && p.x < R &&
+          0 <= p.y && p.y < R &&
+          0 <= p.z && p.z < R);
+}
+
 void UdonAI::RegisterAgents() {
   const Point dirs[9] = {
     Point(-1,-1,-1), // dummy for 1-indexed
@@ -295,7 +331,6 @@ void UdonAI::RegisterAgents() {
     Point(0, 0, 1), // 8
   };
 
-  const int R = ce->GetSystemStatus().R;
 
   for (size_t i = 1; i <= 8; i++) {
     Agent agent;
@@ -357,19 +392,18 @@ void UdonAI::AgentsGo() {
     for (auto& agent : agents) {
 
       if (!AgentValid(agent.bot_id)) {
-        std::cerr << "Bot " << agent.bot_id << ": ___" << std::endl;
+        //std::cerr << "Bot " << agent.bot_id << ": ___" << std::endl;
         continue;
       }
-
       auto com = agent.Go(agents);
       done &= agent.GoFinished();
 
-      std::cerr << "Bot " << agent.bot_id << ": " << agent.GetCurPos() << std::endl;
+      //std::cerr << "Bot " << agent.bot_id << ": " << agent.GetCurPos() << std::endl;
 
       coms.push_back(com);
     }
 
-    std::cerr << Command::CommandsToJson(coms);
+    //std::cerr << Command::CommandsToJson(coms);
     ce->Execute(coms);
   }
 }
@@ -488,8 +522,6 @@ void UdonAI::AgentsLastLayer() {
 void UdonAI::AgentsGoHome() {
   CHECK(GetPosition(0) == Point(0, 0, 0));
 
-  const int R = ce->GetSystemStatus().R;
-
   agents[4].PushMoveStraight(Point(0, 0, -(R-2)));
   agents[7].PushMoveStraight(Point(0, 0, -(R-2)));
 
@@ -532,9 +564,10 @@ void UdonAI::AgentsGoHome() {
   ce->Execute(fusion_com2);
 }
 
+
 void UdonAI::Run() {
   //CHECK(ce->GetSystemStatus().R <= 30);
-  std::cerr<<"R = "<< ce->GetSystemStatus().R <<std::endl;
+  std::cerr<<"R = "<< R <<std::endl;
   RegisterAgents();
 
   // Go to work places
@@ -556,6 +589,82 @@ void UdonAI::Run() {
 
   std::vector<Command> coms = {Command::make_halt(1)};
   ce->Execute(coms);
+}
+
+void UdonAI::RegionBfs(int color, Point& cur) {
+  const Point dxz[] = {
+    Point(0,0,1),
+    Point(-1,0,0),
+    Point(0,0,-1),
+    Point(1,0,0),
+  };
+
+
+  for(int x = 0; x < R; x++)
+    for(int z = 0; z < R; z++)
+      visited[x][cur.y][z] = false;
+
+  //std::cerr<<"cur" << cur << " " << Id2Region(color) << std::endl;
+
+  std::queue<std::pair<Point, int>> q;
+  q.push(std::make_pair(cur, 0));
+  while(!q.empty()) {
+    //std::cerr<<"q size" << q.size() <<  std::endl;
+    auto t = q.front();
+    q.pop();
+    Point p = t.first;
+    int d = t.second;
+    if(visited[p.x][p.y][p.z]) continue;
+    if(DFSRegion[p.x][p.y][p.z].first < d) continue;
+    DFSRegion[p.x][p.y][p.z].first = d;
+    DFSRegion[p.x][p.y][p.z].second = Id2Region(color);
+    visited[p.x][p.y][p.z] = true;
+
+    for (int i = 0; i < 4; i++) {
+      auto nx = p + dxz[i];
+      if (InSpace(nx) &&
+          !visited[nx.x][nx.y][nx.z] &&
+          model[nx.x][nx.y][nx.z] == VOID)
+        q.push(std::make_pair(nx, d+1));
+    }
+  }
+}
+
+void UdonAI::DevideRegion() {
+  for (int i = 0; i < R; i++)
+    for (int j = 0; j < R; j++)
+      for (int k = 0; k < R; k++)
+        DFSRegion[i][j][k] = std::make_pair(R*R*R, -1);
+
+  Point start_ps[] = {
+    Point(  0, 0,   0),
+    Point(R-1, 0,   0),
+    Point(R-1, 0, R-1),
+    Point(  0, 0, R-1),
+  };
+
+  for (int y = R-1; y >= 0; y--) {
+    for (int i = 0; i < 4; ++i) {
+      Point cur(start_ps[i].x, y, start_ps[i].z);
+      int cols[] = {6, 3, 4, 7};
+      RegionBfs(cols[i],cur);
+    }
+
+    /*
+    for (int i = 0; i < R; i++) {
+      for (int k = 0; k < R; k++) {
+        std::cerr << DFSRegion[i][y][k].second << " ";
+      }
+      std::cerr << std::endl;;
+    }
+    for (int i = 0; i < R; i++) {
+      for (int k = 0; k < R; k++) {
+        std::cerr << (model[i][y][k] == FULL) << " ";
+      }
+      std::cerr << std::endl;;
+    }
+    */
+  }
 }
 
 int main(int argc, char* argv[]) {
