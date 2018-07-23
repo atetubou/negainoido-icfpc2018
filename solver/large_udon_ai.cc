@@ -70,7 +70,7 @@ public:
   static constexpr int MAX_BLOCK_SIZE = 30;
 
   vvv model;
-  LargeUdonAI(const vvv &model_) : AI(model_) {
+  LargeUdonAI(const vvv &model_) : AI(model_.size()) {
 
     R = model_.size();
     std::cerr << "R = " << R << std::endl;
@@ -94,6 +94,7 @@ public:
   void DoGFill();
   void DoAllMove(Point);
   void DoAllMoveForce(Point);
+  void DoAllMoveForceAux(Point);
   void Interleave(std::vector<std::vector<Command>> coms);
 
   void AgentsWork();
@@ -103,6 +104,7 @@ public:
 
   Point GetPosition(int bot_id);
   bool AgentValid(int bot_id);
+  bool OnBoarder(Point);
 
   bool InSpace(Point p);
   void DevideRegion();
@@ -330,6 +332,17 @@ void LargeUdonAI::RegisterAgents() {
     Point(0, 1, 1), // 7
     Point(0, 0, 1), // 8
   };
+  const Point s_pos[9] = {
+    Point(-1,-1,-1), // dummy for 1-indexed
+    Point(0, 0, 0), // 1
+    Point(32, 0, 0), // 2
+    Point(32, 30, 0), // 3
+    Point(32, 30, 32), // 4
+    Point(32,  0, 32), // 5
+    Point(0, 30, 0), // 6
+    Point(0, 30, 32), // 7
+    Point(0, 0, 32), // 8
+  };
 
   int len = std::min(R-1, 30);
 
@@ -337,8 +350,8 @@ void LargeUdonAI::RegisterAgents() {
     Agent agent;
     agent.udonAI = this;
     agent.bot_id = i;
-    agent.fission_pos = dirs[i] * len;
-    agent.start_pos = dirs[i] * len;
+    agent.fission_pos = s_pos[i];
+    agent.start_pos = s_pos[i];
 
     agent.area_min = Point(0,0,0);
     agent.area_max = Point(0,0,0);
@@ -413,16 +426,27 @@ void LargeUdonAI::DoGFill() {
   std::vector<Point> nd_pos(num_bots+1);
   const auto& bot_status = ce->GetBotStatus();
 
+  Point origin = bot_status[1].pos;;
   for (size_t i = 1; i <= num_bots; i++) {
     const auto& pos = bot_status[i].pos;
-    std::pair<int,int> p(std::min(1, pos.x),
-                         std::min(1, pos.z));
-    p.first = p.first ? -1 : 1;
-    p.second = p.second ? -1 : 1;
+    std::pair<int,int> p;
+    if (pos.x == origin.x) {
+      p.first = 1;
+    } else {
+      p.first = -1;
+    }
+    if (pos.z == origin.z) {
+      p.second = 1;
+    } else {
+      p.second = -1;
+    }
     nds[i] = Point(p.first, 0, p.second);
     nd_pos[i] = pos + nds[i];
   }
 
+  for(int i = 1; i <= 8; i++) {
+    std::cerr << i << " " << nds[i] << " "<< nd_pos[i]<< std::endl;
+  }
 
   std::vector<Point> fds(num_bots+1);
   for (size_t i = 1; i <= num_bots; i++) {
@@ -436,12 +460,10 @@ void LargeUdonAI::DoGFill() {
     fds[i] = max_diff;
   }
 
-
   std::vector<Command> commands;
   for (size_t i = 1; i <= num_bots; i++) {
     commands.emplace_back(Command::make_gfill(i, nds[i], fds[i]));
   }
-
   ce->Execute(commands);
 }
 
@@ -609,11 +631,34 @@ void LargeUdonAI::DoAllMove(Point p) {
     l -= dl;
   }
 }
-
+bool LargeUdonAI::OnBoarder(Point p) {
+  return std::min({p.x, p.y, p.z}) == 0 ||
+    std::max({p.x, p.y, p.z}) == R-1;
+}
 void LargeUdonAI::DoAllMoveForce(Point p) {
   CHECK((p.x != 0 && p.y == 0 && p.z == 0) ||
         (p.x == 0 && p.y != 0 && p.z == 0) ||
         (p.x == 0 && p.y == 0 && p.z != 0));
+
+  int len = CLen(p);
+  Point vec = sign_vec(p);
+
+  while(len > 0) {
+    int l = std::min(len, 28);
+    DoAllMoveForceAux(vec * l);
+    len -= l;
+  }
+}
+void LargeUdonAI::DoAllMoveForceAux(Point p) {
+  static std::queue<bool> fill_q[10];
+  static bool init = true;
+  if (init) {
+    for(auto & q : fill_q) {
+      q.push(false);
+    }
+    init = false;
+  }
+
   std::cerr << "Force" << std::endl;
   Point dvec = sign_vec(p);
   constexpr int num_workers = 8;
@@ -626,12 +671,9 @@ void LargeUdonAI::DoAllMoveForce(Point p) {
   }
 
   for (auto & agent : agents) {
-    bool fill_flg = false;
+
+
     while(pos[agent.bot_id - 1] != goals[agent.bot_id - 1]) {
-      if(fill_flg) {
-        coms[agent.bot_id - 1].push_back(Command::make_fill(agent.bot_id, Point(0,0,0)-dvec));
-        fill_flg = false;
-      }
 
       Point cur = pos[agent.bot_id - 1];
       Point nex = cur + dvec;
@@ -639,16 +681,27 @@ void LargeUdonAI::DoAllMoveForce(Point p) {
       if (ce->GetSystemStatus().matrix[nex.x][nex.y][nex.z] == VOID) {
         coms[agent.bot_id - 1].push_back(Command::make_smove(agent.bot_id, dvec));
         pos[agent.bot_id - 1] += dvec;
+        fill_q[agent.bot_id - 1].push(false);
       } else {
         coms[agent.bot_id - 1].push_back(Command::make_void(agent.bot_id, dvec));
         coms[agent.bot_id - 1].push_back(Command::make_smove(agent.bot_id, dvec));
-        fill_flg = true;
+        fill_q[agent.bot_id - 1].push(true);
         pos[agent.bot_id - 1] += dvec;
       }
+      bool flg = fill_q[agent.bot_id - 1].front();
+      fill_q[agent.bot_id - 1].pop();
+      if(flg) {
+        coms[agent.bot_id - 1].push_back(Command::make_fill(agent.bot_id, Point(0,0,0)-dvec));
+      }
+
     }
-    if(fill_flg)
-      coms[agent.bot_id - 1].push_back(Command::make_fill(agent.bot_id, Point(0,0,0)-dvec));
+
     //coms[agent.bot_id  -1] = MergeSMove(coms[agent.bot_id  -1]);
+  }
+
+  int x = 1;
+  for(auto comvec : coms) {
+    std::cerr <<x++ << "  " << Command::CommandsToJson(comvec);
   }
 
   Interleave(coms);
@@ -660,32 +713,36 @@ void LargeUdonAI::Run() {
 
   RegisterAgents();
   AgentsGo();
-  DoGFill();
 
-
+  int dy = 0;
   for (int y = 0; y * MAX_BLOCK_SIZE < R; y++) {
+    DoGFill();
+    int dz = 0;
     for (int z = 0; z * MAX_BLOCK_SIZE < R; z++) {
       int dx = 0;
       for (int x = 0; x * MAX_BLOCK_SIZE < R; x++) {
-        int l = std::min((R - 1) - (x+1) * MAX_BLOCK_SIZE, MAX_BLOCK_SIZE);
-        std::cerr << "l = " << l << std::endl;
-        if (l < 0) break;
-        DoAllMove(Point(l, 0, 0));
+        int xlen = std::min((R - 1) - (32 + x * MAX_BLOCK_SIZE), MAX_BLOCK_SIZE);
+        DoAllMoveForce(Point(xlen, 0, 0));
         DoGFill();
-        dx += l;
+        dx += xlen;
       }
-      DoAllMove(Point(-dx, 0, 0));
+      DoAllMoveForce(Point(-dx, 0, 0));
       std::cerr << "Force" << std::endl;
       for(auto& agent : agents) {
         std::cerr << "Bot " << agent.bot_id << " " << agent.GetCurPos() <<std::endl;
       }
-
-      DoAllMoveForce(Point(0, 0, 2));//)MAX_BLOCK_SIZE));
-      std::cerr << "Force end" << std::endl;
-      return;
+      int zlen = std::min((R - 1) - (32 + z * MAX_BLOCK_SIZE), MAX_BLOCK_SIZE);
+      DoAllMoveForce(Point(0, 0, zlen));
+      DoGFill();
+      dz += zlen;
     }
-  }
+    DoAllMoveForce(Point(0, 0, -dz));
 
+    int ylen = std::min((R - 1) - (30 + y * MAX_BLOCK_SIZE), MAX_BLOCK_SIZE);
+    if(ylen < 0) break;
+    DoAllMoveForce(Point(0, ylen, 0));
+    dy += ylen;
+  }
 }
 
 
