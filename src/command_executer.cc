@@ -27,7 +27,7 @@ CommandExecuter::BotStatus::BotStatus()
   : id(0), active(false), pos(0, 0, 0) {}
 
 std::pair<CommandExecuter::BotStatus, CommandExecuter::BotStatus> 
-CommandExecuter::BotStatus::TryFission(const Point& v, int m) {
+CommandExecuter::BotStatus::TryFission(const Point& v, int m) const {
   std::set<uint32_t> child_seeds;
 
   BotStatus parent = *this;
