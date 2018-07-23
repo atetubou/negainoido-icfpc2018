@@ -34,7 +34,7 @@ static Point dP[] = {
 };
 
 vector<Command> CrimeaAI::getPath(const Point &pos, const Point &dest) {
-    DLOG(INFO) << "finding " << pos << " " << dest;
+    DVLOG(2) << "finding " << pos << " " << dest;
     if (pos==dest) return {};
     queue<Point> que;
     que.push(pos);
@@ -359,10 +359,10 @@ bool CrimeaAI::remove_y(const int j, bvv &grounded, int sign) {
                     moving.push_back(Command::make_smove(4, Point(0,0,-q+1)));
                 }
                 ce->Execute(moving);
-                DLOG(INFO) << "try fusion 1 " << ce->GetBotStatus()[1].pos;
-                DLOG(INFO) << "try fusion 2 " << ce->GetBotStatus()[2].pos;
-                DLOG(INFO) << "try fusion 3 " << ce->GetBotStatus()[3].pos;
-                DLOG(INFO) << "try fusion 4 " << ce->GetBotStatus()[4].pos;
+                DVLOG(2) << "try fusion 1 " << ce->GetBotStatus()[1].pos;
+                DVLOG(2) << "try fusion 2 " << ce->GetBotStatus()[2].pos;
+                DVLOG(2) << "try fusion 3 " << ce->GetBotStatus()[3].pos;
+                DVLOG(2) << "try fusion 4 " << ce->GetBotStatus()[4].pos;
                 ce->Execute({
                     Command::make_fusion_p(1, dP[UP_Z]),
                     Command::make_fusion_p(2, dP[UP_Z]),
