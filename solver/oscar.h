@@ -13,7 +13,7 @@ class Vox {
     std::vector<bool> voxels;
     std::vector<int> colors;
     std::vector<int> depth;
-    std::map< int,set<int> > edges;
+    std::map< int, std::set<int> > edges;
     int R;
     Vox(const vvv &voxels);
     bool get(int x, int y, int z);

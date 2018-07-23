@@ -136,6 +136,96 @@ class OscarAI : public AI
 
     bool remove_x(int i, bvv &grounded, int sign) {
         bool res = false;
+        int fd = min(R, 5);
+
+        for (int j=0;j<R-fd;j++) for (int k=0;k<R-fd;k++) if(grounded[j][k]) {
+            int p=0; int q=0;
+            while(p < fd && grounded[j+p][k]) p++;
+            while(q < fd && grounded[j][k+q]) q++;
+            if (p==1 || q == 1) continue;
+            bool flag = true;
+            for (int s=0;s<p;s++) for (int t=0;t<q;t++) if(!grounded[j+s][k+t] && vox.get(i,j+s,k+t)) {
+                flag = false;
+                break;
+            }
+            if (flag && (p> 2 || q > 2)) {
+                p--; q--;
+                LOG(INFO) << "try s delete x " << p << " " << q;
+                Point cur = ce->GetBotStatus()[1].pos;
+                for (auto c : getPath(cur, Point(i+sign, j,k))) {
+                    ce->Execute({c});
+                }
+                LOG(INFO) << "try fisision";
+                ce->Execute({Command::make_fission(1, dP[UP_Y], 1)});
+                ce->Execute({Command::make_fission(1, dP[UP_Z], 0), Command::make_fission(2, dP[UP_Z], 0)});
+                vector<Command> moving;
+                LOG(INFO) << "try moving";
+                moving.push_back(Command::make_wait(1));
+                if (p==1) {
+                    moving.push_back(Command::make_wait(2));
+                    moving.push_back(Command::make_smove(3, dP[UP_Z] * (q-1)));
+                    moving.push_back(Command::make_smove(4, dP[UP_Z] * (q-1)));
+                } else if (q==1) {
+                    moving.push_back(Command::make_smove(2, dP[UP_Y] * (p-1)));
+                    moving.push_back(Command::make_smove(3, dP[UP_Y] * (p-1)));
+                    moving.push_back(Command::make_wait(4));
+                } else {
+                    moving.push_back(Command::make_smove(2, dP[UP_Y] * (p-1)));
+                    moving.push_back(Command::make_lmove(3, dP[UP_Y] * (p-1), dP[UP_Z] * (q-1)));
+                    moving.push_back(Command::make_smove(4, dP[UP_Z] * (q-1)));
+                }
+                ce->Execute(moving);
+                ce->Execute({
+                    Command::make_gvoid(1, dP[UP_X] * -sign,  Point(0,p,q)),
+                    Command::make_gvoid(2, dP[UP_X] * -sign,  Point(0,-p,q)),
+                    Command::make_gvoid(3, dP[UP_X] * -sign,  Point(0,-p,-q)),
+                    Command::make_gvoid(4, dP[UP_X] * -sign,  Point(0,p,-q)),
+
+                });
+                for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
+                    grounded[j+s][k+t] = false;
+                    vox.set(false, i, j+s,k+t);
+                }
+                
+                LOG(INFO) << "try moving";
+                moving.clear();
+                moving.push_back(Command::make_wait(1));
+                if (p==1) {
+                    moving.push_back(Command::make_wait(2));
+                    moving.push_back(Command::make_smove(3, Point(0,0,-q+1)));
+                    moving.push_back(Command::make_smove(4, Point(0,0,-q+1)));
+                } else if (q==1) {
+                    moving.push_back(Command::make_smove(2, Point(0,-p+1,0)));
+                    moving.push_back(Command::make_smove(3, Point(0,-p+1,0)));
+                    moving.push_back(Command::make_wait(4));
+                } else {
+                    moving.push_back(Command::make_smove(2, Point(0,-p+1,0)));
+                    moving.push_back(Command::make_lmove(3, Point(0,-p+1,0), Point(0,0,-q+1)));
+                    moving.push_back(Command::make_smove(4, Point(0,0,-q+1)));
+                }
+                ce->Execute(moving);
+                LOG(INFO) << "try fusion 1 " << ce->GetBotStatus()[1].pos;
+                LOG(INFO) << "try fusion 2 " << ce->GetBotStatus()[2].pos;
+                LOG(INFO) << "try fusion 3 " << ce->GetBotStatus()[3].pos;
+                LOG(INFO) << "try fusion 4 " << ce->GetBotStatus()[4].pos;
+                ce->Execute({
+                    Command::make_fusion_p(1, dP[UP_Z]),
+                    Command::make_fusion_p(2, dP[UP_Z]),
+                    Command::make_fusion_s(3, dP[UP_Z] * -1),
+                    Command::make_fusion_s(4, dP[UP_Z] * -1),
+                });
+                ce->Execute({
+                    Command::make_fusion_p(1, dP[UP_Y]),
+                    Command::make_fusion_s(2, dP[UP_Y] * -1),
+                });
+                q++;
+                res = true;
+            }
+
+            k += q;
+        }
+
+
         for (int j=0;j<R;j++) for (int k=0;k<R;k++) if(grounded[j][k]){
             res = true;
             Point cur = ce->GetBotStatus()[1].pos;
@@ -148,8 +238,97 @@ class OscarAI : public AI
         return res;
     }
     
-    bool remove_y(int j, bvv &grounded, int sign) {
+    bool remove_y(const int j, bvv &grounded, int sign) {
         bool res = false;
+        int fd = min(R, 5);
+        for (int i=0;i<R-fd;i++) for (int k=0;k<R-fd;k++) if(grounded[i][k]) {
+            int p=0; int q=0;
+            while(p < fd && grounded[i+p][k]) p++;
+            while(q < fd && grounded[i][k+q]) q++;
+            if (p==1 || q == 1) continue;
+            bool flag = true;
+            for (int s=0;s<p;s++) for (int t=0;t<q;t++) if(!grounded[i+s][k+t] && vox.get(i+s,j,k+t)) {
+                flag = false;
+                break;
+            }
+            if (flag && (p> 2 || q > 2)) {
+                LOG(INFO) << "try s delete y " << p << " " << q;
+                p--; q--;
+                Point cur = ce->GetBotStatus()[1].pos;
+                for (auto c : getPath(cur, Point(i, j + sign,k))) {
+                    ce->Execute({c});
+                }
+                LOG(INFO) << "try fisision";
+                ce->Execute({Command::make_fission(1, dP[UP_X], 1)});
+                ce->Execute({Command::make_fission(1, dP[UP_Z], 0), Command::make_fission(2, dP[UP_Z], 0)});
+                vector<Command> moving;
+                LOG(INFO) << "try moving";
+                moving.push_back(Command::make_wait(1));
+                if (p==1) {
+                    moving.push_back(Command::make_wait(2));
+                    moving.push_back(Command::make_smove(3, dP[UP_Z] * (q-1)));
+                    moving.push_back(Command::make_smove(4, dP[UP_Z] * (q-1)));
+                } else if (q==1) {
+                    moving.push_back(Command::make_smove(2, dP[UP_X] * (p-1)));
+                    moving.push_back(Command::make_smove(3, dP[UP_X] * (p-1)));
+                    moving.push_back(Command::make_wait(4));
+                } else {
+                    moving.push_back(Command::make_smove(2, dP[UP_X] * (p-1)));
+                    moving.push_back(Command::make_lmove(3, dP[UP_X] * (p-1), dP[UP_Z] * (q-1)));
+                    moving.push_back(Command::make_smove(4, dP[UP_Z] * (q-1)));
+                }
+                ce->Execute(moving);
+                LOG(INFO) << "try gvoid";
+                ce->Execute({
+                    Command::make_gvoid(1, dP[UP_Y] * -sign,  Point(p,0,q)),
+                    Command::make_gvoid(2, dP[UP_Y] * -sign,  Point(-p,0,q)),
+                    Command::make_gvoid(3, dP[UP_Y] * -sign,  Point(-p,0,-q)),
+                    Command::make_gvoid(4, dP[UP_Y] * -sign,  Point(p,0,-q)),
+
+                });
+                for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
+                    grounded[i+s][k+t] = false;
+                    vox.set(false, i+s, j,k+t);
+                }
+                
+                LOG(INFO) << "try moving";
+                moving.clear();
+                moving.push_back(Command::make_wait(1));
+                if (p==1) {
+                    moving.push_back(Command::make_wait(2));
+                    moving.push_back(Command::make_smove(3, Point(0,0,-q+1)));
+                    moving.push_back(Command::make_smove(4, Point(0,0,-q+1)));
+                } else if (q==1) {
+                    moving.push_back(Command::make_smove(2, Point(-p+1,0,0)));
+                    moving.push_back(Command::make_smove(3, Point(-p+1,0,0)));
+                    moving.push_back(Command::make_wait(4));
+                } else {
+                    moving.push_back(Command::make_smove(2, Point(-p+1,0,0)));
+                    moving.push_back(Command::make_lmove(3, Point(-p+1,0,0), Point(0,0,-q+1)));
+                    moving.push_back(Command::make_smove(4, Point(0,0,-q+1)));
+                }
+                ce->Execute(moving);
+                LOG(INFO) << "try fusion 1 " << ce->GetBotStatus()[1].pos;
+                LOG(INFO) << "try fusion 2 " << ce->GetBotStatus()[2].pos;
+                LOG(INFO) << "try fusion 3 " << ce->GetBotStatus()[3].pos;
+                LOG(INFO) << "try fusion 4 " << ce->GetBotStatus()[4].pos;
+                ce->Execute({
+                    Command::make_fusion_p(1, dP[UP_Z]),
+                    Command::make_fusion_p(2, dP[UP_Z]),
+                    Command::make_fusion_s(3, dP[UP_Z] * -1),
+                    Command::make_fusion_s(4, dP[UP_Z] * -1),
+                });
+                ce->Execute({
+                    Command::make_fusion_p(1, dP[UP_X]),
+                    Command::make_fusion_s(2, dP[UP_X] * -1),
+                });
+                q++;
+                res = true;
+            }
+
+            k += q;
+        }
+
         for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(grounded[i][k]){
             res = true;
             Point cur = ce->GetBotStatus()[1].pos;
@@ -163,8 +342,97 @@ class OscarAI : public AI
         return res;
     }
     
-    bool remove_z(int k, bvv &grounded, int sign) {
+    bool remove_z(const int k, bvv &grounded, int sign) {
+
         bool res = false;
+        bool fd = min(R,5);
+        for (int i=0;i<R-fd;i++) for (int j=0;j<R-fd;j++) if(grounded[i][j]) {
+            int p=0; int q=0;
+            while(p < fd && grounded[i+p][j]) p++;
+            while(q < fd && grounded[i][j+q]) q++;
+            if (p==1 || q == 1) continue;
+            bool flag = true;
+            for (int s=0;s<p;s++) for (int t=0;t<q;t++) if(!grounded[i+s][j+t] && vox.get(i+s,j+t,k)) {
+                flag = false;
+                break;
+            }
+            if (flag && (p> 2 || q > 2)) {
+                LOG(INFO) << "try s delete z " << p << " " << q;
+                p--; q--;
+                Point cur = ce->GetBotStatus()[1].pos;
+                for (auto c : getPath(cur, Point(i, j,k+sign))) {
+                    ce->Execute({c});
+                }
+                LOG(INFO) << "try fisision";
+                ce->Execute({Command::make_fission(1, dP[UP_X], 1)});
+                ce->Execute({Command::make_fission(1, dP[UP_Y], 0), Command::make_fission(2, dP[UP_Y], 0)});
+                vector<Command> moving;
+                LOG(INFO) << "try moving";
+                moving.push_back(Command::make_wait(1));
+                if (p==1) {
+                    moving.push_back(Command::make_wait(2));
+                    moving.push_back(Command::make_smove(3, dP[UP_Y] * (q-1)));
+                    moving.push_back(Command::make_smove(4, dP[UP_Y] * (q-1)));
+                } else if (q==1) {
+                    moving.push_back(Command::make_smove(2, dP[UP_X] * (p-1)));
+                    moving.push_back(Command::make_smove(3, dP[UP_X] * (p-1)));
+                    moving.push_back(Command::make_wait(4));
+                } else {
+                    moving.push_back(Command::make_smove(2, dP[UP_X] * (p-1)));
+                    moving.push_back(Command::make_lmove(3, dP[UP_X] * (p-1), dP[UP_Y] * (q-1)));
+                    moving.push_back(Command::make_smove(4, dP[UP_Y] * (q-1)));
+                }
+                ce->Execute(moving);
+                LOG(INFO) << "try gvoid";
+                ce->Execute({
+                    Command::make_gvoid(1, dP[UP_Z] * -sign,  Point(p,q,0)),
+                    Command::make_gvoid(2, dP[UP_Z] * -sign,  Point(-p,q,0)),
+                    Command::make_gvoid(3, dP[UP_Z] * -sign,  Point(-p,-q,0)),
+                    Command::make_gvoid(4, dP[UP_Z] * -sign,  Point(p,-q,0)),
+
+                });
+                for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
+                    grounded[i+s][k+t] = false;
+                    vox.set(false, i+s, j,k+t);
+                }
+                
+                LOG(INFO) << "try moving";
+                moving.clear();
+                moving.push_back(Command::make_wait(1));
+                if (p==1) {
+                    moving.push_back(Command::make_wait(2));
+                    moving.push_back(Command::make_smove(3, Point(0,-q+1,0)));
+                    moving.push_back(Command::make_smove(4, Point(0,-q+1,0)));
+                } else if (q==1) {
+                    moving.push_back(Command::make_smove(2, Point(-p+1,0,0)));
+                    moving.push_back(Command::make_smove(3, Point(-p+1,0,0)));
+                    moving.push_back(Command::make_wait(4));
+                } else {
+                    moving.push_back(Command::make_smove(2, Point(-p+1,0,0)));
+                    moving.push_back(Command::make_lmove(3, Point(-p+1,0,0), Point(0,-q+1,0)));
+                    moving.push_back(Command::make_smove(4, Point(0,-q+1,0)));
+                }
+                ce->Execute(moving);
+                LOG(INFO) << "try fusion 1 " << ce->GetBotStatus()[1].pos;
+                LOG(INFO) << "try fusion 2 " << ce->GetBotStatus()[2].pos;
+                LOG(INFO) << "try fusion 3 " << ce->GetBotStatus()[3].pos;
+                LOG(INFO) << "try fusion 4 " << ce->GetBotStatus()[4].pos;
+                ce->Execute({
+                    Command::make_fusion_p(1, dP[UP_Y]),
+                    Command::make_fusion_p(2, dP[UP_Y]),
+                    Command::make_fusion_s(3, dP[UP_Y] * -1),
+                    Command::make_fusion_s(4, dP[UP_Y] * -1),
+                });
+                ce->Execute({
+                    Command::make_fusion_p(1, dP[UP_X]),
+                    Command::make_fusion_s(2, dP[UP_X] * -1),
+                });
+                q++;
+                res = true;
+            }
+
+            j += q;
+        }
         for (int i=0;i<R;i++) for (int j=0;j<R;j++) if(grounded[i][j]){
             res = true;
             Point cur = ce->GetBotStatus()[1].pos;
