@@ -11,6 +11,8 @@
 #include "solver/AI.h"
 
 
+DEFINE_bool(flip, true, "do flip?");
+DEFINE_bool(dig, false, "do dig?");
 DEFINE_bool(json, false, "output json");
 
 
@@ -152,11 +154,16 @@ class CubeEraser : public AI {
       for (int z = 0; z < R - len + 1; ++z) {
         int m = 0;
         for (int t = y; t >= 0; --t) {
+
           if (model[x][t][z] or
               model[x+len-1][t][z] or
               model[x][t][z+len-1] or
               model[x+len-1][t][z+len-1]) {
-            break;
+            if (not FLAGS_dig) {
+              break;
+            } else {
+              if (t == y) break;
+            }
           }
 
           int h = y - t + 1;
@@ -250,6 +257,30 @@ class CubeEraser : public AI {
             Command::make_fission(3, Point(0, -1, 0), 0),
             Command::make_fission(6, Point(0, -1, 0), 0),
             });
+      }
+      if (FLAGS_dig) { // DIG
+        while (ce->GetBotStatus()[8].pos.y > cube.second.y) {
+          exec({
+              Command::make_wait(1),
+              Command::make_wait(2),
+              Command::make_wait(3),
+              Command::make_wait(6),
+              Command::make_void(8, Point(0, -1, 0)),
+              Command::make_void(5, Point(0, -1, 0)),
+              Command::make_void(4, Point(0, -1, 0)),
+              Command::make_void(7, Point(0, -1, 0))
+              });
+          exec({
+              Command::make_wait(1),
+              Command::make_wait(2),
+              Command::make_wait(3),
+              Command::make_wait(6),
+              Command::make_smove(8, Point(0, -1, 0)),
+              Command::make_smove(5, Point(0, -1, 0)),
+              Command::make_smove(4, Point(0, -1, 0)),
+              Command::make_smove(7, Point(0, -1, 0))
+              });
+        }
       }
       { // Move
         auto commands = MassuguGo(
@@ -405,7 +436,9 @@ public:
   ~CubeEraser() override = default;
 
   void Run() override {
-    exec({ Command::make_flip(1) });
+    if (FLAGS_flip) {
+      exec({ Command::make_flip(1) });
+    }
     GotoTop();
     MakeSquare();
     LOG(INFO) << "start work";
