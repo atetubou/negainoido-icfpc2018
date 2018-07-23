@@ -245,7 +245,6 @@ cc_binary(
 cc_binary(
     name = "udon_ai",
     srcs = ["udon_ai.cc",
-            "AI.h"
            ],
     copts = ["-std=c++14"],
     deps = [
@@ -256,5 +255,22 @@ cc_binary(
         "//src/base",
         "//src:command_executer",
         "//src/base:flags",
+        ":ai",
+    ],
+)
+
+cc_binary(
+    name = "itigo",
+    srcs = ["itigo.cc"],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
+        "//src/base",
+        "//src:command_executer",
+        "//src/base:flags",
+        ":ai",
     ],
 )
