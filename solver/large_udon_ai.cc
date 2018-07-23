@@ -61,13 +61,13 @@ public:
 };
 
 bool visited[250][250][250];
-
+const int MAX_BLOCK_SIZE = 30;
 class LargeUdonAI : public AI {
 public:
   int R;
   std::vector<Agent> agents;
   static constexpr size_t num_bots = 8;
-  static constexpr int MAX_BLOCK_SIZE = 30;
+
 
   vvv model;
   LargeUdonAI(const vvv &model_) : AI(model_.size()) {
@@ -94,7 +94,8 @@ public:
   void DoGFill();
   void DoAllMove(Point);
   void DoAllMoveForce(Point);
-  void DoAllMoveForceAux(Point);
+  void DoPartialMoveForce(Point, std::set<int>);
+  void DoAllMoveForceAux(Point , std::set<int>);
   void Interleave(std::vector<std::vector<Command>> coms);
 
   void AgentsWork();
@@ -270,10 +271,11 @@ void Agent::InitWork() {
   // Go Area Ma
   std::stack<Point> s;
   Point cur = GetCurPos();
-  for (int xx = 0; xx < area_max.y - area_min.y; xx++) {
+
+  for (int xx = 0; xx <= R; xx++) {
     Dfs(cur);
 
-    if (cur.y != 1) {
+    if (cur.y != 0) {
       PushCommand(Command::make_smove(bot_id, Point(0,-1,0)));
       cur.y--;
     }
@@ -416,7 +418,7 @@ void LargeUdonAI::AgentsGo() {
       coms.push_back(com);
     }
 
-    //std::cerr << Command::CommandsToJson(coms);
+    //std::cerr << Command::CommandsToJson(coms);std::cerr << Command::CommandsToJson(coms);
     ce->Execute(coms);
   }
 }
@@ -549,6 +551,8 @@ void LargeUdonAI::Interleave(std::vector<std::vector<Command>> coms) {
     std::vector<Command> commands;
     for (auto& agent : agents) {
       if (!AgentValid(agent.bot_id)) continue;
+
+      std::cerr << agent.bot_id << " is active" << std::endl;
       if (coms[agent.bot_id - 1].size() <= cnt) {
         commands.push_back(Command::make_wait(agent.bot_id));
       } else {
@@ -558,7 +562,7 @@ void LargeUdonAI::Interleave(std::vector<std::vector<Command>> coms) {
       }
     }
     cnt++;
-    std::cerr << Command::CommandsToJson(commands);
+    //std::cerr << Command::CommandsToJson(commands);
     ce->Execute(commands);
   }
   std::cerr << "Interend" << std::endl;
@@ -635,7 +639,7 @@ bool LargeUdonAI::OnBoarder(Point p) {
   return std::min({p.x, p.y, p.z}) == 0 ||
     std::max({p.x, p.y, p.z}) == R-1;
 }
-void LargeUdonAI::DoAllMoveForce(Point p) {
+void LargeUdonAI::DoPartialMoveForce(Point p, std::set<int> ids) {
   CHECK((p.x != 0 && p.y == 0 && p.z == 0) ||
         (p.x == 0 && p.y != 0 && p.z == 0) ||
         (p.x == 0 && p.y == 0 && p.z != 0));
@@ -645,11 +649,18 @@ void LargeUdonAI::DoAllMoveForce(Point p) {
 
   while(len > 0) {
     int l = std::min(len, 28);
-    DoAllMoveForceAux(vec * l);
+    DoAllMoveForceAux(vec * l, ids);
     len -= l;
   }
 }
-void LargeUdonAI::DoAllMoveForceAux(Point p) {
+void LargeUdonAI::DoAllMoveForce(Point p) {
+  std::set<int> ids = {1,2,3,4,5,6,7,8};
+  DoPartialMoveForce(p, ids);
+}
+
+
+
+void LargeUdonAI::DoAllMoveForceAux(Point p, std::set<int> ids) {
   static std::queue<bool> fill_q[10];
   static bool init = true;
   if (init) {
@@ -666,17 +677,24 @@ void LargeUdonAI::DoAllMoveForceAux(Point p) {
   Point goals[num_workers];
   std::vector<std::vector<Command>> coms(num_workers);
   for (auto & agent : agents) {
+          //      if(gfill_cnt > 2) return;
     pos[agent.bot_id - 1] = agent.GetCurPos();
     goals[agent.bot_id - 1] = agent.GetCurPos() + p;
   }
 
   for (auto & agent : agents) {
+    if(!AgentValid(agent.bot_id)) continue;
 
+    bool in_ids = ids.find(agent.bot_id) != ids.end();
+    if (!in_ids)
+      continue;
 
     while(pos[agent.bot_id - 1] != goals[agent.bot_id - 1]) {
 
       Point cur = pos[agent.bot_id - 1];
       Point nex = cur + dvec;
+
+      CHECK(InSpace(nex)) << p << " " << cur << " " << nex;
 
       if (ce->GetSystemStatus().matrix[nex.x][nex.y][nex.z] == VOID) {
         coms[agent.bot_id - 1].push_back(Command::make_smove(agent.bot_id, dvec));
@@ -709,21 +727,37 @@ void LargeUdonAI::DoAllMoveForceAux(Point p) {
 
 }
 
+std::vector<Command> CreateMoveLine(int id, Point p) {
+  Point dvec = sign_vec(p);
+  std::vector<Command> coms;
+  for (int i = 0; i < CLen(p); i++) {
+    coms.push_back(Command::make_smove(id, dvec));
+  }
+  return MergeSMove(coms);
+}
+
 void LargeUdonAI::Run() {
 
   RegisterAgents();
   AgentsGo();
 
+  // Gfill
+  int gfill_cnt = 0;
   int dy = 0;
   for (int y = 0; y * MAX_BLOCK_SIZE < R; y++) {
     DoGFill();
+    gfill_cnt++;
+    std::cerr<<"Counter ------" <<gfill_cnt<<std::endl;
     int dz = 0;
     for (int z = 0; z * MAX_BLOCK_SIZE < R; z++) {
       int dx = 0;
       for (int x = 0; x * MAX_BLOCK_SIZE < R; x++) {
         int xlen = std::min((R - 1) - (32 + x * MAX_BLOCK_SIZE), MAX_BLOCK_SIZE);
+        if(xlen < 0) break;
         DoAllMoveForce(Point(xlen, 0, 0));
         DoGFill();
+        gfill_cnt++;
+        std::cerr<<"Counter ------" <<gfill_cnt<<std::endl;
         dx += xlen;
       }
       DoAllMoveForce(Point(-dx, 0, 0));
@@ -732,18 +766,93 @@ void LargeUdonAI::Run() {
         std::cerr << "Bot " << agent.bot_id << " " << agent.GetCurPos() <<std::endl;
       }
       int zlen = std::min((R - 1) - (32 + z * MAX_BLOCK_SIZE), MAX_BLOCK_SIZE);
+      if(zlen < 0) break;
       DoAllMoveForce(Point(0, 0, zlen));
       DoGFill();
       dz += zlen;
     }
     DoAllMoveForce(Point(0, 0, -dz));
 
-    int ylen = std::min((R - 1) - (30 + y * MAX_BLOCK_SIZE), MAX_BLOCK_SIZE);
+    int ylen = std::min((R - 2) - (30 + y * MAX_BLOCK_SIZE), MAX_BLOCK_SIZE);
     if(ylen < 0) break;
     DoAllMoveForce(Point(0, ylen, 0));
     dy += ylen;
   }
+
+  // Fusion
+  std::set<int> uppers = {3, 4, 6, 7};
+  DoPartialMoveForce(Point(0, 1, 0), uppers);
+
+  std::set<int> unders = {1, 2, 8, 5};
+  DoPartialMoveForce(Point(0, 30, 0), unders);
+
+  std::vector<Command> commands;
+
+  // Fusion
+  for (auto & agent : agents) {
+    if (unders.find(agent.bot_id) != unders.end()) {
+      auto com = Command::make_fusion_s(agent.bot_id, Point(0, 1, 0));
+      commands.push_back(com);
+    } else {
+      auto com = Command::make_fusion_p(agent.bot_id, Point(0, -1, 0));
+      commands.push_back(com);
+    }
+  }
+  ce->Execute(commands);
+
+
+  // Fill a hole
+  std::vector<Command> fill_one = {
+    Command::make_wait(3),
+    Command::make_fill(4, Point(0, -1, 0)),
+    Command::make_wait(6),
+    Command::make_wait(7),
+  };
+  ce->Execute(fill_one);
+
+
+
+  // Go Work place
+  std::vector<std::vector<Command>> deliver_coms(10);
+  deliver_coms[3 - 1] = CreateMoveLine(3, Point(R-1 - agents[3-1].GetCurPos().x, 0, 0));
+  deliver_coms[7 - 1] = CreateMoveLine(7, Point(0, 0, R-1 - agents[7-1].GetCurPos().z));
+
+  deliver_coms[4 - 1] = CreateMoveLine(4, Point(R-1 - agents[4-1].GetCurPos().x, 0, 0));
+  auto com_vec_4 = CreateMoveLine(4, Point(0, 0, R-1 - agents[4-1].GetCurPos().z));
+  deliver_coms[4 - 1].insert(deliver_coms[4-1].end(), com_vec_4.begin(), com_vec_4.end());
+  Interleave(deliver_coms);
+
+
+  AgentsWork();
+
+  // Fusio
+  std::vector<std::vector<Command>> end_coms(10);
+  end_coms[7 - 1] = CreateMoveLine(7, Point(0, 0, -(R-2)));
+  end_coms[4 - 1] = CreateMoveLine(4, Point(0, 0, -(R-2)));
+  Interleave(end_coms);
+
+  std::vector<Command> fusion_coms = {
+    Command::make_fusion_p(3, Point(0, 0, 1)),
+    Command::make_fusion_s(4, Point(0, 0,-1)),
+    Command::make_fusion_p(6, Point(0, 0, 1)),
+    Command::make_fusion_s(7, Point(0, 0,-1)),
+  };
+  ce->Execute(fusion_coms);
+
+  std::set<int> s_3 = {3};
+  DoPartialMoveForce(Point(-(R-2), 0, 0), s_3);
+
+  std::vector<Command> last_coms = {
+    Command::make_fusion_s(3, Point(-1, 0, 0)),
+    Command::make_fusion_p(6, Point( 1,0, 0)),
+  };
+  ce->Execute(last_coms);
+
+  ce->Execute({Command::make_halt(6)});
+
 }
+
+
 
 
 void LargeUdonAI::OldRun() {
