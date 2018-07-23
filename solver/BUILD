@@ -105,7 +105,7 @@ cc_binary(
 
 cc_binary(
     name = "vertical_ai",
-    srcs = ["vertical_ai.cc", "AI.h"],
+    srcs = ["vertical_ai.cc", "AI.h", "simple_solve.h"],
     copts = ["-std=c++14"],
     deps = [
         "//external:glog",
@@ -115,6 +115,7 @@ cc_binary(
         "//src/base",
         "square_delete",
         "//src/base:flags",
+        "simple_solve_lib",
     ],
 )
 

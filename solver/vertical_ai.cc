@@ -10,6 +10,7 @@
 
 #include "solver/AI.h"
 #include "src/command.h"
+#include "solver/simple_solve.h"
 // #include "solver/square_delete.h"
 #include "src/base/flags.h"
 using namespace std;
@@ -49,7 +50,7 @@ class VerticalAI : public AI {
   typedef pair<Point, Point> Region; // I don't care y-axis for this type
   
 public:
-  VerticalAI(const vvv &tgt_model) : AI(tgt_model.size()), M(tgt_model), R(tgt_model.size()), maxy(ComputeMaxY()), MAXB(min(40, R)){ }
+  VerticalAI(const vvv &tgt_model) : AI(tgt_model.size()), M(tgt_model), R(tgt_model.size()), maxy(ComputeMaxY()), MAXB(min(30, R)){ }
   void Run() override {
     vector<pair<Point, Point> > decomposed_regions = DecomposeRegions();
     const int bot_num = decomposed_regions.size();
@@ -60,14 +61,41 @@ public:
 
     LOG(INFO) << "Sttarted moving to each origin: ";
     GotoEachOrigin(decomposed_regions, bot_ids);
-    
-    REP(y, maxy - 1){
+
+    vector<vector<Command>> commands_list;
+    REP(i, bot_ids.size()) {
+      commands_list.push_back(SolveRegion(bot_ids[i], decomposed_regions[i]));
+    }
+    size_t max_len = 0;
+    for (const auto &commands : commands_list) {
+      max_len = max(max_len, commands.size());
+    }
+
+    LOG(INFO) << " max-len: " << max_len;
+    REP(i, bot_ids.size()) {
+      const int b = bot_ids[i];
+      while (commands_list[i].size() < max_len) {
+        commands_list[i].push_back(Command::make_wait(b));
+      }
+    }
+
+    REP(i, max_len) {
       vector<Command> cmds;
-      for (int b : getActiveBots()) {
-        cmds.push_back(Command::make_smove(b, Point(0, 1, 0)));
+      REP(j, bot_ids.size()) {
+        auto c = commands_list[j][i];
+        c.id = bot_ids[j];
+        cmds.push_back(c);
       }
       ce->Execute(cmds);
     }
+    
+    // REP(y, maxy - 1){
+    //   vector<Command> cmds;
+    //   for (int b : getActiveBots()) {
+    //     cmds.push_back(Command::make_smove(b, Point(0, 1, 0)));
+    //   }
+    //   ce->Execute(cmds);
+    // }
     LOG(INFO) << "Moved to y = ymax";
     FusionBots();
     FinishTravel();
@@ -91,8 +119,9 @@ private:
       const int hx = region.second.x;
       const int hz = region.second.z;
       vector<pair<int, pair<Region, Region>> > sub_regions;
-      
-      for (int mx = lx + 2; mx < hx; mx++) {
+
+      const int minimum_size = 3;
+      for (int mx = lx + minimum_size; mx < hx - minimum_size + 2; mx++) {
         const Region sub_region1 = Region(region.first, Point(mx - 1, 0, region.second.z));
         const Region sub_region2 = Region(Point(mx, 0, region.first.z), region.second);
         if (IsGrounded(sub_region1) && IsGrounded(sub_region2)) {
@@ -102,7 +131,7 @@ private:
         }
       }
 
-      for (int mz = lz + 2; mz < hz; mz++) {
+      for (int mz = lz + minimum_size; mz < hz - minimum_size + 2; mz++) {
         const Region sub_region1 = Region(region.first, Point(region.second.x, 0, mz - 1));
         const Region sub_region2 = Region(Point(region.first.x, 0, mz), region.second);
         if (IsGrounded(sub_region1) && IsGrounded(sub_region2)) {
@@ -224,6 +253,29 @@ private:
       if (origins[i].z != bot_status[bot_ids[i]].pos.z) return false;
     }
     return true;
+  }
+
+  vector<Command> SolveRegion(const int b, const Region &region) {
+    const int lx = region.first.x;
+    const int lz = region.first.z;
+    const int hx = region.second.x;
+    const int hz = region.second.z;
+
+    const int xlen = hx - lx + 1;
+    const int zlen = hz - lz + 1;
+    const int ylen = maxy + 1;
+    vvv sub_voxels = vvv(xlen, vv(ylen, v(zlen)));
+    for (int x = lx; x <= hx; x++) {
+      for (int y = 0; y <= ylen; y++) {
+        for (int z = lz; z <= hz; z++) {
+          if (M[x][y][z]) {
+            sub_voxels[x - lx][y][z - lz] = 1;
+          }
+        }
+      }
+    }
+    return SimpleSolve(sub_voxels, Point(hx - lx, maxy, hz - lz), false);
+    // return vector<Command>();
   }
 
   void FissionBots(const int size) {
