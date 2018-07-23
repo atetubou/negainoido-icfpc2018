@@ -680,7 +680,7 @@ ftable = {
 
 def problem_size(pid):
     if pid[0] == 'P':
-        return problem_size('F' + pid[1:])
+        return problem_size('FR' + pid[2:])
     if pid in ftable:
         return ftable[pid]
 
