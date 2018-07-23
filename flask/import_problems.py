@@ -61,6 +61,20 @@ for problem in problems:
     curr.close()
     cnx.commit()
 
+for problem in problems:
+    pd_name = 'PA' + problem['name'][2:]
+    curr= cnx.cursor(dictionary=True)
+    curr.execute('select * from problems where name = %s', (pd_name,))
+    if not curr.fetchone():
+        curr.execute('insert into problems(name) values (%s)', (pd_name,))
+        continue
+    tgt_path = 'static/problems/'+pd_name+'_tgt.mdl'
+    shutil.copy( problem['filepath'], src_path)
+
+    curr.execute('update problems set filepath = %s where name = %s' , (tgt_path, pd_name))
+    curr.close()
+    cnx.commit()
+
 
 best_scores = json.load(open('live.json'))
 for key in best_scores.keys():
