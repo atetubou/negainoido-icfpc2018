@@ -2,48 +2,29 @@
 
 ## One time setup
 
-TODO(tikuta): write here
+### Require
+* Bazel
+* (gcloud)
 
 ## Build and Test
 
-* `bazel build //example/hello`
-* `bazel test //...`
-* `bazel test //example/hello:hello_test`
-* `bazel run //example:main`
-
-下はおまけなので無視してください
-
-`gcloud container builds submit --config=cloudbuild.yaml .`
+### Build
+* `bazel build //...`
 
 
+### Run
+* `bazel run //solver:itigo -- --src_filename=- --tgt_filename=FA001_tgt.mdl > `
 
-## Pull Request
-
-このリポジトリにmasterではないブランチを作って、そこからmasterにpull request送るとCIが走ってくれます。
-
-## Cloud storage usage
-
-### File copy
-
-```
-$ gsutil cp nanika gs://negainoido-icfpc2018-shared-bucket
-```
-
-```
-$ gsutil cp gs://negainoido-icfpc2018-shared-bucket/nanika .
-```
-
-### File ls
-
-```
-$ gsutil ls gs://negainoido-icfpc2018-shared-bucket
-```
-
-### Download Problems
-
-```
-gsutil -m rsync -r gs://negainoido-icfpc2018-shared-bucket/problemsL shared
-gsutil -m rsync -r gs://negainoido-icfpc2018-shared-bucket/dfltTracesL shared
-gsutil -m rsync -r gs://negainoido-icfpc2018-shared-bucket/problemsF shared
-gsutil -m rsync -r gs://negainoido-icfpc2018-shared-bucket/dfltTracesF shared
-```
+#### solvers
+* itigo
+* duskin_ai
+* large_udon_ai
+* simple_solve
+* square_delete
+* oscar_ai
+* udon_ai
+* crimea_ai
+* skelton
+* vertial_ai
+* cube_eraser
+* kevin_ai
