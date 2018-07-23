@@ -165,3 +165,18 @@ cc_binary(
         "//src/base:flags",
     ],
 )
+
+cc_binary(
+    name = "cube_eraser",
+    srcs = ["cube_eraser.cc",
+            "AI.h",
+           ],
+    copts = ["-std=c++14"],
+    deps = [
+        "@com_google_absl//absl/types:span",
+        "//external:glog",
+        "//src/base",
+        "//src:command_executer",
+        "//src/base:flags",
+    ],
+)
