@@ -1,0 +1,75 @@
+#!/bin/bash
+
+for pkg in jq curl; do
+    if ! which $pkg 2>&1 >/dev/null ; then
+        echo Install $pkg
+        exit 1
+    fi
+done
+
+usage() {
+    cat <<EOM
+$0 [ -o OUT_DIR ]
+EOM
+}
+
+OUT_DIR=/tmp/cat_fr
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h | --help )
+            usage
+            exit
+            ;;
+        -o )
+            OUT_DIR=${2%/}
+            shift 2
+            ;;
+    esac
+done
+
+echo "* nbt files will be output to $OUT_DIR"
+mkdir -p $OUT_DIR
+BASIC_AUTH=negainoido:icfpc_ojima
+
+best() {
+    URL=http://${BASIC_AUTH}@35.196.88.166/list_solution/json?problem=$1
+    curl -s "$URL" |
+    jq -r '.value.solutions[] | if .score > 0 then "\(.score) \(.id) \(.solver_id)" else empty end ' |
+    sort -n | head -1
+}
+
+for i in $(seq 1 115); do
+
+    I=$(printf "%03d" $i)
+    OUT="$OUT_DIR/FR${I}.nbt"
+    echo "* cat-best $I > $OUT"
+
+    best "PD$I" | (
+
+        read SCORE ID SOLVER_D
+        echo "** D: $ID $SOLVER_D"
+        PD_URL="http://${BASIC_AUTH}@35.196.88.166/static/solutions/${ID}.nbt"
+
+        best "PA$I" | (
+
+            read SCORE ID SOLVER_A
+            echo "** A: $ID $SOLVER_A"
+            PA_URL="http://${BASIC_AUTH}@35.196.88.166/static/solutions/${ID}.nbt"
+
+            # concat PD+PA
+            (
+                curl -s "$PD_URL" | head -c -1
+                curl -s "$PA_URL"
+            ) >$OUT
+
+            # submit
+            URL="http://${BASIC_AUTH}@35.196.88.166/submit_solution"
+            echo $URL
+            curl "$URL" -F problem_id=FR${I} -F solver_id=bestcat--${SOLVER_D}--${SOLVER_A} -F comment=best_cat -F nbt=@${OUT} > /dev/null
+
+        )
+
+    )
+
+done
