@@ -90,7 +90,8 @@ cc_library(
 
 cc_binary(
     name = "square_deleter",
-    srcs = [ "square_deleter.cc"],
+    srcs = ["square_deleter.cc", "AI.h"],
+    copts = ["-std=c++14"],
     deps = [
         "//external:glog",
         "@com_github_gflags_gflags//:gflags",
