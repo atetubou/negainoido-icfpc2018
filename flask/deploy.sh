@@ -3,7 +3,7 @@ if [ ! -e env ]; then
     virtualenv env
 fi
 
-(cd ../; bazel build //src:simulator)
+(cd ../; bazel build //src:simulator && bazel build //src:simulator_unsafe)
 
 gsutil copy gs://negainoido-icfpc2018-shared-bucket/live.json live.json
 
