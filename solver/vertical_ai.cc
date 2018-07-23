@@ -59,8 +59,10 @@ public:
     LOG(INFO) << "num bots: " << bot_ids.size();
     LOG_ASSERT(int(bot_ids.size()) == bot_num);
 
-    LOG(INFO) << "Sttarted moving to each origin: ";
+    LOG(INFO) << "Started moving to each origin: ";
     GotoEachOrigin(decomposed_regions, bot_ids);
+
+    LOG(INFO) << "Start solving each origin: ";
 
     vector<vector<Command>> commands_list;
     REP(i, bot_ids.size()) {
@@ -120,7 +122,7 @@ private:
       const int hz = region.second.z;
       vector<pair<int, pair<Region, Region>> > sub_regions;
 
-      const int minimum_size = 3;
+      const int minimum_size = 2;
       for (int mx = lx + minimum_size; mx < hx - minimum_size + 2; mx++) {
         const Region sub_region1 = Region(region.first, Point(mx - 1, 0, region.second.z));
         const Region sub_region2 = Region(Point(mx, 0, region.first.z), region.second);
@@ -264,9 +266,10 @@ private:
     const int xlen = hx - lx + 1;
     const int zlen = hz - lz + 1;
     const int ylen = maxy + 1;
+    cerr << xlen << " " << ylen << " " << zlen << " " << endl;
     vvv sub_voxels = vvv(xlen, vv(ylen, v(zlen)));
     for (int x = lx; x <= hx; x++) {
-      for (int y = 0; y <= ylen; y++) {
+      for (int y = 0; y < ylen; y++) {
         for (int z = lz; z <= hz; z++) {
           if (M[x][y][z]) {
             sub_voxels[x - lx][y][z - lz] = 1;
@@ -274,6 +277,7 @@ private:
         }
       }
     }
+    LOG(INFO) << " Prepared sub_voxels" ;
     return SimpleSolve(sub_voxels, Point(hx - lx, maxy, hz - lz), false);
     // return vector<Command>();
   }
