@@ -21,6 +21,11 @@ class Itigo : public AI {
 
   std::vector<int> bids;
 
+  Point low, high;
+  int Rx = 0;
+  int Ry = 0;
+  int Rz = 0;
+
 public:
   Itigo(const vvv &model, bool use_flip) 
     : AI(model.size()), model(model), R(model.size()),
@@ -72,20 +77,22 @@ public:
     CHECK_EQ(bids.size(), 1u);
     CHECK_EQ(bids.back(), 1);
 
+    DoMove({std::make_pair(1, Point(low.x, 1, low.z))});
+
     for (int i = 0; i < x_num - 1; ++i) {
       int bid = bids.back();
       const auto& b = bot(bid);
 
       int child_n = z_num * (x_num - i - 1) - 1;
 
-      FissionAndGo(bid, b.pos + Point(R/x_num, 0, 0), child_n);
+      FissionAndGo(bid, b.pos + Point(Rx/x_num, 0, 0), child_n);
     }
 
     for (int i = 0; i < z_num - 1; ++i) {
       for (int j = 0; j < x_num; ++j) {
         int bid = bids.at(bids.size() - x_num);
         const auto& b = bot(bid);
-        FissionAndGo(bid, b.pos + Point(0, 0, R / z_num), z_num - i - 2);
+        FissionAndGo(bid, b.pos + Point(0, 0, Rz / z_num), z_num - i - 2);
       }
     }
   }
@@ -116,24 +123,56 @@ public:
     return cnt;
   }
 
-  void Run() override {
-    ExecuteOrWait({Command::make_smove(1, Point(0, 1, 0))});
-    const int n = FLAGS_x_num;
-    const int m = FLAGS_z_num;
-    DoHaiti(n, m);
+  void CalcRegion() {
+    low = Point(R - 1, R - 1, R - 1);
+    high = Point(0, 0, 0);
 
-    int lenx = R / n;
-    int lenz = R / m;
-
-    std::vector<std::vector<Point>> targets(n * m);
-
-    for (int y = 0; y < R - 1; ++y) {
+    for (int y = 0; y < R; ++y) {
       for (int x = 0; x < R; ++x) {
         for (int z = 0; z < R; ++z) {
           if (!model[x][y][z]) continue;
+          low.x = std::min(low.x, x);
+          low.y = std::min(low.y, y);
+          low.z = std::min(low.z, z);
 
-          int bx = std::min(x / lenx, n - 1);
-          int bz = std::min(z / lenz, m - 1);
+          high.x = std::max(high.x, x + 1);
+          high.y = std::max(high.y, y + 1);
+          high.z = std::max(high.z, z + 1);
+        }
+      }
+    }
+
+    Rx = high.x - low.x + 1;
+    Ry = high.y - low.y + 1;
+    Rz = high.z - low.z + 1;
+  }
+
+  void Run() override {
+    CalcRegion();
+
+    LOG(INFO) << low << " " << high;
+
+    ExecuteOrWait({Command::make_smove(1, Point(0, 1, 0))});
+    const int n = std::min(FLAGS_x_num, Rx);
+    const int m = std::min(FLAGS_z_num, Rz);
+
+    DoHaiti(n, m);
+
+    int lenx = Rx / n;
+    int lenz = Rz / m;
+
+    std::vector<std::vector<Point>> targets(n * m);
+
+    for (int sy = 0; sy < Ry - 1; ++sy) {
+      for (int sx = 0; sx < Rx; ++sx) {
+        for (int sz = 0; sz < Rz; ++sz) {
+          int x = sx + low.x;
+          int y = sy + low.y;
+          int z = sz + low.z;
+          if (!model[x][y][z]) continue;
+
+          int bx = std::min(sx / lenx, n - 1);
+          int bz = std::min(sz / lenz, m - 1);
           
           targets[bz * n + bx].emplace_back(x, y + 1, z);
         }
@@ -169,6 +208,7 @@ public:
       ExecuteOrWait(turn);
     }
 
+
     if (use_flip) {
       ExecuteOrWait({Command::make_flip(1)});
     }
@@ -180,7 +220,7 @@ public:
       for (int j = 0; j < m; ++j) {
         for (int i = 0; i < n; ++i) {
           before_fusion.emplace_back(bids[j * n + i],
-                                     Point(i * lenx, R - 1, j * lenz));
+                                     Point(i * lenx + low.x, R - 1, j * lenz + low.z));
         }
       }
 
@@ -190,6 +230,9 @@ public:
 
       LOG(INFO) << "moved to up";
     }
+
+    // OK
+    // return;
 
     for (int j = m - 1; j > 0; --j) {
       std::vector<std::pair<int, Point>> before_fusion;
@@ -227,6 +270,7 @@ public:
       ExecuteOrWait(fusion);
     }
 
+    DoMove({std::make_pair(1, Point(0, R - 1, 0))});
 
     DoMove({std::make_pair(1, Point())});
 
