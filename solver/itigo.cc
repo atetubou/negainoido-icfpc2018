@@ -219,7 +219,7 @@ public:
 
     int cy = 0;
 
-    while (cy < R - 1) {
+    while (cy < R) {
       std::vector<Command> turn;
 
       std::vector<Point> fillable;
