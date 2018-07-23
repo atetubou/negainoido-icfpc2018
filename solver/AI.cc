@@ -18,6 +18,10 @@ std::vector<Command> AI::FillCommand(std::vector<Command> commands, Command fill
   return commands;
 }
 
+std::vector<Command> AI::FillWait(std::vector<Command> commands) const {
+  return FillCommand(commands, Command::make_wait(-1));
+}
+
 /* static */
 Command AI::GetStepSMove(int id, Point start, Point goal) {
   if (start.x != goal.x) {
