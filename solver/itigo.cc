@@ -11,6 +11,8 @@
 
 DEFINE_bool(flip, true, "do flip?");
 DEFINE_bool(json, false, "output json");
+DEFINE_int32(x_num, 6, "x separation");
+DEFINE_int32(z_num, 6, "z separation");
 
 class Itigo : public AI {
   const vvv model;
@@ -116,8 +118,8 @@ public:
 
   void Run() override {
     ExecuteOrWait({Command::make_smove(1, Point(0, 1, 0))});
-    const int n = 6;
-    const int m = 6;
+    const int n = FLAGS_x_num;
+    const int m = FLAGS_z_num;
     DoHaiti(n, m);
 
     int lenx = R / n;
