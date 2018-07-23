@@ -261,7 +261,9 @@ cc_binary(
 
 cc_binary(
     name = "itigo",
-    srcs = ["itigo.cc"],
+    srcs = ["itigo.cc",
+            "itigo.h"
+    ],
     copts = ["-std=c++14"],
     deps = [
         "//external:glog",
