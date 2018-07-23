@@ -229,6 +229,31 @@ int parse_command(const std::string& nbt_content, int i, int* nanobot_num, std::
     return 4;
   }
 
+  if ((nbt_content[i] & 0b111) == 0b001) {
+    // GFill
+    int nd = (nbt_content[i] >> 3) & 0b11111;
+    int dx1, dy1, dz1;
+    LOG_IF(FATAL, !getnearcoordinate(nd, &dx1, &dy1, &dz1))
+      << "encoding error" << std::endl;
+
+    int dx2 = static_cast<int>(nbt_content[i + 1]) - 30;
+    int dy2 = static_cast<int>(nbt_content[i + 2]) - 30;
+    int dz2 = static_cast<int>(nbt_content[i + 3]) - 30;
+
+    (*ss) << "GFill <" << dx1 << ", " << dy1 << ", " << dz1 << ">"  
+          << " <" << dx2 << ", " << dy2 << ", " << dz2 << ">"
+          << std::endl;
+
+    (*command)["command"] = "GFill";
+    (*command)["dx1"] = dx1;
+    (*command)["dy1"] = dy1;
+    (*command)["dz1"] = dz1;
+    (*command)["dx2"] = dx2;
+    (*command)["dy2"] = dy2;
+    (*command)["dz2"] = dz2;
+    return 4;
+  }
+
   LOG(FATAL) << "unknown command? " << binary(nbt_content[i]);
 }
 

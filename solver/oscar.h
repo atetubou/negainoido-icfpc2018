@@ -7,12 +7,13 @@
 #include <set>
 
 class Vox {
-    int color_count;
-    void add_color(int dir);
+    int merge(int l, int r);
+
     public:
     std::vector<bool> voxels;
     std::vector<int> colors;
     std::vector<int> depth;
+    std::vector<int> par;
     std::map< int, std::set<int> > edges;
     int R;
     Vox(const vvv &voxels);
@@ -22,6 +23,9 @@ class Vox {
     void set_color(int v, int x, int y, int z);
     int get_color(Point &p);
     void set_color(int v, Point &p);
+    int add_color();
+    int get_parent(int c);
+    int get_parent_color(int x, int y, int z);
     vvv convert();
 };
 

@@ -169,6 +169,23 @@ cc_binary(
 cc_binary(
     name = "kevin_ai",
     srcs = ["kevin_ai.cc" ],
+    copts = ["-std=c++14"],
+    deps = [
+        "simple_solve_lib",
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        "//src:command_executer",
+        "crimea_ai",
+        "//src/base:flags",
+        ":ai",
+    ],
+)
+
+cc_binary(
+    name = "kevin_ai_debug",
+    srcs = ["kevin_ai.cc" ],
     copts = ["-std=c++14", "-DDCHECK_ALWAYS_ON"],
     deps = [
         "simple_solve_lib",
@@ -245,7 +262,6 @@ cc_binary(
 cc_binary(
     name = "udon_ai",
     srcs = ["udon_ai.cc",
-            "AI.h"
            ],
     copts = ["-std=c++14"],
     deps = [
@@ -256,5 +272,22 @@ cc_binary(
         "//src/base",
         "//src:command_executer",
         "//src/base:flags",
+        ":ai",
+    ],
+)
+
+cc_binary(
+    name = "itigo",
+    srcs = ["itigo.cc"],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
+        "//src/base",
+        "//src:command_executer",
+        "//src/base:flags",
+        ":ai",
     ],
 )
