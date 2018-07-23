@@ -110,9 +110,19 @@ int main(int argc, char* argv[]) {
         int cur_nanobot_num = nanobot_num;
         Json::Value turn;
         std::vector<Command> commands;
+
+        std::vector<int> bid_set;
+        {
+            for (int bid = 1; bid <= 40; ++bid) {
+                if (ce->GetBotStatus()[bid].active) {
+                    bid_set.push_back(bid);
+                }
+            }
+        }
+
         for (int cur_nanobot_idx = 1; cur_nanobot_idx <= cur_nanobot_num; ++cur_nanobot_idx) {
             Json::Value command_json;
-            command_json["bot_id"] = cur_nanobot_idx;
+            command_json["bot_id"] = bid_set[cur_nanobot_idx - 1];
             int n = parse_command(nbt_content, i, &nanobot_num, &ss, &command_json);
             i += n;
             Command command =  Command::JsonToCommand(command_json);
