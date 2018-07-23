@@ -103,6 +103,23 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "vertical_ai",
+    srcs = ["vertical_ai.cc", "AI.h", "simple_solve.h"],
+    copts = ["-std=c++14"],
+    deps = [
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "@com_google_absl//absl/types:span",
+        "//src/base",
+        "square_delete",
+        "//src/base:flags",
+        "simple_solve_lib",
+    ],
+)
+
+
 cc_library(
     name = "crimea_ai",
     copts = ["-std=c++14"],
