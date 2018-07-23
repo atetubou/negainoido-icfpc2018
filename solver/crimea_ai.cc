@@ -276,6 +276,7 @@ bool CrimeaAI::fill_y(const int j, bvv &grounded, int sign) {
     }
 
     for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(grounded[i][k]){
+        DLOG(INFO) << "single fill for" << Point(i,j,k);
         res = true;
         Point cur = ce->GetBotStatus()[1].pos;
         for (auto c : getPath(cur, Point(i, j+sign,k))) {

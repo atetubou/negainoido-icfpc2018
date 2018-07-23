@@ -158,14 +158,20 @@ class KevinAI : public CrimeaAI {
                 ce->Execute({c});
             }
             vox.set(true, i,j,k);
-            vox.set(vox.add_color(), i, j, k);
-            if (ce->GetSystemStatus().harmonics == Harmonics::LOW && vox.get_parent_color(i,j+sign,k) != 0) {
+            vox.set_color(vox.add_color(), i, j, k);
+            if (ce->GetSystemStatus().harmonics == Harmonics::LOW && vox.get_parent_color(i,j,k) != 0) {
                 ce->Execute({Command::make_flip(1)});
             }
             ce->Execute({Command::make_fill(1, Point(0,-sign,0))});
         }
         if(res) {
             DLOG(INFO) << "updated y" << j; 
+        }
+        for (int i=0;i<R;i++) for(int k=0;k<R;k++) {
+            DCHECK(ce->GetSystemStatus().matrix[i][j][k] != VoxelState::VOID || !vox.get(i,j,k)) << "wrong empty";
+            DCHECK(ce->GetSystemStatus().matrix[i][j][k] != VoxelState::FULL || vox.get(i,j,k)) << "wrong full";
+            DCHECK(!vox.get(i,j,k) || vox.get_color(i,j,k) != -1) << "wrong empty color";
+            DCHECK(vox.get(i,j,k) || vox.get_color(i,j,k) == -1) << "wrong full color";
         }
         return res;
     }
