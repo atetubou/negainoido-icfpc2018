@@ -42,6 +42,7 @@ cc_library(
     copts = ["-std=c++14"],
     deps = ["//external:glog",
             "@jsoncpp_git//:jsoncpp",
+            "//src/base",
             "@com_google_absl//absl/types:span",
     ],
 )
