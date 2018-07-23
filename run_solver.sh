@@ -18,7 +18,7 @@ usage() {
     cat <<EOM
 $0
     --mdl_dir               --- default: shared
-    --type {FA | FD | FR}
+    --type {FA | FD | FR | PA | PD}
     --solver             --- "//src:{solver}" (e.g. oscar_ai)
     --solver-opts        --- (e.g. --flip=false)
     -o out/
@@ -100,6 +100,15 @@ for i in $(range "$RANGE"); do
     PROBLEM_ID=$(printf "$TYPE%03d" $i)
     SRC=$(printf "$MDL_DIR/$TYPE%03d_src.mdl" $i)
     TGT=$(printf "$MDL_DIR/$TYPE%03d_tgt.mdl" $i)
+
+    if [ $TYPE = PD ]; then
+        SRC=$(printf "$MDL_DIR/FR%03d_src.mdl" $i)
+        TGT=-
+    elif [ $TYPE = PA ]; then
+        SRC=-
+        TGT=$(printf "$MDL_DIR/FR%03d_tgt.mdl" $i)
+    fi
+
     OUT=$(printf "$OUT_DIR/$TYPE%03d.nbt" $i)
     OUT_REPORT=$(printf "$REPORT_DIR/$TYPE%03d.log" $i)
 
@@ -127,36 +136,3 @@ for i in $(range "$RANGE"); do
 
 done |
 parallel -v -j ${J}
-
-
-# Solve PD*
-if [ $SUBMIT -eq 1 -a $RANGE = "1-1000" -a $TYPE = "FD" ]; then
-
-    for i in $(seq 1 115); do
-        PROBLEM_ID=$(printf "PD%03d" $i)
-        SRC=$(printf "$MDL_DIR/FR%03d_src.mdl" $i)
-        SRC=$(readlink -f $SRC)
-        OUT=$(printf "$OUT_DIR/PD%03d.nbt" $i)
-        TGT=-
-        [ ! -f $SRC ] && continue
-        echo "bazel run //solver:$SOLVER -- --src_filename=$SRC --tgt_filename=$TGT $SOLVER_OPTS >$OUT && curl http://negainoido:icfpc_ojima@35.196.88.166/submit_solution -F problem_id=${PROBLEM_ID} -F solver_id=${SOLVER} -F comment=from-run_solver -F nbt=@${OUT} > /dev/null"
-    done |
-    parallel -v -j ${J}
-fi
-
-
-# Solve PA*
-if [ $SUBMIT -eq 1 -a $RANGE = "1-1000" -a $TYPE = "FA" ]; then
-
-    for i in $(seq 1 115); do
-        PROBLEM_ID=$(printf "PA%03d" $i)
-        SRC=-
-        TGT=$(printf "$MDL_DIR/FR%03d_tgt.mdl" $i)
-        TGT=$(readlink -f $TGT)
-        OUT=$(printf "$OUT_DIR/PA%03d.nbt" $i)
-        [ ! -f $TGT ] && continue
-        echo "bazel run //solver:$SOLVER -- --src_filename=$SRC --tgt_filename=$TGT $SOLVER_OPTS >$OUT && curl http://negainoido:icfpc_ojima@35.196.88.166/submit_solution -F problem_id=${PROBLEM_ID} -F solver_id=${SOLVER} -F comment=from-run_solver -F nbt=@${OUT} > /dev/null"
-    done |
-    parallel -v -j ${J}
-
-fi
