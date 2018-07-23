@@ -48,6 +48,128 @@ static void calc_invalid(queue<P> &invalid, bvv &used, bvv &grounded, bvv &visit
 }
 
 class KevinAI : public CrimeaAI {
+    bool safe_fill_y(const int j, bvv &grounded, int sign) {
+        bool res = false;
+        int fd = min(R, 6);
+        for (int i=0;i<R-fd;i++) for (int k=0;k<R-fd;k++) if(grounded[i][k]) {
+            int p=0; int q=0;
+            while(p < fd && grounded[i+p][k]) p++;
+            while(q < fd && grounded[i][k+q]) q++;
+            if (p==1 || q == 1) continue;
+            bool flag = true;
+            for (int s=0;s<p;s++) for (int t=0;t<q;t++) if(!tvox.get(i+s,j,k+t)) {
+                flag = false;
+                break;
+            }
+            if (flag && (p> 2 || q > 2)) {
+                bool shouldHigh = false;
+                if (ce->GetSystemStatus().harmonics == Harmonics::LOW) {
+                    shouldHigh = true;
+                    for (int s=0;s<p;s++) for (int t=0;t<q;t++) if(vox.get(i+s,j-sign,k+t)) {
+                        shouldHigh = false;
+                        s = p; t = q;
+                    }
+                }
+                DLOG(INFO) << "try s fill y " << p << " " << q;
+                p--; q--;
+                Point cur = ce->GetBotStatus()[1].pos;
+                for (auto c : getPath(cur, Point(i, j + sign,k))) {
+                    ce->Execute({c});
+                }
+                DLOG(INFO) << "try fisision";
+                ce->Execute({Command::make_fission(1, dP[UP_X], 1)});
+                ce->Execute({Command::make_fission(1, dP[UP_Z], 0), Command::make_fission(2, dP[UP_Z], 0)});
+                vector<Command> moving;
+                DLOG(INFO) << "try moving";
+                moving.push_back(Command::make_wait(1));
+                if (p==1) {
+                    moving.push_back(Command::make_wait(2));
+                    moving.push_back(Command::make_smove(3, dP[UP_Z] * (q-1)));
+                    moving.push_back(Command::make_smove(4, dP[UP_Z] * (q-1)));
+                } else if (q==1) {
+                    moving.push_back(Command::make_smove(2, dP[UP_X] * (p-1)));
+                    moving.push_back(Command::make_smove(3, dP[UP_X] * (p-1)));
+                    moving.push_back(Command::make_wait(4));
+                } else {
+                    moving.push_back(Command::make_smove(2, dP[UP_X] * (p-1)));
+                    moving.push_back(Command::make_lmove(3, dP[UP_X] * (p-1), dP[UP_Z] * (q-1)));
+                    moving.push_back(Command::make_smove(4, dP[UP_Z] * (q-1)));
+                }
+                ce->Execute(moving);
+                if (shouldHigh) {
+                    DLOG(INFO) << "need to high";
+                    ce->Execute({
+                        Command::make_flip(1),
+                        Command::make_wait(2),
+                        Command::make_wait(3),
+                        Command::make_wait(4)
+                    });
+                }
+                DLOG(INFO) << "try gfill";
+                ce->Execute({
+                    Command::make_gfill(1, dP[UP_Y] * -sign,  Point(p,0,q)),
+                    Command::make_gfill(2, dP[UP_Y] * -sign,  Point(-p,0,q)),
+                    Command::make_gfill(3, dP[UP_Y] * -sign,  Point(-p,0,-q)),
+                    Command::make_gfill(4, dP[UP_Y] * -sign,  Point(p,0,-q)),
+
+                });
+                int color = vox.add_color();
+                for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
+                    grounded[i+s][k+t] = false;
+                    vox.set(true, i+s, j,k+t);
+                    vox.set_color(color, i+s, j, k+t);
+                }
+                
+                DLOG(INFO) << "try moving";
+                moving.clear();
+                moving.push_back(Command::make_wait(1));
+                if (p==1) {
+                    moving.push_back(Command::make_wait(2));
+                    moving.push_back(Command::make_smove(3, Point(0,0,-q+1)));
+                    moving.push_back(Command::make_smove(4, Point(0,0,-q+1)));
+                } else if (q==1) {
+                    moving.push_back(Command::make_smove(2, Point(-p+1,0,0)));
+                    moving.push_back(Command::make_smove(3, Point(-p+1,0,0)));
+                    moving.push_back(Command::make_wait(4));
+                } else {
+                    moving.push_back(Command::make_smove(2, Point(-p+1,0,0)));
+                    moving.push_back(Command::make_lmove(3, Point(-p+1,0,0), Point(0,0,-q+1)));
+                    moving.push_back(Command::make_smove(4, Point(0,0,-q+1)));
+                }
+                ce->Execute(moving);
+                ce->Execute({
+                    Command::make_fusion_p(1, dP[UP_Z]),
+                    Command::make_fusion_p(2, dP[UP_Z]),
+                    Command::make_fusion_s(3, dP[UP_Z] * -1),
+                    Command::make_fusion_s(4, dP[UP_Z] * -1),
+                });
+                ce->Execute({
+                    Command::make_fusion_p(1, dP[UP_X]),
+                    Command::make_fusion_s(2, dP[UP_X] * -1),
+                });
+                q++;
+                res = true;
+            }
+        }
+        for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(grounded[i][k]){
+            res = true;
+            Point cur = ce->GetBotStatus()[1].pos;
+            for (auto c : getPath(cur, Point(i, j+sign,k))) {
+                ce->Execute({c});
+            }
+            vox.set(true, i,j,k);
+            vox.set(vox.add_color(), i, j, k);
+            if (ce->GetSystemStatus().harmonics == Harmonics::LOW && vox.get_parent_color(i,j+sign,k) != 0) {
+                ce->Execute({Command::make_flip(1)});
+            }
+            ce->Execute({Command::make_fill(1, Point(0,-sign,0))});
+        }
+        if(res) {
+            DLOG(INFO) << "updated y" << j; 
+        }
+        return res;
+    }
+
   public:
     KevinAI(const vvv &src_model, const vvv &tgt_model) : CrimeaAI(src_model, tgt_model) { };
     ~KevinAI() override = default;
@@ -110,7 +232,6 @@ class KevinAI : public CrimeaAI {
             grounded[i][k] = true;
         }
         fill_y(0,grounded, 1);
-        bool high = false;
         for (int j=1;j<R;j++) {
             grounded = bvv(R, bv(R,false));
             bool find = false;
@@ -120,13 +241,20 @@ class KevinAI : public CrimeaAI {
                     find = true;
                 }
             }
-            if (find && !high) {
-                ce->Execute({Command::make_flip(1)});
-                high = true;
+            safe_fill_y(j,grounded,1);
+            if (ce->GetSystemStatus().harmonics == Harmonics::HIGH) {
+                int find = false;
+                for (int i=0;i<R;i++) for (int k=0;k<R;k++) if (vox.get(i,j,k) && vox.get_parent_color(i,j,k)!= 0) {
+                    find = true;
+                    break;
+                }
+                if(!find) {
+                    DLOG(INFO) << "seems safe";
+                    ce->Execute({Command::make_flip(1)});
+                }
             }
-            fill_y(j,grounded,1);
         }
-        if (high) {
+        if (ce->GetSystemStatus().harmonics != Harmonics::LOW) {
             ce->Execute({Command::make_flip(1)});
         }
 
