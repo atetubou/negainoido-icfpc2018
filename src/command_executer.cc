@@ -142,9 +142,6 @@ bool CommandExecuter::AllVoxelsAreGrounded() {
   if (!valid_grounded_memo) {
     UpdateGroundedMemo();
   }
-  if (!all_voxels_are_grounded) {
-    std::cout << Json2Binary(GetJson());
-  }
 
   return all_voxels_are_grounded;
 }
