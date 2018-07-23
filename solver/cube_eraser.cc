@@ -116,12 +116,11 @@ class CubeEraser : public AI {
           3,
           ce->GetBotStatus()[3].pos,
           ce->GetBotStatus()[3].pos + Point(0, 0, goal_dz));
-      for (size_t i = 0; i < commands.size(); ++i) {
+      for (auto& c : commands) {
         exec({
             Command::make_wait(1),
             Command::make_wait(2),
-            command_by(commands[i], 3),
-            command_by(commands[i], 6),
+            c, command_by(c, 6)
             });
       }
     }
