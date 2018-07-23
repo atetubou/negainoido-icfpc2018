@@ -89,11 +89,17 @@ class CommandExecuter {
   bool output_json;
 
   // Used for IsGrounded
-  bool grounded_memo[kMaxResolution][kMaxResolution][kMaxResolution];
-  bool all_voxels_are_grounded = true;
-  // false if VOID/GVOID was called after the last calculation
-  // or harmonics == HIGH
-  bool valid_grounded_memo = false;
+  uint32_t grounded_memo[kMaxResolution+1][kMaxResolution+1][kMaxResolution+1];
+  size_t grounded_gsize[kMaxResolution+1][kMaxResolution+1][kMaxResolution+1];
+
+  // false if VOID/GVOID was called after the last calculation.
+  bool grounded_memo_is_valid = false;
+
+  size_t num_filled_voxels = 0;
+
+  // Uinion-Find for grounded_memo.
+  void Union(const Point&p1, const Point& p2);
+  uint32_t Find(int x, int y, int z);
 
   // utility
   bool IsActiveBotId(const uint32_t id);
