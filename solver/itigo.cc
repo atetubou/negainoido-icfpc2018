@@ -196,49 +196,61 @@ public:
     int lenx = Rx / n;
     int lenz = Rz / m;
 
-    std::vector<std::vector<Point>> targets(n * m);
-    
-    auto XZorder = GetXZ(Rx, Rz);
+    vvv will_visit(R, vv(R, v(R)));
 
-    for (int sy = 0; sy < Ry - 1; ++sy) {
-      for (auto xz : XZorder) {
-        int x = xz.first + low.x;
-        int y = sy + low.y;
-        int z = xz.second + low.z;
-        if (!model[x][y][z]) continue;
+    std::vector<std::set<std::pair<int, Point>>> targets(n * m);
 
-        int bx = std::min(xz.first / lenx, n - 1);
-        int bz = std::min(xz.second / lenz, m - 1);
+    for (int x = 0; x < R; ++x) {
+      for (int z = 0; z < R; ++z) {
+        if (model[x][0][z]) {
+          int bx = std::min((x - low.x) / lenx, n - 1);
+          int bz = std::min((z - low.z) / lenz, m - 1);
           
-        targets[bz * n + bx].emplace_back(x, y + 1, z);
+          targets[bz * n + bx].emplace(1, Point(x, 1, z));
+          will_visit[x][0][z] = true;
+        }
       }
-      std::reverse(XZorder.begin(), XZorder.end());
     }
-
+    
     if (use_flip) {
       ExecuteOrWait({Command::make_flip(1)});
       flipped = true;
     }
 
-    std::vector<size_t> idx(n * m);
-    while (true) {
+    int cy = 0;
+
+    while (cy < R - 1) {
       std::vector<Command> turn;
 
-      bool need_flip = false;
+      std::vector<Point> fillable;
 
       for (size_t i = 0; i < targets.size(); ++i) {
-        if (idx[i] == targets[i].size()) continue;
-        const Point target = targets[i][idx[i]];
+        if (targets[i].empty()) continue;
+        if (targets[i].begin()->first > cy) continue;
+        CHECK_EQ(targets[i].begin()->first, cy);
+
+        const Point target = targets[i].begin()->second;
         int bid = bids[i];
         
         if (bot(bid).pos == target) {
-          ++idx[i];
           turn.push_back(Command::make_fill(bid, Point(0, -1, 0)));
-          auto down2 = bot(bid).pos;
-          down2.y -= 2;
+          targets[i].erase(targets[i].begin());
+          
+          const auto fillpos = bot(bid).pos + Point(0, -1, 0);
 
-          if (down2.y >= 1 && model[down2.x][down2.y][down2.z] == 0) {
-            need_flip = true;
+          int dx[] = {0, 1, 0, -1, 0};
+          int dy[] = {0, 0, 0, 0, 1};
+          int dz[] = {1, 0, -1, 0, 0};
+          for (int d = 0; d < 5; ++d) {
+            auto p = fillpos + Point(dx[d], dy[d], dz[d]);
+            if (p.x < 0 || R <= p.x ||
+                p.y < 0 || R <= p.y ||
+                p.z < 0 || R <= p.z) {
+              continue;
+            }
+            if (!model[p.x][p.y][p.z]) continue;
+            
+            fillable.push_back(p);
           }
 
           continue;
@@ -248,16 +260,22 @@ public:
       }
       
       if (turn.empty()) {
-        break;
-      }
-
-      if (need_flip && !flipped) {
-        LOG(INFO) << "flip ";
-        ExecuteOrWait({Command::make_flip(1)});
-        flipped = true;
+        ++cy;
+        continue;
       }
 
       ExecuteOrWait(turn);
+
+      for (const auto& p : fillable) {
+        if (ce->IsFull(p)) continue;
+        if (will_visit[p.x][p.y][p.z]) continue;
+        will_visit[p.x][p.y][p.z] = true;
+
+        int bx = std::min((p.x - low.x) / lenx, n - 1);
+        int bz = std::min((p.z - low.z) / lenz, m - 1);
+        
+        targets[bz * n + bx].emplace(p.y + 1, Point(p.x, p.y + 1, p.z));
+      }
     }
 
     if (flipped) {
