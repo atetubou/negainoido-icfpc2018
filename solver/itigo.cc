@@ -9,7 +9,7 @@
 
 #include "solver/AI.h"
 
-DEFINE_bool(flip, true, "do flip?");
+DEFINE_bool(flip, false, "do flip?");
 DEFINE_bool(json, false, "output json");
 DEFINE_int32(x_num, 6, "x separation");
 DEFINE_int32(z_num, 6, "z separation");
@@ -25,6 +25,7 @@ class Itigo : public AI {
   int Rx = 0;
   int Ry = 0;
   int Rz = 0;
+  bool flipped = false;
 
 public:
   Itigo(const vvv &model, bool use_flip) 
@@ -222,6 +223,8 @@ public:
     while (true) {
       std::vector<Command> turn;
 
+      bool need_flip = false;
+
       for (size_t i = 0; i < targets.size(); ++i) {
         if (idx[i] == targets[i].size()) continue;
         const Point target = targets[i][idx[i]];
@@ -230,6 +233,13 @@ public:
         if (bot(bid).pos == target) {
           ++idx[i];
           turn.push_back(Command::make_fill(bid, Point(0, -1, 0)));
+          auto down2 = bot(bid).pos;
+          down2.y -= 2;
+
+          if (down2.y >= 0 && model[down2.x][down2.y][down2.z] == 0) {
+            need_flip = true;
+          }
+
           continue;
         }
 
@@ -240,14 +250,17 @@ public:
         break;
       }
 
+      if (need_flip && !flipped) {
+        ExecuteOrWait({Command::make_flip(1)});
+        flipped = true;
+      }
+
       ExecuteOrWait(turn);
     }
 
-
-    if (use_flip) {
+    if (flipped) {
       ExecuteOrWait({Command::make_flip(1)});
     }
-
     
     {
       std::vector<std::pair<int, Point>> before_fusion;
