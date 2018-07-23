@@ -45,7 +45,7 @@ class CommandExecuter {
     Point pos;
     std::set<uint32_t> seeds;
     BotStatus();
-    std::pair<BotStatus, BotStatus> TryFission(const Point& p, int m);
+    std::pair<BotStatus, BotStatus> TryFission(const Point& p, int m) const;
   };
 
   CommandExecuter(int R, bool output_json);
