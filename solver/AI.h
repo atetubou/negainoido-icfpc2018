@@ -24,6 +24,8 @@ class AI {
   std::vector<Command> FillCommand(std::vector<Command> commands,
                                    Command c) const;
 
+  std::vector<Command> FillWait(std::vector<Command> commands) const;
+
   // id番目のボットをstartからgoalに一ステップ近づけるようなSMoveを返す
   static Command GetStepSMove(int id, Point start, Point goal);
 
