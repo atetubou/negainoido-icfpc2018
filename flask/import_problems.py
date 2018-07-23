@@ -69,7 +69,8 @@ for problem in problems:
         curr.execute('insert into problems(name) values (%s)', (pd_name,))
         continue
     tgt_path = 'static/problems/'+pd_name+'_tgt.mdl'
-    shutil.copy( problem['filepath'], src_path)
+    shutil.copy( problem['filepath'], tgt_path)
+    print(tgt_path,src_path)
 
     curr.execute('update problems set filepath = %s where name = %s' , (tgt_path, pd_name))
     curr.close()
