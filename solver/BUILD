@@ -60,7 +60,6 @@ cc_binary(
 cc_binary(
     name = "sample_ai",
     srcs = ["sample_ai.cc",
-            "AI.h",
            ],
     copts = ["-std=c++14"],
     deps = [
@@ -70,6 +69,7 @@ cc_binary(
         "//src/base",
         "//src:command_executer",
         "//src/base:flags",
+        ":ai",
     ],
 )
 
@@ -119,7 +119,6 @@ cc_library(
 cc_binary(
     name = "oscar_ai",
     srcs = ["oscar_ai.cc",
-            "AI.h",
            ],
     copts = ["-std=c++14"],
     deps = [
@@ -131,6 +130,7 @@ cc_binary(
         "//src:command_executer",
         "oscar",
         "//src/base:flags",
+        ":ai",
     ],
 )
 
@@ -139,7 +139,6 @@ cc_binary(
     srcs = ["duskin_ai.cc",
             "duskin_lib.h",
             "duskin_lib.cc",
-            "AI.h",
            ],
     copts = ["-std=c++14"],
     deps = [
@@ -147,6 +146,7 @@ cc_binary(
         "//src/base",
         "//src:command_executer",
         "//src/base:flags",
+        ":ai",
     ],
 )
 
@@ -155,7 +155,6 @@ cc_binary(
     srcs = ["smarter_duskin_ai.cc",
             "duskin_lib.h",
             "duskin_lib.cc",
-            "AI.h",
            ],
     copts = ["-std=c++14"],
     deps = [
@@ -163,14 +162,26 @@ cc_binary(
         "//src/base",
         "//src:command_executer",
         "//src/base:flags",
+        ":ai",
+    ],
+)
+
+cc_library(
+    name = "ai",
+    srcs = [
+        "AI.h",
+        "AI.cc",
+    ],
+    copts = ["-std=c++14"],
+    deps =[
+        "//src/base",
+        "//src:command_executer",
     ],
 )
 
 cc_binary(
     name = "cube_eraser",
-    srcs = ["cube_eraser.cc",
-            "AI.h",
-           ],
+    srcs = ["cube_eraser.cc"],
     copts = ["-std=c++14"],
     deps = [
         "@com_google_absl//absl/types:span",
@@ -178,5 +189,6 @@ cc_binary(
         "//src/base",
         "//src:command_executer",
         "//src/base:flags",
+        ":ai",
     ],
 )
