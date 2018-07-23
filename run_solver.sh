@@ -142,5 +142,21 @@ if [ $SUBMIT -eq 1 -a $RANGE = "1-1000" -a $TYPE = "FD" ]; then
         echo "bazel run //solver:$SOLVER -- --src_filename=$SRC --tgt_filename=$TGT $SOLVER_OPTS >$OUT && curl http://negainoido:icfpc_ojima@35.196.88.166/submit_solution -F problem_id=${PROBLEM_ID} -F solver_id=${SOLVER} -F comment=from-run_solver -F nbt=@${OUT} > /dev/null"
     done |
     parallel -v -j ${J}
+fi
+
+
+# Solve PA*
+if [ $SUBMIT -eq 1 -a $RANGE = "1-1000" -a $TYPE = "FA" ]; then
+
+    for i in $(seq 1 115); do
+        PROBLEM_ID=$(printf "PA%03d" $i)
+        SRC=-
+        TGT=$(printf "$MDL_DIR/FR%03d_tgt.mdl" $i)
+        TGT=$(readlink -f $TGT)
+        OUT=$(printf "$OUT_DIR/PA%03d.nbt" $i)
+        [ ! -f $TGT ] && continue
+        echo "bazel run //solver:$SOLVER -- --src_filename=$SRC --tgt_filename=$TGT $SOLVER_OPTS >$OUT && curl http://negainoido:icfpc_ojima@35.196.88.166/submit_solution -F problem_id=${PROBLEM_ID} -F solver_id=${SOLVER} -F comment=from-run_solver -F nbt=@${OUT} > /dev/null"
+    done |
+    parallel -v -j ${J}
 
 fi
