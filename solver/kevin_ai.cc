@@ -20,6 +20,9 @@ static Point dP[] = {
     Point(0,0,1)
 };
 
+#define FOR(i,a,b) for(int i=(a);i<(int)(b);i++)
+#define REP(i,n)  FOR(i,0,n)
+#define INR(x,R) (0 <= (x) && (x) < (R))
 
 
 using namespace std;
@@ -50,173 +53,283 @@ static void calc_invalid(queue<P> &invalid, bvv &used, bvv &grounded, bvv &visit
 }
 
 class KevinAI : public CrimeaAI {
-    bool safe_fill_y_execute(int i, int j, int k, bvv &grounded, int fd, int sign, int id) {
-        bool res = false;
-        int p=0; int q=0;
-        while(p < fd && grounded[i+p][k]) p++;
-        while(q < fd && grounded[i][k+q]) q++;
-        if (p==1 || q == 1) return false;
-        bool flag = true;
-        for (int s=0;s<p;s++) for (int t=0;t<q;t++) if(!tvox.get(i+s,j,k+t)) {
-            flag = false;
-            break;
+    void tryReserve(VBot &b, VArea &varea) {
+        if(b.reserved.empty()) {
+            b.state = VBot::SLEEPING;
+            return;
         }
-        if (flag && (p> 2 || q > 2)) {
-            DLOG(INFO) << "try s fill y " << p << " " << q;
-            p--; q--;
-            Point cur = ce->GetBotStatus()[1].pos;
-            for (auto c : getPath(cur, Point(i, j + sign,k))) {
-                ce->Execute({c});
-            }
-            DLOG(INFO) << "try fisision";
-            vector<int> ids(4);
-            ids[0] = id;
-            auto itr = ce->GetBotStatus()[id].seeds.begin();
-            for (int s=1;s<4;s++) {
-                ids[s] = *itr;
-                itr++;
-            }
+        auto &tar = b.reserved.front();
+        DLOG(INFO) << "check reserved" << tar.x << " " << tar.ex << " " << tar.z << " " << tar.ez;
+        if (!varea.reserve(b.id, b.reserved.front())) {
+            DLOG(INFO) << "failed to reserve " << b.id;
+            return;
+        }
+        DLOG(INFO) << "empty start reserve";
+        queue<P> que;
+        vv memo = vv(R, v(R, -1));
+        int count = 0;
+        int fx =-1,fz =-1;
+        que.push(P(b.pos.x, b.pos.z));
+        while(!que.empty()) {
 
-            ce->Execute({Command::make_fission(ids[0], dP[UP_X], 1)});
-            ce->Execute({Command::make_fission(ids[0], dP[UP_Z], 0), Command::make_fission(ids[1], dP[UP_Z], 0)});
-            vector<Command> moving;
-            DLOG(INFO) << "try moving";
-            moving.push_back(Command::make_wait(ids[0]));
-            if (p==1) {
-                moving.push_back(Command::make_wait(ids[1]));
-                moving.push_back(Command::make_smove(ids[2], dP[UP_Z] * (q-1)));
-                moving.push_back(Command::make_smove(ids[3], dP[UP_Z] * (q-1)));
-            } else if (q==1) {
-                moving.push_back(Command::make_smove(ids[1], dP[UP_X] * (p-1)));
-                moving.push_back(Command::make_smove(ids[2], dP[UP_X] * (p-1)));
-                moving.push_back(Command::make_wait(ids[3]));
-            } else {
-                moving.push_back(Command::make_smove(ids[1], dP[UP_X] * (p-1)));
-                moving.push_back(Command::make_lmove(ids[2], dP[UP_X] * (p-1), dP[UP_Z] * (q-1)));
-                moving.push_back(Command::make_smove(ids[3], dP[UP_Z] * (q-1)));
+            int curx = que.front().first;
+            int curz = que.front().second;
+            DVLOG(2) << "searching " << curx << " " << curz;
+            que.pop();
+            if(memo[curx][curz] != -1) continue;
+            memo[curx][curz] = count;
+            if(b.inNextTarget(curx,curz)) {
+                fx= curx;
+                fz=curz;
+                break;
             }
-            ce->Execute(moving);
-            bool shouldHigh = false;
-            int color = vox.add_color();
-            for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
-                vox.set(true, i+s, j,k+t);
-                vox.set_color(color, i+s, j, k+t);
-            }
-            if (ce->GetSystemStatus().harmonics == Harmonics::LOW) {
-                shouldHigh = vox.get_parent_color(i,j,k) != 0;
-            }
-            if (shouldHigh) {
-                DLOG(INFO) << "need to high";
-                ce->Execute({
-                    Command::make_flip(ids[0]),
-                    Command::make_wait(ids[1]),
-                    Command::make_wait(ids[2]),
-                    Command::make_wait(ids[3])
-                });
-            }
-            while(1) {
-                DLOG(INFO) << "try gfill";
-                ce->Execute({
-                    Command::make_gfill(ids[0], dP[UP_Y] * -sign,  Point(p,0,q)),
-                    Command::make_gfill(ids[1], dP[UP_Y] * -sign,  Point(-p,0,q)),
-                    Command::make_gfill(ids[2], dP[UP_Y] * -sign,  Point(-p,0,-q)),
-                    Command::make_gfill(ids[3], dP[UP_Y] * -sign,  Point(p,0,-q)),
-                });
-                for (int s=0;s<p+1;s++) for (int t=0;t<q+1;t++) {
-                    grounded[i+s][k+t] = false;
-                    vox.set(true, i+s, j,k+t);
-                    vox.set_color(color, i+s, j, k+t);
-                }
-                int r = 1;
-                while(k + q + r < R-1 && r < q) {
-                    bool flag = true;
-                    for(int s=0;s<p+1;s++) if(!grounded[i+s][k+q+r]){
-                        flag = false;
-                        break;
-                    }
-                    if(!flag) break;
-                    r++;
-                }
-                r--;
-                if (r > 1) {
-                    DLOG(INFO) << "try gfill again. move +" << r;
-                    ce->Execute({
-                        Command::make_smove(ids[0], Point(0,0,r)),
-                        Command::make_smove(ids[1], Point(0,0,r)),
-                        Command::make_smove(ids[2], Point(0,0,r)),
-                        Command::make_smove(ids[3], Point(0,0,r))
-                    });
-                    k+= r;
-                } else {
-                    break;
+            count++;
+
+            REP (i,4) {
+                int nx = curx + dx[i];
+                int nz = curz + dy[i];
+                if (varea.checkReserve(b.id, nx, nz)) {
+                    que.push(P(nx,nz));
                 }
             }
-            
-            DLOG(INFO) << "try moving";
-            moving.clear();
-            moving.push_back(Command::make_wait(ids[0]));
-            if (p==1) {
-                moving.push_back(Command::make_wait(ids[1]));
-                moving.push_back(Command::make_smove(ids[2], Point(0,0,-q+1)));
-                moving.push_back(Command::make_smove(ids[3], Point(0,0,-q+1)));
-            } else if (q==1) {
-                moving.push_back(Command::make_smove(ids[1], Point(-p+1,0,0)));
-                moving.push_back(Command::make_smove(ids[2], Point(-p+1,0,0)));
-                moving.push_back(Command::make_wait(ids[3]));
-            } else {
-                moving.push_back(Command::make_smove(ids[1], Point(-p+1,0,0)));
-                moving.push_back(Command::make_lmove(ids[2], Point(-p+1,0,0), Point(0,0,-q+1)));
-                moving.push_back(Command::make_smove(ids[3], Point(0,0,-q+1)));
-            }
-            ce->Execute(moving);
-            ce->Execute({
-                Command::make_fusion_p(ids[0], dP[UP_Z]),
-                Command::make_fusion_p(ids[1], dP[UP_Z]),
-                Command::make_fusion_s(ids[2], dP[UP_Z] * -1),
-                Command::make_fusion_s(ids[3], dP[UP_Z] * -1),
-            });
-            ce->Execute({
-                Command::make_fusion_p(ids[0], dP[UP_X]),
-                Command::make_fusion_s(ids[1], dP[UP_X] * -1),
-            });
-            q++;
-            res = true;
         }
-        return res;
+        if (fx==-1 || fz== -1 || memo[fx][fz] == -1) {
+            DLOG(INFO) << "failed to reseve";
+            b.state = VBot::WAITING;
+            return;
+        } else if(memo[fx][fz]==0) {
+            DLOG(INFO) << "set working";
+            b.state = VBot::WORKING;
+        } else {
+            DLOG(INFO) << "set moving";
+            b.state = VBot::MOVING;
+            int curx = fx;
+            int curz = fz;
+            bool res = varea.reserve(b.id, curx, curz);
+            DCHECK(res);
+            while(curx != b.pos.x || curz != b.pos.z) {
+                int md = -1;
+                int mc = memo[curx][curz];
+                for (int i=0;i<4;i++) {
+                    int nx = curx+dx[i];
+                    int nz = curz+dy[i];
+                    if (nx>=0 && nx < R && nz >=0 && nz < R && memo[nx][nz] != -1 && memo[nx][nz] < mc) {
+                        md = i;
+                        mc = memo[nx][nz];
+                    }
+                }
+                DCHECK(md != -1) << "back trace failed at " << curx << " " << curz;
+                curx += dx[md];
+                curz += dy[md];
+                varea.reserve(b.id, curx, curz);
+                DLOG(INFO) << "reserved path " << curx << " " << curz;
+            }
+        }
+        DLOG(INFO) << "reserve area" << b.id;
+        varea.reserve(b.id, tar);
     }
 
-    bool safe_fill_y(const int j, bvv &grounded, int sign) {
-        bool res = false;
-        int fd = min(R, 6);
-        for (int i=0;i<R-fd;i++) for (int k=0;k<R-fd;k++) if(grounded[i][k] && vox.get(i,j-sign,k)) {
-            res |= safe_fill_y_execute(i,j,k,grounded,fd,sign, 1);
-        }
-        for (int i=0;i<R-fd;i++) for (int k=0;k<R-fd;k++) if(grounded[i][k]) {
-            res |= safe_fill_y_execute(i,j,k,grounded,fd,sign, 1);
-        }
-        for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(grounded[i][k]){
-            res = true;
-            Point cur = ce->GetBotStatus()[1].pos;
-            for (auto c : getPath(cur, Point(i, j+sign,k))) {
-                ce->Execute({c});
+    Command moveReservedPath(VBot &b, VArea &varea) {
+        DLOG(INFO) << "start moving";
+        for (int i=0;i<4;i++) {
+            int nx = b.pos.x;
+            int nz = b.pos.z;
+            int d=0;
+            while(INR(nx+dx[i],R) && INR(nz+dy[i],R) && varea.get(nx+dx[i],nz+dy[i])==b.id && d < 15 && !b.inNextTarget(nx, nz)) {
+                varea.free(nx,nz);
+                d += 1;
+                nx += dx[i];
+                nz += dy[i];
             }
-            vox.set(true, i,j,k);
-            vox.set_color(vox.add_color(), i, j, k);
-            if (ce->GetSystemStatus().harmonics == Harmonics::LOW && vox.get_parent_color(i,j,k) != 0) {
-                ce->Execute({Command::make_flip(1)});
+            if (d==0 && !b.inNextTarget(nx,nz)) continue;
+            DLOG(INFO) << "get dir";
+            DLOG(INFO) << "move to " << b.pos.x << " " << b.pos.z << " to " << nx << " " << nz;
+            b.pos.x = nx;
+            b.pos.z = nz;
+            if (b.inNextTarget(nx,nz)) {
+                DLOG(INFO) << "reached";
+                b.state = VBot::WORKING;
             }
-            ce->Execute({Command::make_fill(1, Point(0,-sign,0))});
+            DCHECK(varea.get(nx,nz) == b.id) << "invalid move" << nx << " "  << nz << " " << b.id;
+            return Command::make_smove(b.id, Point(dx[i]*d, 0, dy[i]*d));
         }
-        if(res) {
-            DLOG(INFO) << "updated y" << j; 
+        LOG(INFO) << "FAILED to construct path";
+        return Command::make_wait(b.id);
+    }
+
+    Command workVBot(VBot &b, VArea &varea) {
+        DLOG(INFO) << "let's work";
+        int cx = b.pos.x;
+        int cy = b.pos.y-1;
+        int cz = b.pos.z;
+        if (!vox.get(cx,cy,cz) && tvox.get(cx,cy,cz)) {
+            vox.set(true, cx,cy,cz);
+            vox.set_color(vox.add_color(), cx,cy,cz);
+            return Command::make_fill(b.id, Point(0, -1, 0));
         }
-        for (int i=0;i<R;i++) for(int k=0;k<R;k++) {
-            DCHECK(ce->GetSystemStatus().matrix[i][j][k] != VoxelState::VOID || !vox.get(i,j,k)) << "wrong empty";
-            DCHECK(ce->GetSystemStatus().matrix[i][j][k] != VoxelState::FULL || vox.get(i,j,k)) << "wrong full";
-            DCHECK(!vox.get(i,j,k) || vox.get_color(i,j,k) != -1) << "wrong empty color";
-            DCHECK(vox.get(i,j,k) || vox.get_color(i,j,k) == -1) << "wrong full color";
+        auto tar = b.reserved.front();
+        FOR(i,tar.x,tar.ex) FOR(j,tar.z,tar.ez)  {
+            if (!vox.get(i,cy,j) && tvox.get(i,cy,j)) {
+                b.pos.x = i;
+                b.pos.z = j;
+                DCHECK(varea.get(i,j)==b.id) << "invalid move" << i << " "  << j << " " << b.id << " " << varea.get(i,j);
+                if(i==cx) return Command::make_smove(b.id, Point(0,0,j-cz));
+                if(j==cz) return Command::make_smove(b.id, Point(i-cx,0,0));
+                return Command::make_lmove(b.id, Point(i-cx,0,0), Point(0,0,j-cz));
+            }
         }
-        return res;
+        varea.freeArea(b,tar);
+        b.state = VBot::WAITING;
+        b.reserved.pop();
+        return Command::make_wait(b.id);
+    }
+
+    // assumption: all y of vbot pos are j;
+    void run_parallel(vector<VBot> &vbots, int j) {
+        DLOG(INFO) << "exec parallel";
+        bool busy = true;
+
+        VArea varea = VArea(R);
+        for (auto &b:vbots) {
+            varea.reserve(b.id, b.pos.x, b.pos.z);
+            b.state = VBot::WAITING;
+        }
+        while (busy) {
+            busy = false;
+            vector<Command> real_commands;
+
+            for (auto &b : vbots) {
+                switch(b.state) {
+                    case VBot::SLEEPING:
+                        real_commands.push_back(Command::make_wait(b.id));
+                        break;
+                    case VBot::MOVING:
+                        busy = true;
+                        real_commands.push_back(moveReservedPath(b, varea));
+                        break;
+                    case VBot::WAITING:
+                        DLOG(INFO) << " now waiting " << b.id;
+                        busy = true;
+                        tryReserve(b, varea); 
+                        if (b.state == VBot::MOVING) {
+                            DLOG(INFO) << " start moving " << b.id;
+                            real_commands.push_back(moveReservedPath(b, varea));
+                        } else if (b.state==VBot::WORKING) {
+                            DLOG(INFO) << " start working " << b.id;
+                            real_commands.push_back(workVBot(b, varea));
+                        } else if (b.state==VBot::SLEEPING) {
+                            DLOG(INFO) << " start sleeping " << b.id;
+                            if(b.pos.y+1 < R) {
+                                b.pos.y++;
+                                real_commands.push_back(Command::make_smove(b.id, dP[UP_Y]));
+                            } else {
+                                real_commands.push_back(Command::make_wait(b.id));
+                            }
+                        } else {
+                            DLOG(INFO) << " wait agin" << b.id;
+                            real_commands.push_back(Command::make_wait(b.id));
+                        }
+                        break;
+                    case VBot::WORKING:
+                        busy = true;
+                        real_commands.push_back(workVBot(b, varea));
+                        DLOG(INFO) << " work end" << b.id;
+                        break;
+                    default:
+                        LOG(FATAL) << "INVALID STATE";
+                }
+            }
+            for (auto &b: vbots) {
+                DLOG(INFO) << "vbots " << b.id << " state " << b.state << " pos " << b.pos;
+                DCHECK(b.pos.y != j || varea.get(b.pos.x,b.pos.z) == b.id) << "on not reserved pos " << varea.get(b.pos.x,b.pos.z);
+            }
+            varea.runFree();
+
+
+            if (busy) {
+                DLOG(INFO) << "running parallel";
+                DCHECK(real_commands.size() == vbots.size()) << "missing real command";
+                ce->Execute(real_commands);
+                for (auto &b: vbots) {
+                    DCHECK(b.pos == ce->GetBotStatus()[b.id].pos) << "failed to check vpos";
+                }
+            }
+        }
+        DLOG(INFO) << "finished";
+    }
+
+    void parallel_fusion(vector<VBot> &vbots) {
+        int y = vbots[0].pos.y;
+        set<Point> invalid;
+        for (auto &bot:vbots) {
+            invalid.insert(bot.pos);
+        }
+        REP (i,vbots.size()) {
+            vector<Command> bc = getPath(vbots[i].pos, Point(0,y,i), invalid);
+            for (auto c : bc) {
+                vector<Command> cs;
+                c.id = vbots[i].id;
+                REP (j,vbots.size()) {
+                    if(i==j) {
+                        cs.push_back(c);
+                    } else {
+                        cs.push_back(Command::make_wait(vbots[j].id));
+                    }
+                }
+                ce->Execute(cs);
+            }
+            invalid.erase(vbots[i].pos);
+            vbots[i].pos = Point(0,y,i);
+            invalid.insert(vbots[i].pos);
+        }
+        int count = vbots.size();
+        int div = 1;
+        
+        while (div < count) {
+            vector<Command> cs;
+            for (int i=0;i<count;i+=2*div) {
+                cs.push_back(Command::make_fusion_p(vbots[i].id, dP[UP_Z]));
+                cs.push_back(Command::make_fusion_s(vbots[i+div].id, dP[UP_Z] * -1));
+            }
+            DLOG(INFO) << "fusion";
+            ce->Execute(cs);
+            div *= 2;
+            cs.clear();
+            if (div >= count) break;
+            for (int i=0;i<count;i+=2*div) {
+                cs.push_back(Command::make_wait(vbots[i].id));
+                cs.push_back(Command::make_smove(vbots[i+div].id,Point(0,0,-div/2)));
+            }
+            DLOG(INFO) << "move";
+            ce->Execute(cs);
+        }
+        DLOG(INFO) << "fusion end";
+    }
+
+    void parallel_fill(vector<VBot> &vbots, const int j, const int L) {
+        CHECK(L < 6) << "L size error";
+        DLOG(INFO) << "start filling";
+        for (auto &bot: vbots) {
+            while(!bot.reserved.empty()) bot.reserved.pop();
+        }
+        bvv visited = bvv(R,bv(R,0));
+        for (int i=0;i<R;i+=L) for(int k=0;k<R;k+=L) {
+            bool find = false;
+            for (int s=i;s<R && s-i < L;s++) for (int t=k;t<R && t-k < L;t++) if(tvox.get(s,j,t)) {
+                find = true;
+                s=R;t=R;
+            }
+            if (find) {
+                int tar = 0;
+                FOR(i,1,vbots.size()) {
+                    if(vbots[i].reserved.size() < vbots[tar].reserved.size()) {
+                        tar = i;
+                    }
+                }
+                vbots[tar].reserved.push(VTarget(i, k, min(i+L, R), min(k+L, R)));
+            }
+        }
+        run_parallel(vbots,j+1);
     }
 
   public:
@@ -225,49 +338,6 @@ class KevinAI : public CrimeaAI {
 
     void Run() override {
         Point pos = Point(0,0,0);
-        // remove all 
-        bool renew = true;
-        while (renew) {
-            renew = false;
-            // UP_Y
-            bvv used = bvv(R,bv(R,false));
-            for (int j=R-2;j>=0;j--) {
-                queue<P> invalid;
-                bvv grounded = bvv(R, bv(R, false));
-                for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(vox.get(i,j,k)) {
-                    if(!used[i][k] &&( j==0 || vox.get(i, j-1, k)) && !vox.get(i,j+1,k)) {
-                        grounded[i][k] = true;
-                    } else {
-                        invalid.push(P(i,k));
-                    }
-                }
-                bvv visited = bvv(R, bv(R, false));
-                calc_invalid(invalid, used, grounded, visited);
-                renew |= remove_y(j, grounded, 1);
-            }
-        }
-        bool find = false;
-        for (int i=0;i<R;i++) for(int j=0;j<R;j++) for(int k=0;k<R;k++) {
-            if(ce->GetSystemStatus().matrix[i][j][k] == 0 || tvox.get(i,j,k)) {
-                find = true;
-                i = R; j=R; k=R;
-            }
-        } 
-
-        if(find) {
-            ce->Execute({Command::make_flip(1)});
-            // UP_Y
-            for (int j=R-2;j>=0;j--) {
-                queue<P> invalid;
-                bvv grounded = bvv(R, bv(R, false));
-                for (int i=0;i<R;i++) for (int k=0;k<R;k++) if(vox.get(i,j,k)) {
-                    grounded[i][k] = true;
-                }
-                renew |= remove_y(j, grounded, 1);
-            }
-            ce->Execute({Command::make_flip(1)});
-        }
-
 
         for (int i=0;i<R;i++) for(int j=0;j<R;j++) for(int k=0;k<R;k++) {
             CHECK(ce->GetSystemStatus().matrix[i][j][k] == 0 || tvox.get(i,j,k)) << "Failed to delete" << Point(i,j,k);
@@ -275,37 +345,43 @@ class KevinAI : public CrimeaAI {
 
         DLOG(INFO) << "removed src";
         // build super simple way
-        bool updated = true;
-        bvv grounded = bvv(R, bv(R,false));
-        for (int i=0;i<R;i++) for (int k=0;k<R;k++) if (!vox.get(i,0,k) && tvox.get(i,0,k)) {
-            grounded[i][k] = true;
+        for (auto c : getPath(ce->GetBotStatus()[1].pos, Point(0,0,0))) {
+            ce->Execute({c});
         }
-        fill_y(0,grounded, 1);
-        for (int j=1;j<R;j++) {
-            grounded = bvv(R, bv(R,false));
-            bool find = false;
-            for (int i=0;i<R;i++) for (int k=0;k<R;k++) if (!vox.get(i,j+1,k) && tvox.get(i,j,k)) {
-                grounded[i][k] = true;
-                if (!(vox.get(i,j-1,k) && !vox.get(i,j,k))) {
-                    find = true;
-                }
-            }
-            safe_fill_y(j,grounded,1);
-            if (ce->GetSystemStatus().harmonics == Harmonics::HIGH) {
-                int find = false;
-                for (int i=0;i<R;i++) for (int k=0;k<R;k++) if (vox.get(i,j,k) && vox.get_parent_color(i,j,k)!= 0) {
-                    find = true;
-                    break;
-                }
-                if(!find) {
-                    DLOG(INFO) << "seems safe";
-                    ce->Execute({Command::make_flip(1)});
-                }
-            }
-        }
-        if (ce->GetSystemStatus().harmonics != Harmonics::LOW) {
+        if (ce->GetSystemStatus().harmonics == Harmonics::LOW) {
             ce->Execute({Command::make_flip(1)});
         }
+        ce->Execute({Command::make_fission(1, dP[UP_X], 1)});
+        ce->Execute({Command::make_fission(1, dP[UP_Z], 0), Command::make_fission(2, dP[UP_Z], 0)});
+        vector<VBot> vbots;
+        for (int i = 0;i<4;i++) {
+            VBot vbot;
+            auto bot = ce->GetBotStatus()[i+1];
+            vbot.id = i+1;
+            vbot.pos = bot.pos;
+            vbots.push_back(vbot);
+        }
+        
+        vector<Command> cs;
+        for (auto &bot: vbots) {
+            cs.push_back(Command::make_smove(bot.id, Point(0,1,0)));
+            bot.pos.y++;
+        }
+        ce->Execute(cs);
+        for (int j=0;j<R-1;j++) {
+            DLOG(INFO) << "start filling at " << j;
+            parallel_fill(vbots, j, 5);
+        }
+        DLOG(INFO) << "filling end";
+        if (ce->GetSystemStatus().harmonics != Harmonics::LOW) {
+            vector<Command> cs;
+            cs.push_back(Command::make_flip(1));
+            FOR(i,1, vbots.size()) {
+                cs.push_back(Command::make_wait(i+1));
+            }
+            ce->Execute(cs);
+        }
+        parallel_fusion(vbots);
 
         DLOG(INFO) << "finalvent";
         for (auto c : getPath(ce->GetBotStatus()[1].pos, Point(0,0,0))) {

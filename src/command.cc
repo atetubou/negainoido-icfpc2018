@@ -263,6 +263,12 @@ Command Command::make_gvoid(int id, Point nd, Point fd) {
   return ret;
 }
 
+Command Command::make_flip_high() {
+  Command ret;
+  ret.type = FLIP_HIGH;
+  return ret;
+}
+
 static bool is_same_direction(Point l, Point r) {
   if (l.x != 0 && r.x == 0) return false;
   if (l.y != 0 && r.y == 0) return false;

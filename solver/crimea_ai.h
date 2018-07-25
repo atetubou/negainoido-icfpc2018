@@ -29,6 +29,7 @@ class CrimeaAI : public AI {
     Vox vox;
 
     std::vector<Command> getPath(const Point &pos, const Point &dest);
+    std::vector<Command> getPath(const Point &pos, const Point &dest, const std::set<Point> invalid);
 
     bool remove_x(int i, bvv &grounded, int sign);   
 

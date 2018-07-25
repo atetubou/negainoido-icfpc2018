@@ -34,6 +34,10 @@ static Point dP[] = {
 };
 
 vector<Command> CrimeaAI::getPath(const Point &pos, const Point &dest) {
+    return getPath(pos, dest, set<Point>());
+}
+
+vector<Command> CrimeaAI::getPath(const Point &pos, const Point &dest, const set<Point> invalid) {
     DVLOG(2) << "finding " << pos << " " << dest;
     if (pos==dest) return {};
     queue<Point> que;
@@ -54,7 +58,7 @@ vector<Command> CrimeaAI::getPath(const Point &pos, const Point &dest) {
             int ny = cur.y + dy[d];
             int nz = cur.z + dz[d];
             
-            if(nx>=0 && nx < R && ny >= 0 && ny < R && nz>= 0 && nz < R) {
+            if(nx>=0 && nx < R && ny >= 0 && ny < R && nz>= 0 && nz < R && invalid.find(Point(nx,ny,nz)) == invalid.end()) {
                 if(ce->GetSystemStatus().matrix[nx][ny][nz]==VoxelState::VOID) {
                     que.push(Point(nx,ny,nz));
                 }

@@ -25,6 +25,67 @@ static int dz[] = {0,0,0,0,-1,1};
 #define DOWN_Z 4
 #define UP_Z 5
 
+#define FOR(i,a,b) for(int i=(a);i<(int)(b);i++)
+#define REP(i,n)  FOR(i,0,n)
+#define INR(x,R) (0 <= (x) && (x) < (R))
+
+bool VBot::inNextTarget(int x, int z) {
+  CHECK(!reserved.empty()) << "task is empty";
+  auto tar = reserved.front();
+  return tar.x <= x && x < tar.ex && tar.z <= z && z < tar.ez;
+}
+
+bool VArea::checkReserve(int id, int x, int y) {
+  if (x < 0 || x>=R || y < 0 || y>=R) return false;
+  if (get(x, y) == -1 || get(x,y) == id) {
+    return true;
+  }
+  return false;
+}
+
+bool VArea::reserve(int id, int x, int y) {
+  if(checkReserve(id, x, y)) {
+    DLOG(INFO) << "reserve: " << id << " " << x << " " << y ;
+    area[x * R + y] = id;
+    return true;
+  }
+  DLOG(INFO) << "failed to reserve: " << id << " " << x << " " <<y << " " << get(x,y);
+  return false;
+}
+
+bool VArea::reserve(int id, const VTarget &tar) {
+  FOR(i,tar.x, tar.ex) FOR(j, tar.z, tar.ez) {
+    if (!checkReserve(id, i, j)) return false;
+  }
+  FOR(i,tar.x, tar.ex) FOR(j, tar.z, tar.ez) {
+    reserve(id,i,j);
+  }
+  return true;
+}
+
+void VArea::free(int x, int y) {
+  DLOG(INFO) << "free " << " " << x << " " << y ;
+  release.insert(make_pair(x,y));
+}
+
+void VArea::freeArea(const VBot &bot, const VTarget &tar) {
+  FOR(i,tar.x, tar.ex) FOR(j, tar.z, tar.ez) {
+    if (bot.pos.x != i || bot.pos.z != j) free(i,j);
+  }
+}
+
+int VArea::get(int x, int y) {
+  if (x < 0 || x>=R || y < 0 || y>=R) return 1000;
+  return area[x * R + y];
+}
+
+void VArea::runFree() {
+  for (auto &tar : release) {
+    area[tar.first * R + tar.second] =  -1;
+  }
+  release.clear();
+}
+
 Vox::Vox(const vvv &voxels)
 {
   R = voxels.size();

@@ -5,6 +5,46 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <queue>
+
+struct VTarget {
+    int x;
+    int z;
+    int ex;
+    int ez;
+
+    VTarget(int x, int z, int ex, int ez) : x(x), z(z), ex(ex), ez(ez) {};
+};
+
+struct VBot {
+    enum State {
+        SLEEPING,
+        WAITING,
+        WORKING,
+        MOVING,
+    };
+    int id;
+    Point pos;
+    State state;
+    std::queue<VTarget> reserved;
+    VBot() : state(SLEEPING) {};
+    bool inNextTarget(int x, int z);
+};
+
+struct VArea {
+    int R;
+    std::vector<int> area;
+    std::set< std::pair<int,int> > release;
+    VArea(int R) : R(R), area(R*R, -1), release() {};
+
+    bool checkReserve(int id, int x, int y);
+    bool reserve(int id, const VTarget &tar);
+    bool reserve(int id, int x, int y);
+    int get(int x, int y);
+    void free(int x, int y);
+    void freeArea(const VBot &vbot, const VTarget &tar);
+    void runFree();
+};
 
 class Vox {
     int merge(int l, int r);

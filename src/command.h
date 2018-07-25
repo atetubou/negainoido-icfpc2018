@@ -23,6 +23,7 @@ struct Command {
     FUSION_S,
     GFILL,
     GVOID,
+    FLIP_HIGH,
   };
 
   struct Smove {
@@ -102,6 +103,7 @@ struct Command {
 
   static Command make_gfill(int id, Point nd, Point fd);
   static Command make_gvoid(int id, Point nd, Point fd);
+  static Command make_flip_high();
 };
 
 std::vector<Command> MergeSMove(absl::Span<const Command> commands);
