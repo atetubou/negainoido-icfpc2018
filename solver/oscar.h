@@ -14,6 +14,7 @@ struct VTarget {
     int ez;
 
     VTarget(int x, int z, int ex, int ez) : x(x), z(z), ex(ex), ez(ez) {};
+    bool in(int x, int z);
 };
 
 struct VBot {
@@ -27,7 +28,8 @@ struct VBot {
     Point pos;
     State state;
     std::queue<VTarget> reserved;
-    VBot() : state(SLEEPING) {};
+    std::queue<Command> command_queue;
+    VBot(int id) : id(id), state(SLEEPING) {};
     bool inNextTarget(int x, int z);
 };
 

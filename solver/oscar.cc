@@ -29,10 +29,14 @@ static int dz[] = {0,0,0,0,-1,1};
 #define REP(i,n)  FOR(i,0,n)
 #define INR(x,R) (0 <= (x) && (x) < (R))
 
+bool VTarget::in(int x, int z) {
+  return this->x <= x && x < this->ex && this->z <= z && z < this->ez;
+}
+
 bool VBot::inNextTarget(int x, int z) {
   CHECK(!reserved.empty()) << "task is empty";
   auto tar = reserved.front();
-  return tar.x <= x && x < tar.ex && tar.z <= z && z < tar.ez;
+  return tar.in(x,z);
 }
 
 bool VArea::checkReserve(int id, int x, int y) {
