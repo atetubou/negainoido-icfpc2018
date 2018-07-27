@@ -27,30 +27,6 @@ static Point dP[] = {
 
 using namespace std;
 using cvv = vector<vector<Command>>;
-static void calc_invalid(queue<P> &invalid, bvv &used, bvv &grounded, bvv &visited) {
-    int R = used.size();
-    while(!invalid.empty()) {
-        P cur = invalid.front();
-        int j = cur.first;
-        int k = cur.second;
-        invalid.pop();
-        if (j < 0 || j>= R || k<0 || k>=R) continue;
-        if(visited[j][k])  continue;
-        visited[j][k] = true;
-        used[j][k] = true;
-        if (grounded[j][k]) {
-            grounded[j][k] = false;
-        } else {
-            for (int p=0;p<4;p++) {
-                int nx = j+dx[p];
-                int ny = k+dy[p];
-                if (0<= nx && nx < R && 0 <= ny && ny < R && grounded[nx][ny]) {
-                    invalid.push(P(nx,ny));
-                }
-            }
-        }
-    }
-}
 
 class KevinAI : public CrimeaAI {
     void tryReserve(VBot &b, VArea &varea) {
@@ -173,6 +149,23 @@ class KevinAI : public CrimeaAI {
         }
         auto tar = b.reserved.front();
         FOR(i,tar.x,tar.ex) FOR(j,tar.z,tar.ez)  {
+            if (!vox.get(i,cy,j) && tvox.get(i,cy,j) && (cy==0 || vox.get(i,cy-1, j))) {
+                b.pos.x = i;
+                b.pos.z = j;
+                DCHECK(varea.get(i,j)==b.id) << "invalid move" << i << " "  << j << " " << b.id << " " << varea.get(i,j);
+                if(i==cx) {
+                    b.command_queue.push(Command::make_smove(b.id, Point(0,0,j-cz)));
+                    return;
+                }
+                if(j==cz) {
+                    b.command_queue.push(Command::make_smove(b.id, Point(i-cx,0,0)));
+                    return;
+                }
+                b.command_queue.push(Command::make_lmove(b.id, Point(i-cx,0,0), Point(0,0,j-cz)));
+                return;
+            }
+        }
+        FOR(i,tar.x,tar.ex) FOR(j,tar.z,tar.ez)  {
             if (!vox.get(i,cy,j) && tvox.get(i,cy,j)) {
                 b.pos.x = i;
                 b.pos.z = j;
@@ -195,7 +188,7 @@ class KevinAI : public CrimeaAI {
     }
 
     // assumption: all y of vbot pos are j;
-    void run_parallel(vector<VBot> &vbots, int j) {
+    void run_parallel(vector<VBot> &vbots, int j, vector<VTarget> &targets) {
         DLOG(INFO) << "exec parallel";
         bool busy = true;
 
@@ -208,6 +201,20 @@ class KevinAI : public CrimeaAI {
         while (busy) {
             busy = false;
             set<Point> filled;
+            for (auto &b:vbots) if (b.reserved.empty() && targets.size() > 0) {
+               int tar = -1; 
+               int mdist;
+               REP(i,targets.size()) {
+                   VTarget &t = targets[i];
+                   int dist = min(abs(b.pos.x-t.x),abs(b.pos.x-t.ex)) + min(abs(b.pos.z-t.z),abs(b.pos.z-t.ez));
+                   if (tar==-1 || mdist > dist) {
+                       tar = i;
+                       mdist = dist;
+                   }
+                }
+                b.reserved.push(targets[tar]);
+                targets.erase(targets.begin() + tar);
+            }
 
             for (auto &b : vbots) {
                 if(!b.command_queue.empty()) continue;
@@ -231,7 +238,7 @@ class KevinAI : public CrimeaAI {
                             busy = true;
                         } else if (b.state==VBot::SLEEPING) {
                             DLOG(INFO) << " start sleeping " << b.id;
-                            if(b.pos.y+1 < R) {
+                            if(b.pos.y+1 < R && b.pos.y <= j) {
                                 b.pos.y++;
                                 b.command_queue.push(Command::make_smove(b.id, dP[UP_Y]));
                                 busy = true;
@@ -288,6 +295,36 @@ class KevinAI : public CrimeaAI {
                     vox.set(true, p.x, p.y, p.z);
                     vox.set_color(vox.add_color(), p.x,p.y,p.z);
                 }
+                if (ce->GetSystemStatus().harmonics == Harmonics::HIGH) {
+                    bool flag = false;
+                    REP(i,R) REP(k,R) if(vox.get(i,j-1,k) && vox.get_parent_color(i,j-1,k) != 0){
+                        flag = true;
+                        break;
+                    }
+                    REP(i,R) REP(k,R) if(vox.get(i,j-2,k) && vox.get_parent_color(i,j-2,k) != 0){
+                        flag = true;
+                        break;
+                    }
+                    if (!flag) {
+                        for (auto &b : vbots) {
+                            if (b.command_queue.empty()) {
+                                DLOG(INFO) << "SET LOW HARMONICS";
+                                b.command_queue.push(Command::make_flip(b.id));
+                                flag = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!flag) {
+                        DLOG(INFO) << "SET LOW HARMONICS";
+                        vector<Command> flips;
+                        flips.push_back(Command::make_flip(vbots[0].id));
+                        FOR(i,1,vbots.size()) {
+                            flips.push_back(Command::make_wait(vbots[i].id));
+                        }
+                        ce->Execute(flips);
+                    }
+                }
 
                 vector<Command> real_commands;
                 for (auto &b : vbots) {
@@ -306,33 +343,23 @@ class KevinAI : public CrimeaAI {
 
             }
         }
-        if (ce->GetSystemStatus().harmonics == Harmonics::HIGH) {
-            bool flag = false;
-            REP(i,R) REP(k,R) if(vox.get(i,j-1,k) && vox.get_parent_color(i,j-1,k) != 0){
-                flag = true;
-                break;
-            }
-            if (!flag) {
-                DLOG(INFO) << "SET LOW HARMONICS";
-                vector<Command> flips;
-                flips.push_back(Command::make_flip(vbots[0].id));
-                FOR(i,1,vbots.size()) {
-                    flips.push_back(Command::make_wait(vbots[i].id));
-                }
-                ce->Execute(flips);
-            }
-        }
         DLOG(INFO) << "finished";
     }
 
     void parallel_fusion(vector<VBot> &vbots) {
+        DLOG(INFO) << "start fusion";
         int y = vbots[0].pos.y;
-        set<Point> invalid;
-        for (auto &bot:vbots) {
-            invalid.insert(bot.pos);
-        }
+        sort(
+            vbots.begin(),
+            vbots.end(),
+            [](const VBot& a, const VBot& b){return (a.pos.x == a.pos.x) ? (a.pos.z < b.pos.z) : (a.pos.x < b.pos.x);}
+        );
         REP (i,vbots.size()) {
-            vector<Command> bc = getPath(vbots[i].pos, Point(0,y,i), invalid);
+            set<Point> invalid;
+            for (auto &bot:vbots) {
+                invalid.insert(bot.pos);
+            }
+            vector<Command> bc = getPath(vbots[i].pos, Point(0,y,vbots[i].id-1), invalid);
             for (auto c : bc) {
                 vector<Command> cs;
                 c.id = vbots[i].id;
@@ -345,13 +372,12 @@ class KevinAI : public CrimeaAI {
                 }
                 ce->Execute(cs);
             }
-            invalid.erase(vbots[i].pos);
-            vbots[i].pos = Point(0,y,i);
-            invalid.insert(vbots[i].pos);
+            vbots[i].pos = Point(0,y,vbots[i].id-1);
         }
         int count = vbots.size();
         int div = 1;
         
+        sort(vbots.begin(), vbots.end(),[](const VBot& a, const VBot& b){return a.id < b.id;});
         while (div < count) {
             vector<Command> cs;
             for (int i=0;i<count;i+=2*div) {
@@ -375,35 +401,41 @@ class KevinAI : public CrimeaAI {
         DLOG(INFO) << "fusion end";
     }
 
-    void parallel_fill(vector<VBot> &vbots, const int j, const int L) {
+    bool parallel_fill(vector<VBot> &vbots, const int j, const int L) {
+        bool res;
         CHECK(L < 6) << "L size error";
         DLOG(INFO) << "start filling";
         for (auto &bot: vbots) {
             while(!bot.reserved.empty()) bot.reserved.pop();
         }
         bvv visited = bvv(R,bv(R,0));
+        vector<VTarget> targets;
         for (int i=0;i<R;i+=L) for(int k=0;k<R;k+=L) {
             bool find = false;
             for (int s=i;s<R && s-i < L;s++) for (int t=k;t<R && t-k < L;t++) if(tvox.get(s,j,t)) {
                 find = true;
+                res = true;
                 s=R;t=R;
             }
             if (find) {
-                int tar=0;
+                int tar=-1;
                 auto vt = VTarget(i, k, min(i+L, R), min(k+L, R));
                 REP(i,vbots.size()) {
                     if(vt.in(vbots[i].pos.x, vbots[i].pos.z)) {
                         tar = i;
                         break;
                     }
-                    if(vbots[i].reserved.size() < vbots[tar].reserved.size()) {
-                        tar = i;
-                    }
                 }
-                vbots[tar].reserved.push(vt);
+                if (tar >= 0) {
+                    vbots[tar].reserved.push(vt);
+                } else  {
+                    targets.push_back(vt);
+                }
             }
         }
-        run_parallel(vbots,j+1);
+        if(!res) return false;
+        run_parallel(vbots,j+1, targets);
+        return true;
     }
 
     vector<VBot> make_bots(int n) {
@@ -413,6 +445,7 @@ class KevinAI : public CrimeaAI {
             vector<Command> commands;
             int count = vbots.size();
             REP(i,count) {
+                DLOG(INFO) << "fission";
                 int child_id = *(ce->GetBotStatus()[vbots[i].id].seeds.begin());
                 commands.push_back(Command::make_fission(vbots[i].id, dP[UP_Z], n / count / 2 - 1));
                 vbots.push_back(VBot(child_id));
@@ -420,11 +453,17 @@ class KevinAI : public CrimeaAI {
             ce->Execute(commands);
             commands.clear();
             if ((int) vbots.size() >= n) break;
-            REP(i, count) {
-                commands.push_back(Command::make_wait(vbots[i].id));
-                commands.push_back(Command::make_smove(vbots[i+count].id, dP[UP_Z] * (n / count -1)));
+            int dist = (n / count -1);
+            while (dist > 0) {
+                int d  = min(dist, 15);
+                REP(i, count) {
+                    commands.push_back(Command::make_wait(vbots[i].id));
+                    commands.push_back(Command::make_smove(vbots[i+count].id, dP[UP_Z] * d));
+                }
+                ce->Execute(commands);
+                commands.clear();
+                dist -= d;
             }
-            ce->Execute(commands);
         }
         for (auto &b: vbots) {
             b.pos = ce->GetBotStatus()[b.id].pos;
@@ -455,7 +494,10 @@ class KevinAI : public CrimeaAI {
         */
 
         int num = 1;
-        if (R > 30) {
+        if (R > 50) {
+            num = 32;
+        }
+        else if (R > 30) {
             num = 16;
         } else if (R > 20) {
             num = 8;
@@ -474,7 +516,9 @@ class KevinAI : public CrimeaAI {
         ce->Execute(cs);
         for (int j=0;j<R-1;j++) {
             DLOG(INFO) << "start filling at " << j;
-            parallel_fill(vbots, j, 5);
+            if(!parallel_fill(vbots, j, 5)) {
+                break;
+            }
         }
         DLOG(INFO) << "filling end";
         if (ce->GetSystemStatus().harmonics != Harmonics::LOW) {
