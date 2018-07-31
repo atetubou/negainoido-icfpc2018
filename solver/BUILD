@@ -218,6 +218,23 @@ cc_binary(
 )
 
 cc_binary(
+    name = "makalov_ai",
+    srcs = ["makalov_ai.cc" ],
+    copts = ["-std=c++14", "-DDCHECK_ALWAYS_ON"],
+    deps = [
+        "simple_solve_lib",
+        "//external:glog",
+        "@com_github_gflags_gflags//:gflags",
+        "@jsoncpp_git//:jsoncpp",
+        "//src/base",
+        "//src:command_executer",
+        "crimea_ai_debug",
+        "//src/base:flags",
+        ":ai",
+    ],
+)
+
+cc_binary(
     name = "duskin_ai",
     srcs = ["duskin_ai.cc",
             "duskin_lib.h",

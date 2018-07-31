@@ -12,8 +12,9 @@ struct VTarget {
     int z;
     int ex;
     int ez;
+    int count;
 
-    VTarget(int x, int z, int ex, int ez) : x(x), z(z), ex(ex), ez(ez) {};
+    VTarget(int x, int z, int ex, int ez) : x(x), z(z), ex(ex), ez(ez), count(0) {};
     bool in(int x, int z);
 };
 

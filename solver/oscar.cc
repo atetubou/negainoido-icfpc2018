@@ -36,7 +36,7 @@ bool VTarget::in(int x, int z) {
 bool VBot::inNextTarget(int x, int z) {
   CHECK(!reserved.empty()) << "task is empty";
   auto tar = reserved.front();
-  return tar.in(x,z);
+  return tar.x <= x && x < tar.ex && tar.z <= z && z < tar.ez;
 }
 
 bool VArea::checkReserve(int id, int x, int y) {
