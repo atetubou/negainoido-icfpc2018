@@ -82,6 +82,7 @@ struct VWorker {
     Point dest;
     queue<Command> command_queue;
     State state;
+    State next;
     set<int> cos;
     bool lead;
     VTarget target;
@@ -92,7 +93,7 @@ class MakalovAI : public CrimeaAI {
     void tryReserve(VWorker &b, VArea &varea) {
         if(b.pos == b.dest){
             DLOG(INFO) << "set ready";
-            b.state = VWorker::READY;
+            b.state = b.next;
             return;
         }
         auto &tar = b.dest;
@@ -164,6 +165,7 @@ class MakalovAI : public CrimeaAI {
 
     void moveReservedPath(VWorker &b, VArea &varea) {
         DLOG(INFO) << "start moving " << b.id << " " << b.pos << " " << b.dest;
+        Point lld1, lld2;
         for (int i=0;i<4;i++) {
             int d=0;
             while(INR(b.pos.x+dx[i],R) && INR(b.pos.z+dy[i],R) && varea.get(b.pos.x+dx[i],b.pos.z+dy[i])==b.id && d < 15 && b.pos != b.dest) {
@@ -173,17 +175,37 @@ class MakalovAI : public CrimeaAI {
                 b.pos.z += dy[i];
             }
             if (d==0 && b.pos == b.dest) {
-                b.state = VWorker::READY;
+                b.state = b.next;
                 return;
             }
             if (d==0) continue;
-            DLOG(INFO) << "get dir";
-            DLOG(INFO) << "move to " << b.pos.x << " " << b.pos.z << " to " << b.pos.x << " " << b.pos.z;
-            if (b.pos == b.dest) {
-                DLOG(INFO) << "reached";
+            lld1 = Point(dx[i]*d, 0, dy[i]*d);
+            if (d <= 5) {
+                for (int j=0;j<4;j++) if (i/2!= j/2) {
+                    int d2 =0;
+                    while(INR(b.pos.x+dx[j],R) && INR(b.pos.z+dy[j],R) && varea.get(b.pos.x+dx[j],b.pos.z+dy[j])==b.id && d2 < 5 && b.pos != b.dest) {
+                        varea.free(b.pos.x,b.pos.z);
+                        d2 += 1;
+                        b.pos.x += dx[j];
+                        b.pos.z += dy[j];
+                    }
+                    if (d2==0) continue;
+                    lld2 = Point(dx[j] * d2, 0 , dy[j]*d2);
+                    break;
+                }
             }
+            if (b.pos == b.dest) {
+                DLOG(INFO) << "reached at " << b.dest;
+            }
+            DLOG(INFO) << "get dir";
+            DLOG(INFO) << "move to " << b.pos.x << " " << b.pos.z << " " << lld1 << " " << lld2;
+            
             DCHECK(varea.get(b.pos.x,b.pos.z) == b.id) << "invalid move" << b.pos.x << " "  << b.pos.z << " " << b.id;
-            b.command_queue.push(Command::make_smove(b.id, Point(dx[i]*d, 0, dy[i]*d)));
+            if (lld2.Manhattan() == 0) {
+                b.command_queue.push(Command::make_smove(b.id, lld1));
+            } else {
+                b.command_queue.push(Command::make_lmove(b.id, lld1, lld2));
+            }
             return;
         }
         DCHECK(false) << "FAILED to construct path";
@@ -243,6 +265,7 @@ class MakalovAI : public CrimeaAI {
                         workers[tar].lead = true;
                         workers[tar].cos.clear();
                         workers[tar].state = VWorker::BLOCKED;
+                        workers[tar].next = VWorker::READY;
                     } else {
                         unasigned.push(t);
                     }
@@ -276,6 +299,7 @@ class MakalovAI : public CrimeaAI {
                             workers[tar].dest = Point(peaks[k].first,j,peaks[k].second);
                             workers[tar].lead = k == 0;
                             workers[tar].cos.clear();
+                            workers[tar].next = VWorker::READY;
                             if (k==0) {
                                 for (auto &c : cows) {
                                     workers[tar].cos.insert(c.first);
@@ -297,12 +321,21 @@ class MakalovAI : public CrimeaAI {
                 switch(b.state) {
                     case VWorker::WAITING:
                         DLOG(INFO) << " start sleeping " << b.id;
-                        if(b.pos.y+1 <= R && b.pos.y <= j) {
+                        if(b.pos.y+1 < R && b.pos.y <= j) {
                             b.pos.y++;
                             b.command_queue.push(Command::make_smove(b.id, dP[UP_Y]));
                             b.state = VWorker::SLEEPING;
                             varea.free(b.pos.x, b.pos.z);
                             busy = true;
+                        } else {
+                            b.dest = Point(0, R-1, b.id - 1);
+                            if (b.pos == b.dest) {
+                                b.state = VWorker::SLEEPING;
+                            } else {
+                                b.next = VWorker::SLEEPING;
+                                tryReserve(b,varea);
+                                busy = true;
+                            }
                         }
                         break;
                     case VWorker::BLOCKED:
@@ -450,11 +483,55 @@ class MakalovAI : public CrimeaAI {
     void parallel_fusion(vector<VWorker> &vbots) {
         DLOG(INFO) << "start fusion";
         int y = vbots[0].pos.y;
+        VArea varea = VArea(R);
+
         sort(
             vbots.begin(),
             vbots.end(),
             [](const VWorker& a, const VWorker& b){return (a.pos.x == a.pos.x) ? (a.pos.z < b.pos.z) : (a.pos.x < b.pos.x);}
         );
+        for (auto &b: vbots) {
+            b.state = VWorker::BLOCKED;
+            b.next = VWorker::READY;
+            b.dest = Point(0, y, b.id-1);   
+            varea.reserve(b.id, b.pos.x, b.pos.z);
+        }
+
+        bool busy = true;
+        while(busy) {
+            DLOG(INFO) << "going to fusion pos";
+            busy = false;
+            
+            for (auto &b: vbots) {
+                if(b.state==VWorker::BLOCKED) {
+                    busy = true;
+                    tryReserve(b, varea);
+                }
+            }
+
+            for (auto &b: vbots) {
+                if(b.state==VWorker::MOVING) {
+                    busy = true;
+                    moveReservedPath(b, varea);
+                }
+            }
+
+            if (busy) {
+                vector<Command> commands;
+                for (auto &b: vbots) {
+                    if (b.command_queue.empty()) {
+                        commands.push_back(Command::make_wait(b.id));
+                    } else {
+                        commands.push_back(b.command_queue.front());
+                        b.command_queue.pop();
+                    }
+                }
+                ce->Execute(commands);
+                varea.runFree();
+            }
+        }
+        /*
+
         REP (i,vbots.size()) {
             set<Point> invalid;
             for (auto &bot:vbots) {
@@ -475,6 +552,7 @@ class MakalovAI : public CrimeaAI {
             }
             vbots[i].pos = Point(0,y,vbots[i].id-1);
         }
+        */
         int count = vbots.size();
         int div = 1;
         
@@ -523,6 +601,9 @@ class MakalovAI : public CrimeaAI {
                     visited[x][z] = true;
                     DCHECK(tvox.get(x,j,z)) << "invalid point" << x << " " << z;
                 }
+                k += B;
+            } else {
+                k += max(0, ((A+1)*(B+1) - count)/ (A+1) -1);
             }
         }
 
