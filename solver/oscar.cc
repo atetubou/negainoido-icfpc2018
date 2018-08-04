@@ -112,9 +112,11 @@ int Vox::add_color() {
 
 int Vox::merge(int l, int r) {
   if(l==-1 || r==-1) {
-    DLOG(INFO) << "failed union";
+    DCHECK(false) << "failed union";
     return -1;
   }
+  l = get_parent(l);
+  r = get_parent(r);
   if(l==r) return l;
   if(l < r) {
     par[r] = l;

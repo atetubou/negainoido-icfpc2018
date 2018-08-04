@@ -240,10 +240,35 @@ class MakalovAI : public CrimeaAI {
         
         while (busy) {
             busy = false;
-            set<Point> filled;
+            map< int,set<Point> > filled;
 
             queue<VTarget> unasigned;
-            while (!targets.empty()) {
+            bool has_free_worker = false;
+            REP (a,workers.size()) if (workers[a].state==VWorker::WAITING) {
+                auto &w = workers[a];
+                has_free_worker = true;
+                REP(b,workers.size()) if (b != a && workers[b].state==VWorker::BLOCKED && workers[b].next == VWorker::READY && workers[b].lead) {
+                    auto &v = workers[b];
+                    int vd = (v.dest - v.pos).Manhattan();
+                    int wd = (v.dest - w.pos).Manhattan();
+                    if (wd < vd) {
+                        DLOG(INFO) << "reasign " << v.id << " to " << w.id;
+                        w.dest = v.dest;
+                        w.state = VWorker::BLOCKED;
+                        w.cos = v.cos;
+                        w.cos.erase(b);
+                        w.cos.insert(a);
+                        w.next = v.next;
+                        w.target = v.target;
+                        w.lead = v.lead;
+                        v.state = VWorker::WAITING;
+                        v.cos.clear();
+                        break;
+                    }
+                }
+
+            }
+            while (!targets.empty() && has_free_worker) {
                 busy = true;
                 auto t = targets.front();
                 targets.pop();
@@ -257,6 +282,9 @@ class MakalovAI : public CrimeaAI {
                         if (workers[i].state == VWorker::WAITING && cost < mc) {
                             tar = i;
                             mc = cost;
+                        } else if (cost == 0 && workers[i].state == VWorker::BLOCKED) {
+                            tar = -1;
+                            break;
                         }
                     }
                     if (tar != -1) {
@@ -321,13 +349,13 @@ class MakalovAI : public CrimeaAI {
                 switch(b.state) {
                     case VWorker::WAITING:
                         DLOG(INFO) << " start sleeping " << b.id;
-                        if(b.pos.y+1 < R && b.pos.y <= j) {
+                        if(b.pos.y+1 < R && b.pos.y <= j && targets.empty()) {
                             b.pos.y++;
                             b.command_queue.push(Command::make_smove(b.id, dP[UP_Y]));
                             b.state = VWorker::SLEEPING;
                             varea.free(b.pos.x, b.pos.z);
                             busy = true;
-                        } else {
+                        } else if (targets.empty()) {
                             b.dest = Point(0, R-1, b.id - 1);
                             if (b.pos == b.dest) {
                                 b.state = VWorker::SLEEPING;
@@ -364,7 +392,7 @@ class MakalovAI : public CrimeaAI {
                         flag &= workers[id].state == b.READY;
                     }
                     if (flag) {
-                        if(b.cos.size()==4) {
+                        if(b.cos.size() == 4) {
                             DLOG(INFO) << "exec gfill";
                             for (int id: b.cos) { 
                                 auto &w = workers[id];
@@ -374,15 +402,16 @@ class MakalovAI : public CrimeaAI {
                                 DLOG(INFO) << "gfill "  << w.id << " " << fdx << " " << fdz;
                                 w.command_queue.push(Command::make_gfill(w.id, dP[DOWN_Y], Point(fdx, 0, fdz)));
                             }
+                            int color  = j-1 == 0 ? 0 : vox.add_color();
                             FOR(x,b.target.x, b.target.ex) FOR(z,b.target.z, b.target.ez) {
-                                filled.insert(Point(x,j-1,z));
+                                filled[color].insert(Point(x,j-1,z));
                             }
                             b.cos.clear();
                         } else {
                             DLOG(INFO) << "run single fill "  << b.id << " " << b.pos.x << " " << b.pos.z;
                             b.state = VWorker::WAITING;
                             b.command_queue.push(Command::make_fill(b.id, dP[DOWN_Y]));
-                            filled.insert(Point(b.pos.x,j-1,b.pos.z));
+                            filled[j-1 == 0 ? 0 : vox.add_color()].insert(Point(b.pos.x,j-1,b.pos.z));
                         }
                     }
                 }
@@ -393,12 +422,21 @@ class MakalovAI : public CrimeaAI {
                 DLOG(INFO) << "running parallel";
 
                 if (ce->GetSystemStatus().harmonics == Harmonics::LOW) {
-                    
                     bool found = false;
-                    for (auto &p: filled) if (p.y!=0 && !vox.get(p.x, p.y-1, p.z)) {
-                        DLOG(INFO) << " found ungrounded point " << p;
-                        found = true;
-                        break;
+                    for (auto entry : filled) {
+                        int color = entry.first;
+                        Vox tmp = vox;
+                        for (auto p : entry.second) {
+                            tmp.set(true, p.x, p.y, p.z);
+                            tmp.set_color(color, p.x, p.y, p.z);
+                        }
+                        for (auto p : entry.second) {
+                            if(p.y!=0 && tmp.get_parent_color(p.x, p.y, p.z) != 0) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) break;
                     }
                     if (found) {
                         bool flag = false;
@@ -419,44 +457,12 @@ class MakalovAI : public CrimeaAI {
                         }
                     }
                 }
-                for (auto &p: filled) {
-                    vox.set(true, p.x, p.y, p.z);
-                    vox.set_color(p.y==0 ? 0 : vox.add_color(), p.x,p.y,p.z);
-                    if (tvox.get(p.x, p.y, p.z)) {
-                        vvox.set(true, p.x, p.y, p.z);
-                        vvox.set_color(p.y==0 ? 0 : vvox.add_color(), p.x, p.y, p.z);
-                    } else {
-                        DCHECK(false) << "invalid fill at " << p;
-                    }
-                }
-                if (ce->GetSystemStatus().harmonics == Harmonics::HIGH) {
-                    bool flag = false;
-                    REP(i,R) REP(k,R) if(vox.get(i,j-1,k) && vox.get_parent_color(i,j-1,k) != 0){
-                        flag = true;
-                        break;
-                    }
-                    REP(i,R) REP(k,R) if(vox.get(i,j-2,k) && vox.get_parent_color(i,j-2,k) != 0){
-                        flag = true;
-                        break;
-                    }
-                    if (!flag) {
-                        for (auto &b : workers) {
-                            if (b.command_queue.empty()) {
-                                DLOG(INFO) << "SET LOW HARMONICS";
-                                b.command_queue.push(Command::make_flip(b.id));
-                                flag = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (!flag) {
-                        DLOG(INFO) << "SET LOW HARMONICS";
-                        vector<Command> flips;
-                        flips.push_back(Command::make_flip(workers[0].id));
-                        FOR(i,1,workers.size()) {
-                            flips.push_back(Command::make_wait(workers[i].id));
-                        }
-                        ce->Execute(flips);
+                for (auto &entry: filled) {
+                    int color = entry.first;
+                    for (Point p : entry.second) {
+                        vox.set(true, p.x, p.y, p.z);
+                        vox.set_color(color, p.x,p.y,p.z);
+                        DCHECK(tvox.get(p.x, p.y, p.z)) << "invalid fill at " << p;
                     }
                 }
 
@@ -473,6 +479,27 @@ class MakalovAI : public CrimeaAI {
                 ce->Execute(real_commands);
                 for (auto &b: workers) {
                     DCHECK(b.pos == ce->GetBotStatus()[b.id].pos) << "failed to check vpos " << b.id;
+                }
+                if (ce->GetSystemStatus().harmonics == Harmonics::HIGH) {
+                    DLOG(INFO) << "check state";
+                    bool flag = false;
+                    REP(i,R) REP(k,R) if(vox.get(i,j-1,k) && vox.get_parent_color(i,j-1,k) != 0){
+                        flag = true;
+                        break;
+                    }
+                    REP(i,R) REP(k,R) if(vox.get(i,j-2,k) && vox.get_parent_color(i,j-2,k) != 0){
+                        flag = true;
+                        break;
+                    }
+                    if (!flag) {
+                        DLOG(INFO) << "SET LOW HARMONICS";
+                        vector<Command> flips;
+                        flips.push_back(Command::make_flip(workers[0].id));
+                        FOR(i,1,workers.size()) {
+                            flips.push_back(Command::make_wait(workers[i].id));
+                        }
+                        ce->Execute(flips);
+                    }
                 }
 
             }
@@ -504,7 +531,6 @@ class MakalovAI : public CrimeaAI {
             
             for (auto &b: vbots) {
                 if(b.state==VWorker::BLOCKED) {
-                    busy = true;
                     tryReserve(b, varea);
                 }
             }
@@ -531,7 +557,6 @@ class MakalovAI : public CrimeaAI {
             }
         }
         /*
-
         REP (i,vbots.size()) {
             set<Point> invalid;
             for (auto &bot:vbots) {
@@ -539,6 +564,8 @@ class MakalovAI : public CrimeaAI {
             }
             vector<Command> bc = getPath(vbots[i].pos, Point(0,y,vbots[i].id-1), invalid);
             for (auto c : bc) {
+
+                DLOG(INFO) << "try second move";
                 vector<Command> cs;
                 c.id = vbots[i].id;
                 REP (j,vbots.size()) {
@@ -556,7 +583,7 @@ class MakalovAI : public CrimeaAI {
         int count = vbots.size();
         int div = 1;
         
-        sort(vbots.begin(), vbots.end(),[](const VWorker& a, const VWorker& b){return a.id < b.id;});
+        sort(vbots.begin(), vbots.end(),[](const VWorker& a, const VWorker& b){return a.pos.z < b.pos.z;});
         while (div < count) {
             vector<Command> cs;
             for (int i=0;i<count;i+=2*div) {
@@ -631,7 +658,7 @@ class MakalovAI : public CrimeaAI {
             ce->Execute(commands);
             commands.clear();
             if ((int) vbots.size() >= n) break;
-            int dist = (n / count -1);
+            int dist = (n / count / 2 -1);
             while (dist > 0) {
                 int d  = min(dist, 15);
                 REP(i, count) {
